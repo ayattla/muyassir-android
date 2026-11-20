@@ -127,7 +127,7 @@ jobs:
 
   preview:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build, device]
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
