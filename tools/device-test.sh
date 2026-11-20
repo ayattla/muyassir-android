@@ -14,8 +14,12 @@ grep -q "^OK (" shots/instrumented.txt || FAIL=1
 
 echo "== every tool screen"
 adb shell settings put system font_scale 1.0
+# Emulator system apps (e.g. the launcher) can raise "isn't responding" dialogs; keep them out of the screenshots.
+adb shell settings put global hide_error_dialogs 1
 home() { # name: cold start on the home screen, fail if its content is missing
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1
   adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 8
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1; sleep 1
   adb exec-out screencap -p > "shots/$1.png"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb exec-out cat /sdcard/ui.xml > "shots/$1.xml"
   grep -q "التصنيفات" "shots/$1.xml" || { echo "::error::Home screen content missing ($1)"; FAIL=1; }
