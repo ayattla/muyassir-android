@@ -9,11 +9,12 @@ import com.muyassir.app.core.Store
 import com.muyassir.app.tools.ToolHost
 
 @Composable
-fun AppNav(startTool: String? = null) {
+fun AppNav(startTool: String? = null, startCat: String? = null) {
     Store.init(LocalContext.current)
     val nav = rememberNavController()
     // A launcher shortcut or the automated UI test can open a tool directly.
     androidx.compose.runtime.LaunchedEffect(startTool) { if (!startTool.isNullOrBlank() && com.muyassir.app.core.Tools.byId.containsKey(startTool)) nav.navigate("tool/$startTool") }
+    androidx.compose.runtime.LaunchedEffect(startCat) { if (!startCat.isNullOrBlank() && com.muyassir.app.core.Tools.categories.any { it.id == startCat }) nav.navigate("cat/$startCat") }
     NavHost(nav, startDestination = "home") {
         composable("home") { Home(open = { nav.navigate("tool/$it") }, openCat = { nav.navigate("cat/$it") }) }
         composable("cat/{id}") { e -> CategoryScreen(e.arguments?.getString("id") ?: "files", open = { nav.navigate("tool/$it") }, back = { nav.popBackStack() }) }

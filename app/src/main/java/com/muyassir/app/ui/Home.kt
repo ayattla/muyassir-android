@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +37,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(), contentAlignment = Alignment.TopCenter) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(300.dp),
-            modifier = Modifier.widthIn(max = 1100.dp).fillMaxSize(),
+            modifier = Modifier.widthIn(max = 1100.dp).fillMaxSize().testTag("homeGrid"),
             contentPadding = PaddingValues(16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -189,10 +190,10 @@ fun CategoryScreen(id: String, open: (String) -> Unit, back: () -> Unit) {
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.TopCenter) {
             LazyVerticalGrid(
-                GridCells.Adaptive(300.dp), Modifier.widthIn(max = 1100.dp), contentPadding = PaddingValues(16.dp),
+                GridCells.Adaptive(300.dp), Modifier.widthIn(max = 1100.dp).fillMaxSize().testTag("catGrid"), contentPadding = PaddingValues(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                item(span = { GridItemSpan(Int.MAX_VALUE) }) { Text(c.blurb, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item(span = { GridItemSpan(maxLineSpan) }) { Text(c.blurb, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(Tools.inCat(id), key = { it.id }) { t -> ToolTile(t) { open(t.id) } }
             }
         }

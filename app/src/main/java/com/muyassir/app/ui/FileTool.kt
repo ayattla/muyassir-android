@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.muyassir.app.core.Files
@@ -51,6 +52,7 @@ fun FileTool(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val progress = remember { Progress() }
+    LaunchedEffect(Unit) { com.muyassir.app.core.TestHooks.inputs?.let { if (inputs.isEmpty()) inputs.addAll(it) } }
 
     val pickMany = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { if (it.isNotEmpty()) { inputs.addAll(it.filter { u -> u !in inputs }); results = emptyList() } }
     val pickOne = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { if (it != null) { inputs.clear(); inputs.add(it); results = emptyList() } }
@@ -87,7 +89,7 @@ fun FileTool(
 
         if (inputs.isNotEmpty()) options(inputs)
 
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("error")) }
 
         if (busy) {
             Panel {
@@ -95,7 +97,7 @@ fun FileTool(
                 if (progress.value >= 0) LinearProgressIndicator(progress = { progress.value }, Modifier.fillMaxWidth())
                 else LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-        } else PrimaryButton(actionLabel, Icons.Rounded.Bolt, enabled = inputs.isNotEmpty()) {
+        } else PrimaryButton(actionLabel, Icons.Rounded.Bolt, enabled = inputs.isNotEmpty(), modifier = Modifier.testTag("action")) {
             error = validate(inputs)
             if (error == null) scope.launch {
                 busy = true; progress.value = -1f; progress.label = ""
@@ -135,7 +137,7 @@ fun ResultFiles(files: List<File>) {
     val saveAs = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { u ->
         val f = pending; if (u != null && f != null) { Files.writeTo(ctx, f, u); toast(ctx, "تم الحفظ") }
     }
-    Panel("الناتج (${files.size})") {
+    Panel("الناتج (${files.size})", Modifier.testTag("results")) {
         files.take(60).forEach { f ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.CheckCircle, null, tint = Brand.Mint, modifier = Modifier.size(20.dp))

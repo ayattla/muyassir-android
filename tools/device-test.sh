@@ -25,6 +25,11 @@ home() { # name: cold start on the home screen, fail if its content is missing
   grep -q "التصنيفات" "shots/$1.xml" || { echo "::error::Home screen content missing ($1)"; FAIL=1; }
 }
 home 00-home
+echo "== every category screen"
+for c in $(grep -o 'Category("[a-z]*"' app/src/main/java/com/muyassir/app/core/Tools.kt | cut -d'"' -f2); do
+  adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity --es cat "$c" >/dev/null; sleep 3
+  adb exec-out screencap -p > "shots/cat-$c.png"
+done
 IDS=$(grep -o 'Tool("[a-z_]*"' app/src/main/java/com/muyassir/app/core/Tools.kt | cut -d'"' -f2)
 n=0
 for id in $IDS; do
