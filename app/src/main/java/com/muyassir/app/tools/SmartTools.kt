@@ -75,7 +75,7 @@ fun QrMake(t: Tool, back: () -> Unit) {
         }
         val content = when (kind) {
             0 -> a
-            1 -> if (a.isBlank()) "" else "WIFI:T:WPA;S:${a.replace(";", "\;")};P:${b.replace(";", "\;")};;"
+            1 -> if (a.isBlank()) "" else "WIFI:T:WPA;S:${a.replace(";", "\\;")};P:${b.replace(";", "\\;")};;"
             else -> if (a.isBlank()) "" else "BEGIN:VCARD\nVERSION:3.0\nFN:$a\nTEL:$b\nEMAIL:$c\nEND:VCARD"
         }
         if (content.isNotBlank()) {

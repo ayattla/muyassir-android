@@ -275,7 +275,7 @@ fun BudgetTool(t: Tool, back: () -> Unit) {
 fun AttendanceTool(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     var students by remember { mutableStateOf(Store.list("students").map { it.optString("name") }) }
-    var sessions by remember { mutableStateOf(Store.list("attendance")) }
+    var sessions by remember { mutableStateOf<List<JSONObject>>(Store.list("attendance")) }
     var newName by remember { mutableStateOf("") }
     val absentToday = remember { mutableStateListOf<String>() }
     var date by remember { mutableLongStateOf(System.currentTimeMillis()) }
