@@ -33,7 +33,6 @@ import java.util.Locale
 fun Home(open: (String) -> Unit, openCat: (String) -> Unit) {
     var q by remember { mutableStateOf("") }
     val results = remember(q) { Tools.search(q) }
-    val span = GridItemSpan(Int.MAX_VALUE)
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(), contentAlignment = Alignment.TopCenter) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(300.dp),
@@ -42,30 +41,30 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(span = { span }) { Header() }
-            item(span = { span }) { SearchBox(q) { q = it } }
+            item(span = { GridItemSpan(maxLineSpan) }) { Header() }
+            item(span = { GridItemSpan(maxLineSpan) }) { SearchBox(q) { q = it } }
             if (q.isNotBlank()) {
-                item(span = { span }) { SectionTitle(if (results.isEmpty()) "لا توجد أداة بهذا الاسم" else "${results.size} نتيجة") }
+                item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(if (results.isEmpty()) "لا توجد أداة بهذا الاسم" else "${results.size} نتيجة") }
                 items(results, key = { "s" + it.id }) { t -> ToolTile(t) { open(t.id) } }
                 return@LazyVerticalGrid
             }
-            item(span = { span }) { QuickActions(open) }
-            item(span = { span }) { SectionTitle("التصنيفات") }
+            item(span = { GridItemSpan(maxLineSpan) }) { QuickActions(open) }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("التصنيفات") }
             items(Tools.categories, key = { "c" + it.id }) { c -> CategoryCard(c.title, c.blurb, Tools.inCat(c.id).size, c.icon, c.color) { openCat(c.id) } }
             val favs = Store.favorites.mapNotNull { Tools.byId[it] }
             if (favs.isNotEmpty()) {
-                item(span = { span }) { SectionTitle("المفضلة") }
+                item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("المفضلة") }
                 items(favs, key = { "f" + it.id }) { t -> ToolTile(t, compact = true) { open(t.id) } }
             }
             val most = Store.usage.entries.sortedByDescending { it.value }.mapNotNull { Tools.byId[it.key] }.take(6)
             if (most.isNotEmpty()) {
-                item(span = { span }) { SectionTitle("الأكثر استخدامًا") }
+                item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("الأكثر استخدامًا") }
                 items(most, key = { "m" + it.id }) { t -> ToolTile(t, compact = true) { open(t.id) } }
             }
-            item(span = { span }) { SectionTitle("مقترحة لك") }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("مقترحة لك") }
             items(Tools.suggestions(), key = { "g" + it.id }) { t -> ToolTile(t) { open(t.id) } }
             if (Store.recents.isNotEmpty()) {
-                item(span = { span }) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SectionTitle("آخر العمليات", Modifier.weight(1f))
                         TextButton(onClick = { Store.clearRecents() }) { Text("مسح") }
@@ -76,7 +75,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit) {
                     RecentRow(t.title, r.detail, r.time, t.icon, Tools.colorOf(t)) { open(t.id) }
                 }
             }
-            item(span = { span }) { Footer() }
+            item(span = { GridItemSpan(maxLineSpan) }) { Footer() }
         }
     }
 }
