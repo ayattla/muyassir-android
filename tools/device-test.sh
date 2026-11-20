@@ -14,8 +14,13 @@ grep -q "^OK (" shots/instrumented.txt || FAIL=1
 
 echo "== every tool screen"
 adb shell settings put system font_scale 1.0
-adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 6
-adb exec-out screencap -p > shots/00-home.png
+home() { # name: cold start on the home screen, fail if its content is missing
+  adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 8
+  adb exec-out screencap -p > "shots/$1.png"
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb exec-out cat /sdcard/ui.xml > "shots/$1.xml"
+  grep -q "التصنيفات" "shots/$1.xml" || { echo "::error::Home screen content missing ($1)"; FAIL=1; }
+}
+home 00-home
 IDS=$(grep -o 'Tool("[a-z_]*"' app/src/main/java/com/muyassir/app/core/Tools.kt | cut -d'"' -f2)
 n=0
 for id in $IDS; do
@@ -25,7 +30,8 @@ for id in $IDS; do
   sleep 3
   adb exec-out screencap -p > "shots/$(printf %02d $n)-$id.png"
 done
-adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 2
+home 99-home-after
+adb shell input swipe 500 1600 500 500 400; sleep 1; adb exec-out screencap -p > shots/99-home-scrolled.png
 adb logcat -d -s AndroidRuntime:E > shots/crashes.txt
 if grep -q FATAL shots/crashes.txt; then echo "::error::A tool screen crashed"; sed -n '1,80p' shots/crashes.txt; FAIL=1; fi
 echo "screens: $n" | tee shots/summary.txt
