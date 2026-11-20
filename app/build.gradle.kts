@@ -22,6 +22,15 @@ android {
             storePassword = System.getenv("MYS_KS_PASS")
             keyAlias = "upload"
             keyPassword = System.getenv("MYS_KS_PASS")
+            enableV1Signing = true; enableV2Signing = true
+        }
+        // Public, fixed key for preview APKs only (never used for the store), so updates install over each other.
+        create("preview") {
+            storeFile = file("preview.jks")
+            storePassword = "muyassir-preview"
+            keyAlias = "preview"
+            keyPassword = "muyassir-preview"
+            enableV1Signing = true; enableV2Signing = true
         }
     }
 
@@ -31,7 +40,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (!System.getenv("MYS_KS_PASS").isNullOrEmpty()) signingConfigs.getByName("release")
-            else signingConfigs.getByName("debug")
+            else signingConfigs.getByName("preview")
         }
     }
 
