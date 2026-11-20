@@ -1,0 +1,273 @@
+package com.muyassir.app.tools
+
+import android.graphics.Bitmap
+import android.graphics.Canvas as ACanvas
+import android.graphics.Paint
+import android.graphics.Path as APath
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.muyassir.app.core.Files
+import com.muyassir.app.core.Store
+import com.muyassir.app.core.Tool
+import com.muyassir.app.engine.Calc
+import com.muyassir.app.engine.DocBuilder
+import com.muyassir.app.engine.DocBuilder.Block
+import com.muyassir.app.engine.ImageEngine
+import com.muyassir.app.engine.PdfEngine
+import com.muyassir.app.ui.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.File
+import java.util.Date
+
+/** Remembers the last values of a form so the user does not retype their company or personal details. */
+@Composable
+private fun rememberForm(name: String): JSONObject = remember { Store.obj("form_$name") }
+
+@Composable
+private fun F(form: JSONObject, key: String, label: String, lines: Int = 1, tick: MutableIntState) {
+    TextField2(label, form.optString(key), { form.put(key, it); tick.intValue++ }, lines = lines)
+}
+
+@Composable
+fun CvTool(t: Tool, back: () -> Unit) {
+    val ctx = LocalContext.current
+    val f = rememberForm("cv"); val tick = remember { mutableIntStateOf(0) }
+    var photo by remember { mutableStateOf<Bitmap?>(null) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u -> u?.let { photo = runCatching { ImageEngine.cropRatio(ImageEngine.load(ctx, it, 800), 1f, 1f) }.getOrNull() } }
+    var result by remember { mutableStateOf<List<File>>(emptyList()) }
+    ToolScreen(t, back) {
+        key(tick.intValue) {
+            Panel("البيانات الأساسية") {
+                F(f, "name", "الاسم الكامل", tick = tick); F(f, "title", "المسمى أو التخصص", tick = tick)
+                F(f, "phone", "الجوال", tick = tick); F(f, "email", "البريد الإلكتروني", tick = tick); F(f, "city", "المدينة", tick = tick)
+                SecondaryButton(if (photo == null) "إضافة صورة (اختياري)" else "تغيير الصورة", Icons.Rounded.AddAPhoto) { pick.launch("image/*") }
+            }
+            Panel("المحتوى") {
+                F(f, "summary", "نبذة مختصرة", 3, tick)
+                F(f, "exp", "الخبرات (سطر لكل خبرة: المسمى — الجهة — المدة)", 5, tick)
+                F(f, "edu", "التعليم (سطر لكل مؤهل)", 3, tick)
+                F(f, "skills", "المهارات (مفصولة بفاصلة)", 2, tick)
+                F(f, "langs", "اللغات", tick = tick); F(f, "courses", "الدورات والشهادات", 3, tick)
+            }
+        }
+        PrimaryButton("إنشاء السيرة الذاتية", Icons.Rounded.PictureAsPdf, enabled = f.optString("name").isNotBlank()) {
+            Store.saveObj("form_cv", f)
+            val b = DocBuilder(ctx).apply { footer = null }
+            photo?.let { b.add(Block.Image(it, 110f, center = false)) }
+            b.add(Block.Title(f.optString("name"), f.optString("title")))
+            b.add(Block.Para(listOf(f.optString("phone"), f.optString("email"), f.optString("city")).filter { it.isNotBlank() }.joinToString("   |   "), 10f, color = DocBuilder.MUTED))
+            fun sec(h: String, k: String, bullets: Boolean = true) { val v = f.optString(k); if (v.isNotBlank()) { b.add(Block.Heading(h)); v.lines().filter { it.isNotBlank() }.forEach { b.add(Block.Para(if (bullets) "• $it" else it)) } } }
+            sec("نبذة", "summary", false); sec("الخبرات العملية", "exp"); sec("التعليم", "edu")
+            f.optString("skills").takeIf { it.isNotBlank() }?.let { b.add(Block.Heading("المهارات")); b.add(Block.Para(it.split(',', '،').joinToString("  •  ") { s -> s.trim() })) }
+            sec("اللغات", "langs"); sec("الدورات والشهادات", "courses")
+            result = listOf(b.save(File(Files.outDir(ctx), "السيرة-الذاتية-${f.optString("name")}.pdf"))); Store.used(t.id)
+        }
+        if (result.isNotEmpty()) ResultFiles(result)
+    }
+}
+
+/** Invoice and quotation share one form: seller, buyer, line items, VAT. */
+@Composable
+private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean) {
+    val ctx = LocalContext.current
+    val f = rememberForm(if (quote) "quote" else "invoice"); val tick = remember { mutableIntStateOf(0) }
+    val items = remember { mutableStateListOf(Triple("", "1", "")) }
+    var withVat by remember { mutableStateOf(true) }
+    var result by remember { mutableStateOf<List<File>>(emptyList()) }
+    ToolScreen(t, back) {
+        key(tick.intValue) {
+            Panel("البائع") { F(f, "seller", "اسم المنشأة", tick = tick); F(f, "vatNo", "الرقم الضريبي", tick = tick); F(f, "sellerInfo", "العنوان والتواصل", 2, tick) }
+            Panel("العميل") { F(f, "buyer", "اسم العميل", tick = tick); F(f, "buyerInfo", "بيانات العميل (اختياري)", 2, tick) }
+            Panel { F(f, "no", if (quote) "رقم العرض" else "رقم الفاتورة", tick = tick); F(f, "notes", if (quote) "الشروط ومدة صلاحية العرض" else "ملاحظات وطريقة الدفع", 3, tick) }
+        }
+        Panel("البنود") {
+            items.forEachIndexed { i, (d, q, p) ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextField2("الوصف", d, { items[i] = Triple(it, q, p) }, Modifier.weight(1.6f))
+                    NumField("الكمية", q, { items[i] = Triple(d, it, p) }, Modifier.weight(0.7f))
+                    NumField("السعر", p, { items[i] = Triple(d, q, it) }, Modifier.weight(0.9f))
+                    IconButton(onClick = { if (items.size > 1) items.removeAt(i) }) { Icon(Icons.Rounded.Close, "حذف") }
+                }
+            }
+            SecondaryButton("إضافة بند", Icons.Rounded.Add) { items.add(Triple("", "1", "")) }
+            SwitchRow("إضافة ضريبة القيمة المضافة 15%", withVat) { withVat = it }
+        }
+        val sub = items.sumOf { it.second.num() * it.third.num() }
+        val v = if (withVat) Calc.vat(sub, inclusive = false) else Calc.Vat(sub, 0.0, sub)
+        ResultCard("الإجمالي" to money(v.total), listOf("المجموع قبل الضريبة" to money(v.net), "الضريبة" to money(v.vat)))
+        PrimaryButton(if (quote) "إنشاء عرض السعر" else "إنشاء الفاتورة", Icons.Rounded.PictureAsPdf, enabled = sub > 0) {
+            Store.saveObj(if (quote) "form_quote" else "form_invoice", f)
+            val b = DocBuilder(ctx)
+            b.add(Block.Title(if (quote) "عرض سعر" else if (withVat) "فاتورة ضريبية مبسطة" else "فاتورة", "${f.optString("seller")}${f.optString("vatNo").takeIf { it.isNotBlank() }?.let { "  •  الرقم الضريبي: $it" } ?: ""}"))
+            b.add(Block.KeyValues(listOfNotNull(
+                (if (quote) "رقم العرض" else "رقم الفاتورة") to f.optString("no").ifBlank { "${System.currentTimeMillis() / 1000 % 100000}" },
+                "التاريخ" to dayFmt.format(Date()), "العميل" to f.optString("buyer"),
+                f.optString("buyerInfo").takeIf { it.isNotBlank() }?.let { "بيانات العميل" to it },
+                f.optString("sellerInfo").takeIf { it.isNotBlank() }?.let { "بيانات البائع" to it },
+            )))
+            b.add(Block.Table(listOf("#", "الوصف", "الكمية", "السعر", "المجموع"),
+                items.filter { it.first.isNotBlank() || it.third.num() > 0 }.mapIndexed { i, (d, q, p) -> listOf("${i + 1}", d, fmt(q.num()), fmt(p.num()), fmt(q.num() * p.num())) },
+                listOf(0.4f, 3f, 0.8f, 1f, 1.2f)))
+            b.add(Block.KeyValues(listOf("المجموع قبل الضريبة" to money(v.net)) + (if (withVat) listOf("ضريبة القيمة المضافة 15%" to money(v.vat)) else emptyList()) + listOf("الإجمالي المستحق" to money(v.total))))
+            f.optString("notes").takeIf { it.isNotBlank() }?.let { b.add(Block.Heading(if (quote) "الشروط" else "ملاحظات")); b.add(Block.Para(it)) }
+            if (!quote && withVat) b.add(Block.Para("تنبيه: هذا مستند مبسط. الفوترة الإلكترونية الإلزامية (فاتورة) تتطلب نظامًا معتمدًا من هيئة الزكاة والضريبة والجمارك.", 8.5f, color = DocBuilder.MUTED))
+            result = listOf(b.save(File(Files.outDir(ctx), "${if (quote) "عرض-سعر" else "فاتورة"}-${f.optString("buyer").ifBlank { "عميل" }}.pdf"))); Store.used(t.id, f.optString("buyer"))
+        }
+        if (result.isNotEmpty()) ResultFiles(result)
+    }
+}
+
+@Composable fun InvoiceTool(t: Tool, back: () -> Unit) = BillingDoc(t, back, false)
+@Composable fun QuoteTool(t: Tool, back: () -> Unit) = BillingDoc(t, back, true)
+
+@Composable
+fun LetterTool(t: Tool, back: () -> Unit) {
+    val ctx = LocalContext.current
+    val f = rememberForm("letter"); val tick = remember { mutableIntStateOf(0) }
+    var kind by remember { mutableIntStateOf(0) }
+    var result by remember { mutableStateOf<List<File>>(emptyList()) }
+    ToolScreen(t, back) {
+        Panel { Segmented(listOf("خطاب رسمي", "تقرير"), kind) { kind = it } }
+        key(tick.intValue) {
+            Panel {
+                F(f, "from", "الجهة أو المرسل", tick = tick)
+                if (kind == 0) { F(f, "to", "المرسل إليه (سعادة/ مدير …)", tick = tick); F(f, "subject", "الموضوع", tick = tick) }
+                else { F(f, "rtitle", "عنوان التقرير", tick = tick); F(f, "author", "إعداد", tick = tick) }
+                F(f, "body", if (kind == 0) "نص الخطاب" else "محتوى التقرير (العناوين تبدأ بـ #)", 10, tick)
+                F(f, "sign", "الاسم والصفة للتوقيع", tick = tick)
+            }
+        }
+        PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf) {
+            Store.saveObj("form_letter", f)
+            val b = DocBuilder(ctx)
+            if (kind == 0) {
+                b.add(Block.Para(f.optString("from"), 13f, bold = true))
+                b.add(Block.Para("التاريخ: ${dayFmt.format(Date())}", 10f, color = DocBuilder.MUTED)); b.add(Block.Rule)
+                b.add(Block.Para(f.optString("to"), 12f, bold = true)); b.add(Block.Para("السلام عليكم ورحمة الله وبركاته،"))
+                if (f.optString("subject").isNotBlank()) b.add(Block.Para("الموضوع: ${f.optString("subject")}", 12f, bold = true))
+                f.optString("body").split("\n").forEach { b.add(Block.Para(it, 12f)) }
+                b.add(Block.Space(20f)); b.add(Block.Para("وتفضلوا بقبول فائق الاحترام والتقدير،")); b.add(Block.Space(16f))
+                b.add(Block.Para(f.optString("sign"), 12f, bold = true)); b.add(Block.Para("التوقيع: ..............................."))
+            } else {
+                b.add(Block.Title(f.optString("rtitle").ifBlank { "تقرير" }, listOf(f.optString("from"), f.optString("author").takeIf { it.isNotBlank() }?.let { "إعداد: $it" }, dayFmt.format(Date())).filterNotNull().filter { it.isNotBlank() }.joinToString(" • ")))
+                f.optString("body").lines().forEach { l -> if (l.startsWith("#")) b.add(Block.Heading(l.trimStart('#').trim())) else if (l.isNotBlank()) b.add(Block.Para(l)) }
+                if (f.optString("sign").isNotBlank()) { b.add(Block.Space(16f)); b.add(Block.Para(f.optString("sign"), bold = true)) }
+            }
+            result = listOf(b.save(File(Files.outDir(ctx), "${if (kind == 0) "خطاب" else "تقرير"}.pdf"))); Store.used(t.id)
+        }
+        if (result.isNotEmpty()) ResultFiles(result)
+    }
+}
+
+@Composable
+fun TextPdfTool(t: Tool, back: () -> Unit) {
+    val ctx = LocalContext.current
+    var title by remember { mutableStateOf("") }; var body by remember { mutableStateOf("") }; var size by remember { mutableIntStateOf(1) }
+    var result by remember { mutableStateOf<List<File>>(emptyList()) }
+    ToolScreen(t, back) {
+        Panel {
+            TextField2("العنوان (اختياري)", title, { title = it }); TextField2("النص", body, { body = it }, lines = 12)
+            Segmented(listOf("صغير", "متوسط", "كبير"), size) { size = it }
+        }
+        PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf, enabled = body.isNotBlank()) {
+            val b = DocBuilder(ctx)
+            if (title.isNotBlank()) b.add(Block.Title(title))
+            body.split("\n").forEach { b.add(Block.Para(it, listOf(10f, 12f, 15f)[size])) }
+            result = listOf(b.save(File(Files.outDir(ctx), "${title.ifBlank { "مستند" }}.pdf"))); Store.used(t.id, title)
+        }
+        if (result.isNotEmpty()) ResultFiles(result)
+    }
+}
+
+@Composable
+fun SignPdfTool(t: Tool, back: () -> Unit) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val strokes = remember { mutableStateListOf<List<Offset>>() }
+    var current by remember { mutableStateOf<List<Offset>>(emptyList()) }
+    var pdf by remember { mutableStateOf<File?>(null) }
+    var pages by remember { mutableIntStateOf(0) }
+    var page by remember { mutableIntStateOf(1) }
+    var preview by remember { mutableStateOf<Bitmap?>(null) }
+    var x by remember { mutableFloatStateOf(0.6f) }; var y by remember { mutableFloatStateOf(0.8f) }; var w by remember { mutableFloatStateOf(0.28f) }
+    var padW by remember { mutableIntStateOf(1) }; var padH by remember { mutableIntStateOf(1) }
+    var result by remember { mutableStateOf<List<File>>(emptyList()) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { u: Uri? ->
+        u?.let { scope.launch { withContext(Dispatchers.IO) { val f = Files.toCache(ctx, it); pdf = f; pages = PdfEngine.pageCount(f); page = pages; preview = PdfEngine.render(f, page - 1, 60) } } }
+    }
+    LaunchedEffect(page, pdf) { pdf?.let { f -> preview = withContext(Dispatchers.IO) { PdfEngine.render(f, page - 1, 60) } } }
+
+    fun signatureBitmap(): Bitmap {
+        val bmp = Bitmap.createBitmap(padW, padH, Bitmap.Config.ARGB_8888)
+        val c = ACanvas(bmp); val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF0B1F6B.toInt(); strokeWidth = 7f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
+        strokes.forEach { s -> if (s.size > 1) { val path = APath(); path.moveTo(s[0].x, s[0].y); s.drop(1).forEach { path.lineTo(it.x, it.y) }; c.drawPath(path, p) } }
+        return bmp
+    }
+
+    ToolScreen(t, back) {
+        Panel("ارسم توقيعك") {
+            Box(
+                Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(14.dp)).background(Color.White).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                    .pointerInput(Unit) {
+                        padW = size.width; padH = size.height
+                        detectDragGestures(onDragStart = { current = listOf(it) }, onDragEnd = { strokes.add(current); current = emptyList() }) { ch, _ -> current = current + ch.position }
+                    },
+            ) {
+                Canvas(Modifier.fillMaxSize()) {
+                    (strokes + listOf(current)).forEach { s -> for (i in 1 until s.size) drawLine(Color(0xFF0B1F6B), s[i - 1], s[i], 7f, cap = StrokeCap.Round) }
+                }
+                if (strokes.isEmpty() && current.isEmpty()) Text("وقّع هنا بإصبعك", Modifier.align(Alignment.Center), color = Color.Gray)
+            }
+            TextButton(onClick = { strokes.clear() }) { Text("مسح التوقيع") }
+        }
+        Panel("المستند") {
+            SecondaryButton(if (pdf == null) "اختر ملف PDF" else "تغيير الملف", Icons.Rounded.UploadFile, Modifier.fillMaxWidth()) { pick.launch(arrayOf("application/pdf")) }
+            if (pdf != null) {
+                Text("الصفحة $page من $pages"); if (pages > 1) Slider(page.toFloat(), { page = it.toInt() }, valueRange = 1f..pages.toFloat(), steps = (pages - 2).coerceAtLeast(0))
+                preview?.let { pv ->
+                    Box(Modifier.fillMaxWidth().aspectRatio(pv.width.toFloat() / pv.height)) {
+                        Image(pv.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+                        Canvas(Modifier.fillMaxSize()) { drawRect(Color(0x552F4BFF), Offset(x * size.width, y * size.height), androidx.compose.ui.geometry.Size(w * size.width, w * size.width * padH / padW.coerceAtLeast(1))) }
+                    }
+                }
+                Text("الموضع الأفقي"); Slider(x, { x = it }, valueRange = 0f..(1f - w))
+                Text("الموضع العمودي"); Slider(y, { y = it }, valueRange = 0f..0.95f)
+                Text("الحجم"); Slider(w, { w = it; x = x.coerceAtMost(1f - it) }, valueRange = 0.1f..0.6f)
+            }
+        }
+        PrimaryButton("توقيع المستند", Icons.Rounded.Draw, enabled = pdf != null && strokes.isNotEmpty()) {
+            scope.launch {
+                result = withContext(Dispatchers.IO) { listOf(PdfEngine.stamp(pdf!!, page - 1, signatureBitmap(), x, y, w, File(Files.outDir(ctx), "مستند-موقع.pdf"))) }
+                Store.used(t.id)
+            }
+        }
+        Hint("التوقيع المرسوم مناسب للمستندات الداخلية. التوقيع الإلكتروني الموثّق نظاميًا يتم عبر منصات معتمدة مثل النفاذ الوطني.")
+        if (result.isNotEmpty()) ResultFiles(result)
+    }
+}
