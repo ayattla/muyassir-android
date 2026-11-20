@@ -38,10 +38,16 @@ jobs:
       - name: Build bundle and APKs
         env: { MYS_KS_PASS: '${{ secrets.MYS_KS_PASS }}' }
         run: gradle --no-daemon bundleRelease assembleRelease assembleDebug assembleDebugAndroidTest
-      - name: Verify APK signatures (v1 + v2, needed by some phones)
+      - name: Add v1 (JAR) signature and verify (some phones refuse APKs without it)
+        env: { MYS_KS_PASS: '${{ secrets.MYS_KS_PASS }}' }
         run: |
           SIGNER=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)apksigner
-          for a in app/build/outputs/apk/release/*.apk; do $SIGNER verify --verbose "$a" | tee /tmp/sig.txt; grep -q "v1 scheme (JAR signing): true" /tmp/sig.txt; grep -q "v2 scheme (APK Signature Scheme v2): true" /tmp/sig.txt; done
+          if [ -n "$MYS_KS_PASS" ]; then KS="$MYS_KS"; ALIAS=upload; PASS="$MYS_KS_PASS"; else KS=app/preview.jks; ALIAS=preview; PASS=muyassir-preview; fi
+          for a in app/build/outputs/apk/release/*.apk; do
+            $SIGNER sign --ks "$KS" --ks-key-alias $ALIAS --ks-pass pass:$PASS --key-pass pass:$PASS --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true "$a"
+            $SIGNER verify --verbose "$a" 2>/dev/null | tee /tmp/sig.txt
+            grep -q "v1 scheme (JAR signing): true" /tmp/sig.txt; grep -q "v2 scheme (APK Signature Scheme v2): true" /tmp/sig.txt
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: muyassir-android-${{ github.run_number }}
