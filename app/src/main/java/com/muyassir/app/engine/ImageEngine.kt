@@ -12,7 +12,11 @@ import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
 import androidx.exifinterface.media.ExifInterface
+import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.common.MlKitException
+import java.util.concurrent.TimeUnit
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
@@ -118,12 +122,32 @@ object ImageEngine {
         return Bitmap.createBitmap(dst, w, h, Bitmap.Config.ARGB_8888)
     }
 
-    /** On-device background removal with ML Kit subject segmentation (model is delivered by Google Play services). */
-    fun removeBackground(b: Bitmap): Bitmap {
+    /**
+     * On-device background removal with ML Kit subject segmentation. The model is an optional Google Play services
+     * module: on first use we ask Play services to install it and wait (no image ever leaves the device).
+     */
+    fun removeBackground(ctx: Context, b: Bitmap, onStatus: (String) -> Unit = {}): Bitmap {
         val seg = SubjectSegmentation.getClient(SubjectSegmenterOptions.Builder().enableForegroundBitmap().build())
         try {
-            val r = Tasks.await(seg.process(InputImage.fromBitmap(b, 0)))
-            return r.foregroundBitmap ?: error("لم يُعثر على عنصر واضح في الصورة")
+            val installer = ModuleInstall.getClient(ctx)
+            val available = runCatching { Tasks.await(installer.areModulesAvailable(seg)).areModulesAvailable() }.getOrDefault(true)
+            if (!available) {
+                onStatus("تنزيل نموذج إزالة الخلفية من خدمات Google Play (مرة واحدة)…")
+                runCatching { Tasks.await(installer.installModules(ModuleInstallRequest.newBuilder().addApi(seg).build()), 3, TimeUnit.MINUTES) }
+            }
+            var last: Throwable? = null
+            repeat(30) {
+                try {
+                    val r = Tasks.await(seg.process(InputImage.fromBitmap(b, 0)), 60, TimeUnit.SECONDS)
+                    return r.foregroundBitmap ?: throw IllegalStateException("لم يُعثر على عنصر واضح في الصورة")
+                } catch (e: java.util.concurrent.ExecutionException) {
+                    last = e.cause ?: e
+                    val waiting = (last as? MlKitException)?.errorCode == MlKitException.UNAVAILABLE || last?.message?.contains("download", true) == true
+                    if (!waiting) throw last!!
+                    onStatus("بانتظار اكتمال تنزيل النموذج…"); Thread.sleep(4000)
+                }
+            }
+            throw IllegalStateException("تعذّر تجهيز نموذج إزالة الخلفية. اتصل بالإنترنت مرة واحدة ثم أعد المحاولة.", last)
         } finally { seg.close() }
     }
 

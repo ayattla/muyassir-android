@@ -42,6 +42,7 @@ done
 home 99-home-after
 adb shell input swipe 500 1600 500 500 400; sleep 1; adb exec-out screencap -p > shots/99-home-scrolled.png
 adb logcat -d -s AndroidRuntime:E > shots/crashes.txt
+adb logcat -d -s Muyassir:E > shots/tool-errors.txt; head -60 shots/tool-errors.txt
 if grep -q FATAL shots/crashes.txt; then echo "::error::A tool screen crashed"; sed -n '1,80p' shots/crashes.txt; FAIL=1; fi
 echo "screens: $n" | tee shots/summary.txt
 exit $FAIL

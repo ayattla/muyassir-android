@@ -50,7 +50,7 @@ class UiFlowTest {
     }
     private fun text(s: String) = rule.onNode(hasText(s, substring = true) and !hasSetTextAction(), useUnmergedTree = true)
     private fun waitText(s: String, ms: Long = 10_000) = rule.waitUntil(ms) { rule.onAllNodes(hasText(s, substring = true), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
-    private fun input(label: String, value: String) { rule.onNode(hasSetTextAction() and hasText(label, substring = true)).performScrollTo().performTextReplacement(value) }
+    private fun input(label: String, value: String, exact: Boolean = false) { rule.onNode(hasSetTextAction() and hasText(label, substring = !exact)).performScrollTo().performTextReplacement(value) }
 
     // ---------- navigation: every category and every tool ----------
     @Test fun everyCategoryShowsItsToolsAndEveryToolOpens() {
@@ -130,6 +130,13 @@ class UiFlowTest {
         c.drawCircle(w / 2f, h / 2f, h / 4f, p); p.color = Color.BLACK; c.drawText("Muyassir 2026", 60f, 120f, p)
         val f = File(dir, name); FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }; return f
     }
+    /** A simple portrait: a figure on a light studio background, for background removal and ID photos. */
+    private fun person(name: String): File {
+        val bmp = Bitmap.createBitmap(800, 1000, Bitmap.Config.ARGB_8888); val c = Canvas(bmp); c.drawColor(Color.rgb(232, 232, 236))
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(217, 166, 128) }
+        c.drawOval(290f, 180f, 510f, 450f, p); p.color = Color.rgb(38, 51, 115); c.drawRoundRect(160f, 470f, 640f, 1070f, 200f, 200f, p)
+        val f = File(dir, name); FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }; return f
+    }
     private fun runFileTool(id: String, files: List<File>, fill: () -> Unit = {}, waitMs: Long = 60_000) {
         TestHooks.inputs = files.map { Uri.fromFile(it) }
         launch(id)
@@ -159,7 +166,7 @@ class UiFlowTest {
     @Test fun pdfDelete() = runFileTool("pdf_delete", listOf(pdf("a.pdf", 3)), { input("الصفحات المطلوب حذفها", "2") })
     @Test fun pdfExtract() = runFileTool("pdf_extract", listOf(pdf("a.pdf", 3)), { input("الصفحات المطلوبة", "1, 3") })
     @Test fun pdfRotate() = runFileTool("pdf_rotate", listOf(pdf("a.pdf", 2)))
-    @Test fun pdfProtect() = runFileTool("pdf_protect", listOf(pdf("a.pdf", 1)), { input("كلمة المرور", "1234"); input("تأكيد كلمة المرور", "1234") })
+    @Test fun pdfProtect() = runFileTool("pdf_protect", listOf(pdf("a.pdf", 1)), { input("كلمة المرور", "1234", exact = true); input("تأكيد كلمة المرور", "1234") })
     @Test fun pdfUnlock() {
         val locked = PdfEngine.protect(pdf("a.pdf", 1), "1234", "", true, false, File(dir, "locked.pdf"))
         runFileTool("pdf_unlock", listOf(locked), { input("كلمة مرور الملف", "1234") })
@@ -174,6 +181,6 @@ class UiFlowTest {
     @Test fun imgRotate() = runFileTool("img_rotate", listOf(png("a.png")))
     @Test fun imgEnhance() = runFileTool("img_enhance", listOf(png("a.png")))
     @Test fun imgBatch() = runFileTool("img_batch", listOf(png("a.png"), png("b.png"), png("c.png")))
-    @Test fun idPhoto() = runFileTool("id_photo", listOf(png("a.png", 800, 1000)))
-    @Test fun imgBackground() = runFileTool("img_bg", listOf(png("a.png")), waitMs = 180_000)
+    @Test fun idPhoto() = runFileTool("id_photo", listOf(person("p.png")))
+    @Test fun imgBackground() = runFileTool("img_bg", listOf(person("p.png")), waitMs = 300_000)
 }

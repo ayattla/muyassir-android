@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.mlkit.docscan)
     implementation(libs.mlkit.codescan)
     implementation(libs.mlkit.segment)
+    implementation(libs.gms.base)
     implementation(libs.tesseract)
     implementation(libs.exifinterface)
     testImplementation(libs.junit)

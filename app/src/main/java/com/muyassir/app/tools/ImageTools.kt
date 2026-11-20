@@ -214,7 +214,7 @@ fun ImgBackground(t: Tool, back: () -> Unit) {
     }) { ins, out, p ->
         ins.mapIndexed { i, u ->
             p.value = i / ins.size.toFloat(); p.label = "صورة ${i + 1} من ${ins.size}"
-            val fg = ImageEngine.removeBackground(ImageEngine.load(ctx, u, 2048))
+            val fg = ImageEngine.removeBackground(ctx, ImageEngine.load(ctx, u, 2048)) { p.label = it }
             if (bg == 0) ImageEngine.save(fg, Fmt.PNG, 100, File(out, outName(ctx, u, "-بدون-خلفية", Fmt.PNG)))
             else ImageEngine.save(ImageEngine.flatten(fg, colors[bg].second), Fmt.JPG, 95, File(out, outName(ctx, u, "-خلفية", Fmt.JPG)))
         }
@@ -265,9 +265,13 @@ fun IdPhoto(t: Tool, back: () -> Unit) {
             if (removeBg) ChipRow { bgs.forEachIndexed { i, (n, _) -> Chip(n, i == bg) { bg = i } } }
             Hint("تأكد من متطلبات الجهة (لون الخلفية والمقاس) قبل الطباعة. الدقة 300 نقطة لكل بوصة.")
         }
-    }) { ins, out, _ ->
+    }) { ins, out, p ->
         var b = ImageEngine.load(ctx, ins[0], 2400)
-        if (removeBg) b = ImageEngine.flatten(ImageEngine.removeBackground(b), bgs[bg].second)
+        if (removeBg) {
+            val cut = runCatching { ImageEngine.removeBackground(ctx, b) { p.label = it } }
+            if (cut.isSuccess) b = ImageEngine.flatten(cut.getOrThrow(), bgs[bg].second)
+            else p.label = "تعذّر استبدال الخلفية (${cut.exceptionOrNull()?.message ?: "لا يوجد شخص واضح"})، فحُفظت بخلفيتها الأصلية"
+        }
         val (w, h) = sizes[size].second
         listOf(ImageEngine.save(ImageEngine.idPhoto(b, w, h, bgs[bg].second), Fmt.JPG, 97, File(out, "صورة-وثيقة-${w.toInt()}x${h.toInt()}.jpg")))
     }

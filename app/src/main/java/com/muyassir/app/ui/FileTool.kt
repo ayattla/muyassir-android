@@ -106,6 +106,7 @@ fun FileTool(
                     results = withContext(Dispatchers.IO) { run(inputs.toList(), out, progress) }
                     Store.used(tool.id, results.firstOrNull()?.name ?: "")
                 } catch (t: Throwable) {
+                    android.util.Log.e("Muyassir", "tool ${tool.id} failed", t)
                     error = friendly(t)
                 } finally {
                     busy = false
@@ -126,6 +127,7 @@ fun friendly(t: Throwable): String {
         m.contains("password", true) || t.javaClass.simpleName.contains("InvalidPassword") -> "الملف محمي بكلمة مرور. استخدم أداة «إزالة حماية PDF» أولًا."
         t is SecurityException -> "لا يمكن فتح هذا الملف. اختره مرة أخرى."
         m.isNotBlank() && m.any { it in '؀'..'ۿ' } -> m
+        t.javaClass.name.contains("MlKit") -> "تعذّر تشغيل نموذج Google على هذا الجهاز. تأكد من تحديث خدمات Google Play والاتصال بالإنترنت لأول استخدام."
         else -> "تعذّرت المعالجة: تأكد أن الملف سليم ومن النوع الصحيح."
     }
 }
