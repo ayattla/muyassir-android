@@ -4,7 +4,7 @@ object TextTools {
     data class Counts(val words: Int, val chars: Int, val charsNoSpaces: Int, val lines: Int, val sentences: Int, val paragraphs: Int, val readMinutes: Double)
 
     fun count(s: String): Counts {
-        val words = Regex("[\\p{L}\\p{N}]+(['’][\\p{L}]+)?").findAll(s).count()
+        val words = Regex("[\\p{L}\\p{M}\\p{N}]+(['’][\\p{L}\\p{M}]+)?").findAll(s).count()
         val sentences = Regex("[^.!?؟\\n]+[.!?؟]+").findAll(s).count().let { if (it == 0 && s.isNotBlank()) 1 else it }
         return Counts(
             words, s.length, s.count { !it.isWhitespace() },
