@@ -268,7 +268,7 @@ fun IdPhoto(t: Tool, back: () -> Unit) {
     }) { ins, out, p ->
         var b = ImageEngine.load(ctx, ins[0], 2400)
         if (removeBg) {
-            val cut = runCatching { ImageEngine.removeBackground(ctx, b) { p.label = it } }
+            val cut = runCatching { ImageEngine.removeBackground(ctx, b, maxWaitSec = 20) { p.label = it } }
             if (cut.isSuccess) b = ImageEngine.flatten(cut.getOrThrow(), bgs[bg].second)
             else p.label = "تعذّر استبدال الخلفية (${cut.exceptionOrNull()?.message ?: "لا يوجد شخص واضح"})، فحُفظت بخلفيتها الأصلية"
         }

@@ -126,17 +126,18 @@ object ImageEngine {
      * On-device background removal with ML Kit subject segmentation. The model is an optional Google Play services
      * module: on first use we ask Play services to install it and wait (no image ever leaves the device).
      */
-    fun removeBackground(ctx: Context, b: Bitmap, onStatus: (String) -> Unit = {}): Bitmap {
+    fun removeBackground(ctx: Context, b: Bitmap, maxWaitSec: Int = 120, onStatus: (String) -> Unit = {}): Bitmap {
         val seg = SubjectSegmentation.getClient(SubjectSegmenterOptions.Builder().enableForegroundBitmap().build())
         try {
             val installer = ModuleInstall.getClient(ctx)
             val available = runCatching { Tasks.await(installer.areModulesAvailable(seg)).areModulesAvailable() }.getOrDefault(true)
             if (!available) {
                 onStatus("تنزيل نموذج إزالة الخلفية من خدمات Google Play (مرة واحدة)…")
-                runCatching { Tasks.await(installer.installModules(ModuleInstallRequest.newBuilder().addApi(seg).build()), 3, TimeUnit.MINUTES) }
+                installer.installModules(ModuleInstallRequest.newBuilder().addApi(seg).build())
+                if (maxWaitSec == 0) throw IllegalStateException("نموذج إزالة الخلفية ما زال يُنزَّل")
             }
             var last: Throwable? = null
-            repeat(30) {
+            repeat(maxOf(1, maxWaitSec / 4)) {
                 try {
                     val r = Tasks.await(seg.process(InputImage.fromBitmap(b, 0)), 60, TimeUnit.SECONDS)
                     return r.foregroundBitmap ?: throw IllegalStateException("لم يُعثر على عنصر واضح في الصورة")
