@@ -33,7 +33,7 @@ import java.util.Calendar
 
 private val full: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
 // Two cards per row on phones, three or four on tablets.
-private val half: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(if (maxLineSpan >= 4) 1 else maxLineSpan / 2) }
+private val half: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(2) }
 
 /** The smart home: brand header, greeting, search, featured tools, categories, then the user's own history. */
 @Composable
