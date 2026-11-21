@@ -48,8 +48,9 @@ class P0ToolsTest {
     private fun waitText(s: String, ms: Long = 10_000) = try {
         rule.waitUntil(ms) { rule.onAllNodes(hasText(s, substring = true), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
     } catch (e: Throwable) { fail("«$s» did not appear within ${ms / 1000}s") }
-    private fun input(label: String, value: String) { rule.onNode(hasSetTextAction() and hasText(label, substring = true)).performScrollTo().performTextReplacement(value) }
-    private fun click(label: String) { rule.onAllNodes(hasText(label, substring = true) and hasClickAction()).onFirst().performScrollTo().performClick(); rule.waitForIdle() }
+    private fun SemanticsNodeInteraction.scrolled() = apply { runCatching { performScrollTo() } } // dialogs have no scroll parent
+    private fun input(label: String, value: String) { rule.onNode(hasSetTextAction() and hasText(label, substring = true)).scrolled().performTextReplacement(value) }
+    private fun click(label: String) { rule.onAllNodes(hasText(label, substring = true) and hasClickAction()).onFirst().scrolled().performClick(); rule.waitForIdle() }
     private fun clickTag(tag: String) { rule.onNodeWithTag(tag).performScrollTo().performClick(); rule.waitForIdle() }
     private fun waitResults(ms: Long = 60_000) {
         try { rule.waitUntil(ms) { rule.onAllNodesWithTag("results").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty() } }
@@ -127,7 +128,7 @@ class P0ToolsTest {
     @Test fun summarizer() { launch("summarize"); rule.onNodeWithTag("sourceText").performScrollTo().performTextReplacement(lesson); clickTag("action"); waitResults() }
 
     // ---------- documents ----------
-    @Test fun quotePdf() { launch("quote"); input("الوصف", "تصميم شعار"); input("الكمية", "1"); input("السعر", "500"); click("إنشاء PDF"); waitResults() }
+    @Test fun quotePdf() { launch("quote"); input("الوصف", "تصميم شعار"); input("الكمية", "1"); input("السعر", "500"); click("إنشاء عرض السعر"); waitResults() }
     @Test fun letterPdf() { launch("letter"); input("الموضوع", "طلب إجازة"); input("نص الخطاب", "أرجو الموافقة على إجازتي."); click("إنشاء PDF"); waitResults() }
     @Test fun textToPdf() { launch("text_pdf"); input("النص", "فقرة عربية للاختبار"); click("إنشاء PDF"); waitResults() }
     @Test fun signPdf() {
