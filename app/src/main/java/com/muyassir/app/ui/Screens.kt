@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -176,7 +178,13 @@ fun ActivityScreen(open: (String) -> Unit) {
     val files = remember(refresh, tab) { Files.outputs(ctx) }
     TabPage("نشاطي", "عملياتك وملفاتك الناتجة ومفضلتك، محفوظة على جهازك فقط") {
         Segmented(listOf("العمليات", "الملفات", "المفضلة"), tab) { tab = it }
-        Spacer(Modifier.height(Space.m))
+        val P = com.muyassir.app.core.Plus
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.WorkspacePremium, null, tint = Brand.Saffron, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp))
+            TextButton(onClick = { P.paywall = P.Reason.Menu }) {
+                Text(when { P.active -> "مُيسّر بلس مفعّل"; P.live -> "اليوم: ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية • مُيسّر بلس"; else -> "مُيسّر بلس قريبًا" }, style = MaterialTheme.typography.labelMedium)
+            }
+        }
         LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Space.s), contentPadding = PaddingValues(bottom = Space.xxxl)) {
             when (tab) {
                 0 -> if (Store.recents.isEmpty()) item { EmptyState(Icons.Rounded.History, "لا توجد عمليات بعد", "كل ما تنجزه في الأدوات يظهر هنا لتعيده بلمسة.") }
@@ -220,9 +228,32 @@ fun SettingsScreen() {
     var cleared by remember { mutableStateOf<String?>(null) }
     TabPage("الإعدادات", "مظهر التطبيق والصفحة الرئيسية والخصوصية") {
         LazyColumn(Modifier.fillMaxSize().testTag("settings"), verticalArrangement = Arrangement.spacedBy(Space.m), contentPadding = PaddingValues(bottom = Space.xxxl)) {
+            item { PlusCard() }
             item {
                 Panel("المظهر") {
                     Segmented(listOf("فاتح", "داكن", "حسب الجهاز"), when (Prefs.theme) { "dark" -> 1; "system" -> 2; else -> 0 }) { Prefs.chooseTheme(listOf("light", "dark", "system")[it]) }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                        Text("لون التطبيق", style = MaterialTheme.typography.labelLarge, color = tokens.textPrimary); Spacer(Modifier.width(6.dp)); PlusBadge()
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                        Accents.forEachIndexed { i, (n, c) ->
+                            val on = (if (com.muyassir.app.core.Plus.unlocked) Prefs.accent else 0) == i
+                            Box(Modifier.padding(4.dp).size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(c)
+                                .border(if (on) 3.dp else 0.dp, if (on) tokens.textPrimary else Color.Transparent, androidx.compose.foundation.shape.CircleShape)
+                                .pressable { if (i == 0 || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Look)) Prefs.chooseAccent(i) }
+                                .semantics { contentDescription = "اللون $n" })
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                        Text("أيقونة التطبيق", style = MaterialTheme.typography.labelLarge, color = tokens.textPrimary); Spacer(Modifier.width(6.dp)); PlusBadge()
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                        Prefs.icons.forEach { (id, label) ->
+                            Box(Modifier.padding(horizontal = 3.dp)) {
+                                Chip(label, Prefs.icon == id) { if (id == "Default" || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Look)) { Prefs.chooseIcon(ctx, id); toast(ctx, "تغيّرت الأيقونة. قد يستغرق ظهورها لحظات على الشاشة الرئيسية.") } }
+                            }
+                        }
+                    }
                 }
             }
             item {
@@ -240,7 +271,28 @@ fun SettingsScreen() {
                     Text("كل المعالجة على جهازك، ولا تُرفع ملفاتك إلى أي خادم. النتائج تُحذف تلقائيًا بعد 24 ساعة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     SecondaryButton("حذف الملفات المؤقتة والنتائج الآن", Icons.Rounded.DeleteSweep, Modifier.fillMaxWidth()) { Files.clearAll(ctx); cleared = "حُذفت الملفات المؤقتة والنتائج" }
                     SecondaryButton("مسح سجل العمليات والبحث", Icons.Rounded.History, Modifier.fillMaxWidth()) { Store.clearRecents(); Prefs.clearSearches(); cleared = "مُسح السجل" }
+                    LaunchedEffect(Unit) { AppLock.load() }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) {
+                            SwitchRow("قفل المفكرة والوثائق بالبصمة", AppLock.enabled) { on ->
+                                val a = ctx.activity() as? androidx.fragment.app.FragmentActivity
+                                when {
+                                    !on -> if (a != null) AppLock.prompt(a, "إيقاف القفل", { AppLock.set(false) }) else AppLock.set(false)
+                                    !com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Lock) -> {}
+                                    a == null || !AppLock.available(a) -> cleared = "فعّل البصمة أو قفل الشاشة في إعدادات جهازك أولًا"
+                                    else -> AppLock.prompt(a, "تفعيل القفل", { AppLock.set(true) })
+                                }
+                            }
+                        }
+                        PlusBadge()
+                    }
                     cleared?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = Brand.Mint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
+                }
+            }
+            item {
+                Panel("الدعم والملاحظات") {
+                    Text(if (com.muyassir.app.core.Plus.active) "مشتركو بلس تصل رسائلهم بعلامة «بلس» ويُرد عليها أولًا." else "أرسل اقتراحك أو بلّغ عن مشكلة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    SecondaryButton("تواصل مع الدعم", Icons.Rounded.SupportAgent, Modifier.fillMaxWidth()) { contactSupport(ctx) }
                 }
             }
             item {
@@ -252,5 +304,47 @@ fun SettingsScreen() {
                 }
             }
         }
+    }
+}
+
+/** Support address. Empty = use the project's public feedback page instead. */
+const val SUPPORT_EMAIL = ""
+
+fun contactSupport(ctx: android.content.Context) {
+    val plus = com.muyassir.app.core.Plus.active
+    val subject = (if (plus) "[بلس] " else "") + "ملاحظة على تطبيق مُيسّر"
+    val v = runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: ""
+    val body = "\n\n—\nالإصدار $v • Android ${android.os.Build.VERSION.RELEASE}${if (plus) " • مشترك بلس" else ""}"
+    if (SUPPORT_EMAIL.isNotBlank()) runCatching {
+        ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:$SUPPORT_EMAIL"))
+            .putExtra(android.content.Intent.EXTRA_SUBJECT, subject).putExtra(android.content.Intent.EXTRA_TEXT, body))
+    }.onFailure { toast(ctx, "لا يوجد تطبيق بريد على الجهاز") }
+    else openUrl(ctx, "https://github.com/ayattla/muyassir-android/issues/new?title=" + android.net.Uri.encode(subject) + "&body=" + android.net.Uri.encode(body) + (if (plus) "&labels=plus" else ""))
+}
+
+/** Plus status at the top of Settings. */
+@Composable
+fun PlusCard() {
+    val P = com.muyassir.app.core.Plus
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(Brand.Ink).pressable { P.paywall = P.Reason.Menu }.padding(Space.l).testTag("plusCard"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.WorkspacePremium, null, tint = Brand.Saffron)
+        }
+        Spacer(Modifier.width(Space.m))
+        Column(Modifier.weight(1f)) {
+            Text(if (P.active) "أنت مشترك في مُيسّر بلس" else "مُيسّر بلس", style = MaterialTheme.typography.titleSmall, color = Color.White)
+            Text(
+                when {
+                    P.active -> "كل الميزات مفتوحة. اضغط لإدارة اشتراكك."
+                    !P.live -> "قريبًا: بلا حدود يومية وقوالب احترافية وOCR لملفات كاملة"
+                    else -> "استخدمت اليوم ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية. افتحها بلا حدود."
+                },
+                style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.78f),
+            )
+        }
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, null, tint = Color.White.copy(alpha = 0.7f))
     }
 }

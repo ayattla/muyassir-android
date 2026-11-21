@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.muyassir.app.core.Files
 import com.muyassir.app.core.ReminderReceiver
 import com.muyassir.app.core.Store
+import com.muyassir.app.core.Plus
 import com.muyassir.app.core.Tool
 import com.muyassir.app.engine.Office
 import com.muyassir.app.ui.*
@@ -75,6 +76,14 @@ fun DateField(label: String, value: Long, withTime: Boolean, onChange: (Long) ->
     }
 }
 
+/** A simple table PDF for exported records. */
+fun exportPdf(ctx: android.content.Context, title: String, header: List<String>, rows: List<List<String>>): File {
+    val b = com.muyassir.app.engine.DocBuilder(ctx, landscape = header.size > 5)
+    b.add(com.muyassir.app.engine.DocBuilder.Block.Title(title, SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())))
+    b.add(com.muyassir.app.engine.DocBuilder.Block.Table(header, rows))
+    return b.save(File(Files.outDir(ctx), "$title.pdf"))
+}
+
 /** Generic on-device record list: add / edit / delete / tick, optional reminders and Excel export. */
 @Composable
 fun RecordList(
@@ -95,11 +104,16 @@ fun RecordList(
         header(items)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PrimaryButton("إضافة", Icons.Rounded.Add, modifier = Modifier.weight(1f)) { editing = JSONObject().put("id", System.currentTimeMillis()) }
-            if (items.isNotEmpty()) SecondaryButton("تصدير Excel", Icons.Rounded.TableChart) {
-                val out = File(Files.outDir(ctx), "${t.title}.xlsx")
-                val rows = listOf(fields.map { it.label }) + items.map { o -> fields.map { f -> cell(o, f) } }
-                Office.writeXlsx(out, listOf(t.title to rows)); Files.share(ctx, listOf(out))
+        }
+        if (items.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            val rows = { listOf(fields.map { it.label }) + items.map { o -> fields.map { f -> cell(o, f) } } }
+            SecondaryButton("تصدير Excel", Icons.Rounded.TableChart, Modifier.weight(1f)) {
+                if (Plus.allow(Plus.Reason.Export)) { val out = File(Files.outDir(ctx), "${t.title}.xlsx"); Office.writeXlsx(out, listOf(t.title to rows())); Files.share(ctx, listOf(out)) }
             }
+            SecondaryButton("تصدير PDF", Icons.Rounded.PictureAsPdf, Modifier.weight(1f)) {
+                if (Plus.allow(Plus.Reason.Export)) { val r = rows(); Files.share(ctx, listOf(exportPdf(ctx, t.title, r.first(), r.drop(1)))) }
+            }
+            PlusBadge()
         }
         if (items.isEmpty()) EmptyState(t.icon, "لا توجد عناصر بعد", emptyText)
         sort(items).forEach { o ->
@@ -174,9 +188,11 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
 
 // ------------------------------------------------------------------ concrete lists
 
-@Composable fun NotesTool(t: Tool, back: () -> Unit) = RecordList(t, back, "notes",
+@Composable fun NotesTool(t: Tool, back: () -> Unit) = LockGate("المفكرة", back) {
+    RecordList(t, back, "notes",
     listOf(FieldSpec("title", "العنوان", required = true), FieldSpec("body", "الملاحظة", FType.MULTI)),
     title = { it.optString("title") }, subtitle = { it.optString("body").take(120) }, sort = { l -> l.sortedByDescending { it.optLong("id") } })
+}
 
 @Composable fun TasksTool(t: Tool, back: () -> Unit) = RecordList(t, back, "tasks",
     listOf(FieldSpec("title", "المهمة", required = true), FieldSpec("priority", "الأولوية", FType.CHOICE, listOf("عادية", "مهمة", "عاجلة")), FieldSpec("due", "الموعد", FType.DATE), FieldSpec("done", "منجزة", FType.BOOL)),
@@ -206,7 +222,8 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
     subtitle = { o -> o.optLong("due").takeIf { it > 0 }?.let { "التسليم ${whenText(it)}" } ?: "" },
     sort = { l -> l.sortedWith(compareBy({ it.optBoolean("done") }, { it.optLong("due").takeIf { d -> d > 0 } ?: Long.MAX_VALUE })) })
 
-@Composable fun DocumentsTool(t: Tool, back: () -> Unit) = RecordList(t, back, "documents",
+@Composable fun DocumentsTool(t: Tool, back: () -> Unit) = LockGate("الوثائق", back) {
+    RecordList(t, back, "documents",
     listOf(
         FieldSpec("name", "اسم الوثيقة أو الموعد", required = true),
         FieldSpec("kind", "النوع", FType.CHOICE, listOf("هوية وطنية", "جواز سفر", "إقامة", "رخصة قيادة", "استمارة مركبة", "تأمين", "عقد إيجار", "موعد", "أخرى")),
@@ -225,6 +242,7 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
     })
 
 private val expenseCats = listOf("طعام", "مواصلات", "سكن", "فواتير", "تسوق", "صحة", "تعليم", "ترفيه", "أخرى")
+}
 
 @Composable fun ExpensesTool(t: Tool, back: () -> Unit) = RecordList(t, back, "expenses",
     listOf(FieldSpec("title", "البند", required = true), FieldSpec("amount", "المبلغ", FType.NUM, required = true), FieldSpec("cat", "الفئة", FType.CHOICE, expenseCats), FieldSpec("date", "التاريخ", FType.DATE)),
@@ -309,14 +327,17 @@ fun AttendanceTool(t: Tool, back: () -> Unit) {
         if (sessions.isNotEmpty()) Panel("ملخص الغياب (${sessions.size} حصة)") {
             val counts = students.associateWith { s -> sessions.count { o -> (0 until (o.optJSONArray("absent")?.length() ?: 0)).any { o.getJSONArray("absent").getString(it) == s } } }
             counts.entries.sortedByDescending { it.value }.forEach { (s, c) -> LabelValue(s, "$c غياب • ${fmt(100.0 * (sessions.size - c) / sessions.size, 0)}% حضور") }
-            SecondaryButton("تصدير Excel", Icons.Rounded.TableChart, Modifier.fillMaxWidth()) {
+            SecondaryButton("تصدير Excel وPDF", Icons.Rounded.TableChart, Modifier.fillMaxWidth()) {
+                if (!Plus.allow(Plus.Reason.Export)) return@SecondaryButton
                 val dates = sessions.sortedBy { it.optLong("date") }
                 val header = listOf("الطالب") + dates.map { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(it.optLong("date"))) } + listOf("الغياب")
                 val rows = students.map { s ->
                     val marks = dates.map { o -> if ((0 until (o.optJSONArray("absent")?.length() ?: 0)).any { o.getJSONArray("absent").getString(it) == s }) "غائب" else "حاضر" }
                     listOf(s) + marks + listOf(marks.count { it == "غائب" }.toString())
                 }
-                val out = File(Files.outDir(ctx), "سجل-الحضور.xlsx"); Office.writeXlsx(out, listOf("الحضور" to (listOf(header) + rows))); Files.share(ctx, listOf(out))
+                val out = File(Files.outDir(ctx), "سجل-الحضور.xlsx"); Office.writeXlsx(out, listOf("الحضور" to (listOf(header) + rows)))
+                val summary = counts.entries.sortedByDescending { it.value }.map { (s, c) -> listOf(s, "$c", "${fmt(100.0 * (sessions.size - c) / sessions.size, 0)}%") }
+                Files.share(ctx, listOf(out, exportPdf(ctx, "سجل الحضور", listOf("الطالب", "الغياب", "نسبة الحضور"), summary)))
             }
         }
     }

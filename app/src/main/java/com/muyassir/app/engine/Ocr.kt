@@ -25,6 +25,64 @@ object Ocr {
         return dir
     }
 
+    data class Line(val text: String, val box: android.graphics.Rect)
+
+    /** Text plus the position of every line, for building a searchable PDF (image with an invisible text layer). */
+    fun recognizeLines(ctx: Context, bmp: Bitmap, lang: Lang): Pair<String, List<Line>> = when (lang) {
+        Lang.EN -> {
+            val rec = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            try {
+                val r = Tasks.await(rec.process(InputImage.fromBitmap(bmp, 0)))
+                r.text to r.textBlocks.flatMap { b -> b.lines.mapNotNull { l -> l.boundingBox?.let { Line(l.text, it) } } }
+            } finally { rec.close() }
+        }
+        Lang.AR -> {
+            val api = TessBaseAPI()
+            try {
+                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذّر تشغيل محرك التعرف" }
+                api.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO
+                val k = if (bmp.width < 1200) 2 else 1
+                val src = if (k == 2) Bitmap.createScaledBitmap(bmp, bmp.width * 2, bmp.height * 2, true) else bmp
+                api.setImage(src.copy(Bitmap.Config.ARGB_8888, false))
+                val text = api.getUTF8Text()?.trim() ?: ""
+                val lines = ArrayList<Line>()
+                val it = api.resultIterator
+                if (it != null) {
+                    it.begin()
+                    val level = com.googlecode.tesseract.android.TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE
+                    do {
+                        val t = it.getUTF8Text(level)?.trim().orEmpty()
+                        val r = it.getBoundingRect(level)
+                        if (t.isNotEmpty()) lines += Line(t, android.graphics.Rect(r.left / k, r.top / k, r.right / k, r.bottom / k))
+                    } while (it.next(level))
+                    it.delete()
+                }
+                text to lines
+            } finally { api.recycle() }
+        }
+    }
+
+    /** One PDF page per image, with the recognised lines drawn as (nearly) invisible text so the PDF can be searched and copied. */
+    fun searchablePdf(pages: List<Pair<Bitmap, List<Line>>>, out: java.io.File): java.io.File {
+        val doc = android.graphics.pdf.PdfDocument()
+        pages.forEachIndexed { i, (bmp, lines) ->
+            val w = 595; val h = (bmp.height * 595f / bmp.width).toInt().coerceAtLeast(1); val k = 595f / bmp.width
+            val p = doc.startPage(android.graphics.pdf.PdfDocument.PageInfo.Builder(w, h, i + 1).create())
+            val c = p.canvas
+            c.drawBitmap(bmp, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+            val tp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.argb(1, 0, 0, 0) }
+            lines.forEach { l ->
+                val bh = l.box.height() * k; val bw = l.box.width() * k
+                if (bh < 2 || bw < 2) return@forEach
+                tp.textSize = bh * 0.85f; tp.textScaleX = 1f
+                val tw = tp.measureText(l.text); if (tw > 0) tp.textScaleX = (bw / tw).coerceIn(0.3f, 3f)
+                c.drawText(l.text, l.box.left * k, l.box.bottom * k - bh * 0.15f, tp)
+            }
+            doc.finishPage(p)
+        }
+        out.outputStream().use { doc.writeTo(it) }; doc.close(); return out
+    }
+
     fun recognize(ctx: Context, bmp: Bitmap, lang: Lang): String = when (lang) {
         Lang.EN -> {
             val rec = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)

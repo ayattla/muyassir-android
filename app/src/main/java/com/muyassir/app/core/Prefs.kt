@@ -13,6 +13,11 @@ object Prefs {
         private set
     var name by mutableStateOf("")
         private set
+    /** Plus: app accent colour index (0 = default indigo) and launcher icon. */
+    var accent by mutableStateOf(0)
+        private set
+    var icon by mutableStateOf("Default")
+        private set
     val hidden = mutableStateListOf<String>()      // home sections the user switched off
     val searches = mutableStateListOf<String>()    // recent search terms
     private var loaded = false
@@ -23,14 +28,29 @@ object Prefs {
     fun load(ctx: Context) {
         if (loaded) return; loaded = true; Store.init(ctx)
         val o = Store.obj("settings")
-        theme = o.optString("theme", "light"); name = o.optString("name", "")
+        theme = o.optString("theme", "light"); name = o.optString("name", ""); accent = o.optInt("accent", 0); icon = o.optString("icon", "Default")
         hidden.clear(); o.optJSONArray("hidden")?.let { a -> (0 until a.length()).forEach { hidden.add(a.optString(it)) } }
         searches.clear(); o.optJSONArray("searches")?.let { a -> (0 until a.length()).forEach { searches.add(a.optString(it)) } }
     }
-    private fun save() = Store.saveObj("settings", org.json.JSONObject().put("theme", theme).put("name", name)
+    private fun save() = Store.saveObj("settings", org.json.JSONObject().put("theme", theme).put("name", name).put("accent", accent).put("icon", icon)
         .put("hidden", JSONArray(hidden.toList())).put("searches", JSONArray(searches.toList())))
 
     fun chooseTheme(v: String) { theme = v; save() }
+    fun chooseAccent(v: Int) { accent = v; save() }
+
+    val icons = listOf("Default" to "الأصلية", "Paper" to "فاتحة", "Saffron" to "زعفرانية")
+
+    /** Switch the launcher icon by enabling exactly one activity-alias. The launcher may take a moment to refresh. */
+    fun chooseIcon(ctx: Context, v: String) {
+        val pm = ctx.packageManager
+        icons.forEach { (id, _) ->
+            pm.setComponentEnabledSetting(android.content.ComponentName(ctx, "com.muyassir.app.Icon$id"),
+                if (id == v) android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED else android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                android.content.pm.PackageManager.DONT_KILL_APP)
+        }
+        icon = v; save()
+    }
+
     fun changeName(v: String) { name = v.trim().take(24); save() }
     fun toggleSection(id: String) { if (id in hidden) hidden.remove(id) else hidden.add(id); save() }
     fun shows(id: String) = id !in hidden

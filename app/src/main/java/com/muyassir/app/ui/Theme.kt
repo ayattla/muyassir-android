@@ -71,6 +71,12 @@ private val darkTokens = Tokens(
     accent = Brand.IndigoDark, onAccent = Color(0xFF0E1220), accentSoft = Color(0xFF242B4A), shadow = Color(0x00000000),
 )
 
+/** Accent colours for Plus (all give ≥ 4.5:1 with white text in light mode). */
+val Accents = listOf(
+    "نيلي" to Brand.Indigo, "زمردي" to Color(0xFF0B7F7A), "عنابي" to Color(0xFFA3264A),
+    "برتقالي" to Color(0xFFB0500A), "بنفسجي" to Color(0xFF6A3FC4), "فحمي" to Color(0xFF2A2F3A),
+)
+
 val tokens: Tokens @Composable @ReadOnlyComposable get() = LocalTokens.current
 
 /** Category colours are tuned to one lightness so no category shouts; in dark mode they are lifted for contrast. */
@@ -133,7 +139,13 @@ private fun scheme(k: Tokens): ColorScheme = if (k.dark) darkColorScheme(
 fun MuyassirTheme(content: @Composable () -> Unit) {
     // Light by default; dark only when the user picks it (or picks "follow the system" and the system is dark).
     val dark = when (Prefs.theme) { "dark" -> true; "system" -> isSystemInDarkTheme(); else -> false }
-    val k = if (dark) darkTokens else lightTokens
+    val base = if (dark) darkTokens else lightTokens
+    // Plus: optional accent colour (kept only while Plus is open to the user)
+    val pick = if (com.muyassir.app.core.Plus.unlocked) Prefs.accent else 0
+    val k = if (pick in 1 until Accents.size) Accents[pick].second.let { c ->
+        if (dark) base.copy(accent = lerp(c, Color.White, 0.45f), accentSoft = lerp(Color(0xFF181D2B), c, 0.35f))
+        else base.copy(accent = c, accentSoft = lerp(Color.White, c, 0.10f))
+    } else base
     CompositionLocalProvider(LocalTokens provides k) {
         MaterialTheme(colorScheme = scheme(k), typography = Type, shapes = AppShapes, content = content)
     }

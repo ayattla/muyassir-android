@@ -60,7 +60,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     androidResources { noCompress += "traineddata" }
 
     lint {
@@ -98,6 +98,9 @@ dependencies {
     implementation(libs.gms.base)
     implementation(libs.tesseract)
     implementation(libs.exifinterface)
+    implementation(libs.billing)
+    implementation(libs.biometric)
+    implementation(libs.fragment)
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.androidx.test.junit)

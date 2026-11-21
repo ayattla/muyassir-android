@@ -88,6 +88,14 @@ fun FileTool(
                     }
                 }
             }
+            if (tool.id in com.muyassir.app.core.Plus.metered && !com.muyassir.app.core.Plus.unlocked) {
+                val left = com.muyassir.app.core.Plus.opsLeft
+                Row(Modifier.fillMaxWidth().testTag("opsLeft"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (left > 0) "متبقٍ لك اليوم $left من ${com.muyassir.app.core.Plus.FREE_OPS_PER_DAY} عمليات مجانية" else "انتهت عملياتك المجانية لليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
+                    Spacer(Modifier.width(6.dp))
+                    TextButton(onClick = { com.muyassir.app.core.Plus.paywall = com.muyassir.app.core.Plus.Reason.Menu }) { Text("بلا حدود مع بلس") }
+                }
+            }
             if (inputs.isNotEmpty()) Text("${inputs.size} ${if (inputs.size == 1) "ملف" else "ملفات"} جاهزة", style = MaterialTheme.typography.labelLarge, color = tokens.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
             inputs.forEachIndexed { i, u ->
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(tokens.surfaceSunken).padding(Space.s), verticalAlignment = Alignment.CenterVertically) {
@@ -124,6 +132,7 @@ fun FileTool(
             }
         } else PrimaryButton(actionLabel, Icons.Rounded.Bolt, enabled = inputs.isNotEmpty(), modifier = Modifier.testTag("action")) {
             error = validate(inputs)
+            com.muyassir.app.core.Plus.check(tool.id, inputs.map { Files.size(ctx, it) })?.let { com.muyassir.app.core.Plus.paywall = it; return@PrimaryButton }
             if (error == null) scope.launch {
                 busy = true; progress.value = -1f; progress.label = ""
                 val started = System.currentTimeMillis()
@@ -131,6 +140,7 @@ fun FileTool(
                     val out = Files.outDir(ctx)
                     results = withContext(Dispatchers.IO) { run(inputs.toList(), out, progress) }
                     Store.used(tool.id, results.firstOrNull()?.name ?: "")
+                    com.muyassir.app.core.Plus.counted(tool.id)
                     if (System.currentTimeMillis() - started > 6000) notifyDone(ctx, tool.title, results.size)
                 } catch (t: Throwable) {
                     android.util.Log.e("Muyassir", "tool ${tool.id} failed", t)

@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
@@ -203,20 +204,32 @@ fun ImgEnhance(t: Tool, back: () -> Unit) {
 fun ImgBackground(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     var bg by remember { mutableIntStateOf(0) }
+    var hq by remember { mutableStateOf(false) }
     val colors = listOf("شفاف" to 0, "أبيض" to AColor.WHITE, "أزرق" to 0xFF2F4BFF.toInt(), "رمادي" to 0xFFE5E7EB.toInt())
+    // Plus: custom background colours
+    val custom = listOf("أسود" to 0xFF111111.toInt(), "كحلي" to 0xFF1C2453.toInt(), "أحمر" to 0xFFC62F3A.toInt(), "أخضر" to 0xFF23814A.toInt(),
+        "زهري" to 0xFFF6C9D5.toInt(), "سماوي" to 0xFFCFE8F7.toInt(), "بيج" to 0xFFF1E6D2.toInt(), "ذهبي" to 0xFFF2B01E.toInt())
+    val all = colors + custom
     FileTool(t, back, IMAGES, true, "اختر صورة لشخص أو منتج", "إزالة الخلفية", options = { ins ->
         Preview(ins.firstOrNull())
         Panel {
             Text("الخلفية الجديدة", style = MaterialTheme.typography.labelLarge)
             ChipRow { colors.forEachIndexed { i, (n, _) -> Chip(n, i == bg) { bg = i } } }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("ألوان مخصصة", style = MaterialTheme.typography.labelLarge); Spacer(Modifier.width(6.dp)); com.muyassir.app.ui.PlusBadge() }
+            ChipRow { custom.forEachIndexed { j, (n, _) -> val i = colors.size + j; Chip(n, i == bg) { if (com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Quality)) bg = i } } }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { SwitchRow("دقة عالية (حتى 4096 بكسل)", hq) { if (!it || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Quality)) hq = it } }
+                com.muyassir.app.ui.PlusBadge()
+            }
             Hint("يعمل على جهازك دون رفع الصورة. يدعم الأشخاص فورًا، ويدعم أي عنصر بعد أن تنزّل خدمات Google Play نموذجها الإضافي تلقائيًا.")
         }
     }) { ins, out, p ->
+        val side = if (hq && com.muyassir.app.core.Plus.unlocked) 4096 else 2048
         ins.mapIndexed { i, u ->
             p.value = i / ins.size.toFloat(); p.label = "صورة ${i + 1} من ${ins.size}"
-            val fg = ImageEngine.removeBackground(ctx, ImageEngine.load(ctx, u, 2048)) { p.label = it }
+            val fg = ImageEngine.removeBackground(ctx, ImageEngine.load(ctx, u, side)) { p.label = it }
             if (bg == 0) ImageEngine.save(fg, Fmt.PNG, 100, File(out, outName(ctx, u, "-بدون-خلفية", Fmt.PNG)))
-            else ImageEngine.save(ImageEngine.flatten(fg, colors[bg].second), Fmt.JPG, 95, File(out, outName(ctx, u, "-خلفية", Fmt.JPG)))
+            else ImageEngine.save(ImageEngine.flatten(fg, all[bg].second), Fmt.JPG, 95, File(out, outName(ctx, u, "-خلفية", Fmt.JPG)))
         }
     }
 }
@@ -252,17 +265,30 @@ fun ImgBatch(t: Tool, back: () -> Unit) {
 @Composable
 fun IdPhoto(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
-    val sizes = listOf("جواز/هوية 4×6 سم" to (40f to 60f), "تأشيرة 3.5×4.5 سم" to (35f to 45f), "2×2 بوصة" to (50.8f to 50.8f), "3×4 سم" to (30f to 40f))
+    // The first two sizes are free; the rest and the print sheet are Plus (open to everyone until Plus launches).
+    val sizes = listOf("جواز/هوية 4×6 سم" to (40f to 60f), "تأشيرة 3.5×4.5 سم" to (35f to 45f), "2×2 بوصة" to (50.8f to 50.8f), "3×4 سم" to (30f to 40f),
+        "5×7 سم" to (50f to 70f), "3.5×4 سم" to (35f to 40f), "4.5×3.5 سم (عرضي)" to (45f to 35f), "2.5×3 سم" to (25f to 30f))
     var size by remember { mutableIntStateOf(0) }
     var removeBg by remember { mutableStateOf(true) }
     var bg by remember { mutableIntStateOf(0) }
+    var sheet by remember { mutableStateOf(false) }
     val bgs = listOf("أبيض" to AColor.WHITE, "أزرق فاتح" to 0xFFDCE7F7.toInt(), "رمادي فاتح" to 0xFFEFEFEF.toInt())
     FileTool(t, back, IMAGES, false, "اختر صورة شخصية واضحة", "تجهيز الصورة", options = { ins ->
         Preview(ins.firstOrNull())
         Panel {
-            Picker("المقاس", sizes.indices.toList(), size, { sizes[it].first }) { size = it }
+            Text("المقاس", style = MaterialTheme.typography.labelLarge)
+            ChipRow {
+                sizes.forEachIndexed { i, (n, _) ->
+                    val locked = i >= 2 && !com.muyassir.app.core.Plus.unlocked
+                    Chip(if (locked) "$n • بلس" else n, i == size) { if (i < 2 || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sizes)) size = i }
+                }
+            }
             SwitchRow("استبدال الخلفية", removeBg) { removeBg = it }
             if (removeBg) ChipRow { bgs.forEachIndexed { i, (n, _) -> Chip(n, i == bg) { bg = i } } }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { SwitchRow("ورقة طباعة 10×15 سم بعدة نسخ", sheet) { if (!it || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sizes)) sheet = it } }
+                com.muyassir.app.ui.PlusBadge()
+            }
             Hint("تأكد من متطلبات الجهة (لون الخلفية والمقاس) قبل الطباعة. الدقة 300 نقطة لكل بوصة.")
         }
     }) { ins, out, p ->
@@ -272,8 +298,12 @@ fun IdPhoto(t: Tool, back: () -> Unit) {
             if (cut.isSuccess) b = ImageEngine.flatten(cut.getOrThrow(), bgs[bg].second)
             else p.label = "تعذّر استبدال الخلفية (${cut.exceptionOrNull()?.message ?: "لا يوجد شخص واضح"})، فحُفظت بخلفيتها الأصلية"
         }
-        val (w, h) = sizes[size].second
-        listOf(ImageEngine.save(ImageEngine.idPhoto(b, w, h, bgs[bg].second), Fmt.JPG, 97, File(out, "صورة-وثيقة-${w.toInt()}x${h.toInt()}.jpg")))
+        val pick = if (size >= 2 && !com.muyassir.app.core.Plus.unlocked) 0 else size
+        val (w, h) = sizes[pick].second
+        val photo = ImageEngine.idPhoto(b, w, h, bgs[bg].second)
+        val list = mutableListOf(ImageEngine.save(photo, Fmt.JPG, 97, File(out, "صورة-وثيقة-${w.toInt()}x${h.toInt()}.jpg")))
+        if (sheet && com.muyassir.app.core.Plus.unlocked) list += ImageEngine.save(ImageEngine.printSheet(photo), Fmt.JPG, 97, File(out, "ورقة-طباعة-10x15.jpg"))
+        list
     }
 }
 
@@ -282,27 +312,59 @@ fun OcrTool(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     var lang by remember { mutableIntStateOf(0) }
     var text by remember { mutableStateOf("") }
+    var limited by remember { mutableStateOf(0) }
+    var searchable by remember { mutableStateOf(true) }
     FileTool(t, back, arrayOf("image/*", "application/pdf"), true, "اختر صورًا أو ملف PDF", "استخراج النص", options = {
-        Panel { Segmented(Ocr.Lang.entries.map { it.label }, lang) { lang = it }; Hint("يعمل دون إنترنت. للحصول على أفضل نتيجة استخدم صورة واضحة ومستقيمة.") }
-    }, after = { if (text.isNotBlank()) TextResult(text, "النص المستخرج") }) { ins, out, p ->
+        Panel {
+            Segmented(Ocr.Lang.entries.map { it.label }, lang) { lang = it }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { SwitchRow("إنشاء PDF قابل للبحث أيضًا", searchable && com.muyassir.app.core.Plus.unlocked) { if (com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Ocr)) searchable = it } }
+                com.muyassir.app.ui.PlusBadge()
+            }
+            Hint(if (com.muyassir.app.core.Plus.unlocked) "يعمل دون إنترنت. للحصول على أفضل نتيجة استخدم صورة واضحة ومستقيمة."
+                 else "يعمل دون إنترنت. المجاني يستخرج النص من ${com.muyassir.app.core.Plus.FREE_OCR_PAGES} صفحات في العملية، ومع بلس من الملف كاملًا.")
+        }
+    }, after = {
+        if (limited > 0) Panel {
+            Text("استُخرج النص من أول ${com.muyassir.app.core.Plus.FREE_OCR_PAGES} صفحات، وبقيت $limited ${if (limited == 1) "صفحة" else "صفحات"}.", style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("ocrLimited"))
+            SecondaryButton("استخرج الملف كاملًا مع بلس", Icons.Rounded.WorkspacePremium, Modifier.fillMaxWidth()) { com.muyassir.app.core.Plus.paywall = com.muyassir.app.core.Plus.Reason.Ocr }
+        }
+        if (text.isNotBlank()) TextResult(text, "النص المستخرج")
+    }) { ins, out, p ->
         val sb = StringBuilder()
+        val budget = com.muyassir.app.core.Plus.ocrPages
+        val makePdf = searchable && com.muyassir.app.core.Plus.unlocked
+        var done = 0; var skipped = 0
+        val pages = ArrayList<Pair<android.graphics.Bitmap, List<Ocr.Line>>>()
+        fun one(bmp: android.graphics.Bitmap) {
+            if (makePdf) { val (s, lines) = Ocr.recognizeLines(ctx, bmp, Ocr.Lang.entries[lang]); sb.append(s).append("\n\n"); val small = if (maxOf(bmp.width, bmp.height) > 1700) ImageEngine.resize(bmp, 1700, 1700, true) else bmp
+                val f = small.width / bmp.width.toFloat()
+                pages += small to lines.map { l -> Ocr.Line(l.text, android.graphics.Rect((l.box.left * f).toInt(), (l.box.top * f).toInt(), (l.box.right * f).toInt(), (l.box.bottom * f).toInt())) }
+                if (small !== bmp) bmp.recycle() }
+            else { sb.append(Ocr.recognize(ctx, bmp, Ocr.Lang.entries[lang])).append("\n\n"); bmp.recycle() }
+        }
         for ((i, u) in ins.withIndex()) {
             val name = Files.name(ctx, u)
             if (name.endsWith(".pdf", true) || ctx.contentResolver.getType(u) == "application/pdf") {
                 val f = Files.toCache(ctx, u); val n = PdfEngine.pageCount(f)
                 for (pg in 0 until n) {
+                    if (done >= budget) { skipped++; continue }
                     p.label = "$name: صفحة ${pg + 1} من $n"; p.value = pg / n.toFloat()
-                    val bmp = PdfEngine.render(f, pg, 220); sb.append(Ocr.recognize(ctx, bmp, Ocr.Lang.entries[lang])).append("\n\n"); bmp.recycle()
+                    one(PdfEngine.render(f, pg, 220)); done++
                 }
             } else {
+                if (done >= budget) { skipped++; continue }
                 p.label = "صورة ${i + 1} من ${ins.size}"; p.value = i / ins.size.toFloat()
-                sb.append(Ocr.recognize(ctx, ImageEngine.load(ctx, u, 3000), Ocr.Lang.entries[lang])).append("\n\n")
+                one(ImageEngine.load(ctx, u, 3000)); done++
             }
         }
+        limited = skipped
         text = sb.toString().trim()
         val txt = File(out, "نص-مستخرج.txt").apply { writeText(text) }
         val docx = File(out, "نص-مستخرج.docx").also { Office.writeDocx(it, text.split("\n\n").map { para -> Office.Para.Text(para) }) }
-        listOf(txt, docx)
+        val list = mutableListOf(txt, docx)
+        if (makePdf && pages.isNotEmpty()) { p.label = "إنشاء PDF قابل للبحث…"; list += Ocr.searchablePdf(pages, File(out, "ملف-قابل-للبحث.pdf")); pages.forEach { it.first.recycle() } }
+        list
     }
 }
 

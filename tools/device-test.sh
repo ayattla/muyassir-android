@@ -50,6 +50,17 @@ shot --es tool vat; adb exec-out screencap -p > shots/dark-vat.png
 shot --es tool pdf_merge; adb exec-out screencap -p > shots/dark-pdf_merge.png
 shot --es tab settings; adb exec-out screencap -p > shots/dark-settings.png
 shot --es theme light
+echo "== Plus: paywall, limits, gates (debug test states)"
+shot --es plus free --es paywall Menu; adb exec-out screencap -p > shots/plus-paywall.png
+adb shell input swipe 500 1700 500 500 400; sleep 1; adb exec-out screencap -p > shots/plus-paywall-scrolled.png
+shot --es plus free-used --es paywall Daily; adb exec-out screencap -p > shots/plus-paywall-daily.png
+shot --es plus off --es paywall Menu; adb exec-out screencap -p > shots/plus-paywall-soon.png
+shot --es plus free --es tool pdf_compress; adb exec-out screencap -p > shots/plus-free-counter.png
+shot --es plus free --es tool invoice; adb shell input swipe 500 1800 500 300 300; sleep 1; adb shell input swipe 500 1800 500 300 300; sleep 1; adb exec-out screencap -p > shots/plus-templates.png
+shot --es plus free --es tab settings; adb exec-out screencap -p > shots/plus-settings.png
+shot --es plus plus --es tab settings; adb exec-out screencap -p > shots/plus-settings-subscribed.png
+shot --es plus free --es paywall Menu --es theme dark; adb exec-out screencap -p > shots/plus-paywall-dark.png
+shot --es theme light --es plus off
 adb shell wm size 1600x2560; adb shell wm density 320; sleep 2
 shot; adb exec-out screencap -p > shots/tablet-home.png
 shot --es cat study; adb exec-out screencap -p > shots/tablet-cat-study.png

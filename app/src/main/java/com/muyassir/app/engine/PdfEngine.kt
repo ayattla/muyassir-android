@@ -185,4 +185,26 @@ object PdfEngine {
         }
         return out
     }
+
+    /** Diagonal semi-transparent text watermark on every page (text drawn by Android so Arabic is shaped correctly). */
+    fun watermark(input: File, text: String, out: File, password: String? = null): File {
+        val tp = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 120f; color = android.graphics.Color.argb(46, 20, 26, 46); typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        val tw = tp.measureText(text).toInt().coerceAtLeast(10); val th = 160
+        val diag = Math.hypot(tw.toDouble(), th.toDouble()).toInt()
+        val bmp = Bitmap.createBitmap(diag, diag, Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(bmp).apply { rotate(-35f, diag / 2f, diag / 2f); drawText(text, (diag - tw) / 2f, diag / 2f + 40f, tp) }
+        PDDocument.load(input, password ?: "").use { d ->
+            val img = LosslessFactory.createFromImage(d, bmp)
+            for (p in d.pages) {
+                val box = p.cropBox; val s = minOf(box.width, box.height) * 0.85f
+                PDPageContentStream(d, p, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                    cs.drawImage(img, box.lowerLeftX + (box.width - s) / 2, box.lowerLeftY + (box.height - s) / 2, s, s)
+                }
+            }
+            d.save(out)
+        }
+        bmp.recycle(); return out
+    }
 }

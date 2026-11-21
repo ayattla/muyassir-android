@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.muyassir.app.core.Files
@@ -306,7 +307,14 @@ fun PdfProtect(t: Tool, back: () -> Unit) {
     var pass2 by remember { mutableStateOf("") }
     var print by remember { mutableStateOf(true) }
     var copyOk by remember { mutableStateOf(false) }
+    var mark by remember { mutableStateOf("") }
     FileTool(t, back, PDF, false, "اختر ملف PDF", "حماية الملف", options = {
+        Panel {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                Text("علامة مائية (اختياري)", style = MaterialTheme.typography.labelLarge); Spacer(Modifier.width(6.dp)); com.muyassir.app.ui.PlusBadge()
+            }
+            TextField2("نص العلامة، مثل: سري أو نسخة للمراجعة", mark, { if (it.isEmpty() || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sign)) mark = it })
+        }
         Panel {
             TextField2("كلمة المرور", pass, { pass = it }, keyboard = androidx.compose.ui.text.input.KeyboardType.Password)
             TextField2("تأكيد كلمة المرور", pass2, { pass2 = it }, keyboard = androidx.compose.ui.text.input.KeyboardType.Password)
@@ -315,7 +323,9 @@ fun PdfProtect(t: Tool, back: () -> Unit) {
             Hint("احتفظ بكلمة المرور؛ لا يمكن استرجاعها إن نُسيت. التشفير AES بطول 128 بت.")
         }
     }, validate = { when { it.isEmpty() -> "اختر ملفًا"; pass.length < 4 -> "كلمة المرور 4 أحرف على الأقل"; pass != pass2 -> "كلمتا المرور غير متطابقتين"; else -> null } }) { ins, out, _ ->
-        listOf(PdfEngine.protect(cache(ctx, ins[0]), pass, "", print, copyOk, File(out, base(ctx, ins[0]) + "-محمي.pdf")))
+        var src = cache(ctx, ins[0])
+        if (mark.isNotBlank() && com.muyassir.app.core.Plus.unlocked) src = PdfEngine.watermark(src, mark.trim(), File(ctx.cacheDir, "in/wm.pdf").apply { parentFile?.mkdirs() })
+        listOf(PdfEngine.protect(src, pass, "", print, copyOk, File(out, base(ctx, ins[0]) + "-محمي.pdf")))
     }
 }
 

@@ -170,6 +170,22 @@ object ImageEngine {
         return out
     }
 
+    /** A 10×15 cm (4×6 in) print sheet at 300 dpi filled with copies of a document photo, with cut guides. */
+    fun printSheet(photo: Bitmap): Bitmap {
+        val sw = 1800; val sh = 1200; val gap = 24
+        val sheet = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888)
+        val c = Canvas(sheet); c.drawColor(Color.WHITE)
+        val cols = ((sw - gap) / (photo.width + gap)).coerceAtLeast(1); val rows = ((sh - gap) / (photo.height + gap)).coerceAtLeast(1)
+        val ox = (sw - cols * photo.width - (cols - 1) * gap) / 2f; val oy = (sh - rows * photo.height - (rows - 1) * gap) / 2f
+        val guide = android.graphics.Paint().apply { color = 0xFFBBBBBB.toInt(); strokeWidth = 1f }
+        for (r in 0 until rows) for (k in 0 until cols) {
+            val x = ox + k * (photo.width + gap); val y = oy + r * (photo.height + gap)
+            c.drawBitmap(photo, x, y, null)
+            c.drawRect(x - 1, y - 1, x + photo.width + 1, y + photo.height + 1, guide.apply { style = android.graphics.Paint.Style.STROKE })
+        }
+        return sheet
+    }
+
     /** Compress to a target size (KB) by searching JPEG quality, then scaling down if needed. */
     fun compressToSize(b: Bitmap, targetKb: Int, out: File): File {
         var bmp = b

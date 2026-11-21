@@ -30,6 +30,8 @@ import com.muyassir.app.core.Store
 import com.muyassir.app.core.Tool
 import com.muyassir.app.engine.Calc
 import com.muyassir.app.engine.DocBuilder
+import com.muyassir.app.core.Templates
+import com.muyassir.app.ui.TemplatePanel
 import com.muyassir.app.engine.DocBuilder.Block
 import com.muyassir.app.ui.*
 import kotlinx.coroutines.delay
@@ -274,10 +276,11 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
         }
         SecondaryButton("إضافة سؤال", Icons.Rounded.Add, Modifier.fillMaxWidth()) { qs.add(JSONObject().put("type", 0).put("mark", "1")) }
         SwitchRow("إنشاء نموذج إجابة منفصل", withKey) { withKey = it }
+        TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf, enabled = qs.isNotEmpty()) {
             val out = Files.outDir(ctx)
             fun build(key: Boolean): File {
-                val b = DocBuilder(ctx)
+                val b = Templates.apply(ctx, DocBuilder(ctx))
                 b.add(Block.Title(title + if (key) " — نموذج الإجابة" else "", listOf(school, subject).filter { it.isNotBlank() }.joinToString(" • ")))
                 if (!key) b.add(Block.KeyValues(listOf("اسم الطالب" to "........................................", "الدرجة" to "......... / ${fmt(qs.sumOf { it.optString("mark", "1").num() })}")))
                 qs.forEachIndexed { i, q ->
@@ -309,8 +312,9 @@ fun WorksheetTool(t: Tool, back: () -> Unit) {
             TextField2("الأنشطة/الأسئلة (سطر لكل سؤال)", body, { body = it }, lines = 6)
             NumField("أسطر إجابة بعد كل سؤال", lines, { lines = it })
         }
+        TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf) {
-            val b = DocBuilder(ctx)
+            val b = Templates.apply(ctx, DocBuilder(ctx))
             b.add(Block.Title(title, subject)); b.add(Block.KeyValues(listOf("الاسم" to ".................................", "التاريخ" to "....../....../........")))
             if (goal.isNotBlank()) { b.add(Block.Heading("الهدف")); b.add(Block.Para(goal)) }
             b.add(Block.Heading("الأنشطة"))
@@ -341,8 +345,9 @@ fun CertificateTool(t: Tool, back: () -> Unit) {
             DateField("التاريخ", date, false) { date = it }
             ChipRow { colors.forEachIndexed { i, (n, _) -> Chip(n, i == color) { color = i } } }
         }
+        TemplatePanel(styles = false)
         PrimaryButton("إنشاء الشهادة", Icons.Rounded.WorkspacePremium, enabled = name.isNotBlank()) {
-            val b = DocBuilder(ctx, landscape = true).apply { border = colors[color].second; footer = null }
+            val b = Templates.apply(ctx, DocBuilder(ctx, landscape = true)).apply { border = colors[color].second; layoutStyle = 0; accent = colors[color].second; pageNumbers = false }
             b.add(Block.Space(30f))
             b.add(Block.Para(org, 14f, center = true, color = DocBuilder.MUTED))
             b.add(Block.Para(kinds[kind], 34f, bold = true, center = true, color = colors[color].second))

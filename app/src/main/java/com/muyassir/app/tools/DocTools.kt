@@ -34,6 +34,8 @@ import com.muyassir.app.core.Store
 import com.muyassir.app.core.Tool
 import com.muyassir.app.engine.Calc
 import com.muyassir.app.engine.DocBuilder
+import com.muyassir.app.core.Templates
+import com.muyassir.app.ui.TemplatePanel
 import com.muyassir.app.engine.DocBuilder.Block
 import com.muyassir.app.engine.ImageEngine
 import com.muyassir.app.engine.PdfEngine
@@ -76,9 +78,10 @@ fun CvTool(t: Tool, back: () -> Unit) {
                 F(f, "langs", "اللغات", tick = tick); F(f, "courses", "الدورات والشهادات", 3, tick)
             }
         }
+        TemplatePanel(useLogo = false)
         PrimaryButton("إنشاء السيرة الذاتية", Icons.Rounded.PictureAsPdf, enabled = f.optString("name").isNotBlank()) {
             Store.saveObj("form_cv", f)
-            val b = DocBuilder(ctx).apply { footer = null }
+            val b = Templates.apply(ctx, DocBuilder(ctx), useLogo = false)
             photo?.let { b.add(Block.Image(it, 110f, center = false)) }
             b.add(Block.Title(f.optString("name"), f.optString("title")))
             b.add(Block.Para(listOf(f.optString("phone"), f.optString("email"), f.optString("city")).filter { it.isNotBlank() }.joinToString("   |   "), 10f, color = DocBuilder.MUTED))
@@ -121,9 +124,10 @@ private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean) {
         val sub = items.sumOf { it.second.num() * it.third.num() }
         val v = if (withVat) Calc.vat(sub, inclusive = false) else Calc.Vat(sub, 0.0, sub)
         ResultCard("الإجمالي" to money(v.total), listOf("المجموع قبل الضريبة" to money(v.net), "الضريبة" to money(v.vat)))
+        TemplatePanel()
         PrimaryButton(if (quote) "إنشاء عرض السعر" else "إنشاء الفاتورة", Icons.Rounded.PictureAsPdf, enabled = sub > 0) {
             Store.saveObj(if (quote) "form_quote" else "form_invoice", f)
-            val b = DocBuilder(ctx)
+            val b = Templates.apply(ctx, DocBuilder(ctx))
             b.add(Block.Title(if (quote) "عرض سعر" else if (withVat) "فاتورة ضريبية مبسطة" else "فاتورة", "${f.optString("seller")}${f.optString("vatNo").takeIf { it.isNotBlank() }?.let { "  •  الرقم الضريبي: $it" } ?: ""}"))
             b.add(Block.KeyValues(listOfNotNull(
                 (if (quote) "رقم العرض" else "رقم الفاتورة") to f.optString("no").ifBlank { "${System.currentTimeMillis() / 1000 % 100000}" },
@@ -163,9 +167,10 @@ fun LetterTool(t: Tool, back: () -> Unit) {
                 F(f, "sign", "الاسم والصفة للتوقيع", tick = tick)
             }
         }
+        TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf) {
             Store.saveObj("form_letter", f)
-            val b = DocBuilder(ctx)
+            val b = Templates.apply(ctx, DocBuilder(ctx))
             if (kind == 0) {
                 b.add(Block.Para(f.optString("from"), 13f, bold = true))
                 b.add(Block.Para("التاريخ: ${dayFmt.format(Date())}", 10f, color = DocBuilder.MUTED)); b.add(Block.Rule)
@@ -195,8 +200,9 @@ fun TextPdfTool(t: Tool, back: () -> Unit) {
             TextField2("العنوان (اختياري)", title, { title = it }); TextField2("النص", body, { body = it }, lines = 12)
             Segmented(listOf("صغير", "متوسط", "كبير"), size) { size = it }
         }
+        TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf, enabled = body.isNotBlank()) {
-            val b = DocBuilder(ctx)
+            val b = Templates.apply(ctx, DocBuilder(ctx))
             if (title.isNotBlank()) b.add(Block.Title(title))
             body.split("\n").forEach { b.add(Block.Para(it, listOf(10f, 12f, 15f)[size])) }
             result = listOf(b.save(File(Files.outDir(ctx), "${title.ifBlank { "مستند" }}.pdf"))); Store.used(t.id, title)
@@ -218,6 +224,13 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
     var x by remember { mutableFloatStateOf(0.6f) }; var y by remember { mutableFloatStateOf(0.8f) }; var w by remember { mutableFloatStateOf(0.28f) }
     var padW by remember { mutableIntStateOf(1) }; var padH by remember { mutableIntStateOf(1) }
     var result by remember { mutableStateOf<List<File>>(emptyList()) }
+    // Plus: a saved signature and stamps (any image, e.g. a company stamp)
+    val sigFile = remember { File(ctx.filesDir, "data/signature.png") }
+    var source by remember { mutableIntStateOf(0) }
+    var saved by remember { mutableStateOf<Bitmap?>(null) }
+    var stampImg by remember { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(Unit) { saved = withContext(Dispatchers.IO) { if (sigFile.exists()) android.graphics.BitmapFactory.decodeFile(sigFile.absolutePath) else null } }
+    val pickStamp = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u -> u?.let { stampImg = runCatching { ImageEngine.load(ctx, it, 900) }.getOrNull() } }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { u: Uri? ->
         u?.let { scope.launch { withContext(Dispatchers.IO) { val f = Files.toCache(ctx, it); pdf = f; pages = PdfEngine.pageCount(f); page = pages; preview = PdfEngine.render(f, page - 1, 60) } } }
     }
@@ -230,8 +243,23 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
         return bmp
     }
 
+    fun chosen(): Bitmap? = when (source) { 1 -> saved; 2 -> stampImg; else -> if (strokes.isEmpty()) null else signatureBitmap() }
+    val ratio = when (source) { 1 -> saved?.let { it.height / it.width.toFloat() }; 2 -> stampImg?.let { it.height / it.width.toFloat() }; else -> null } ?: (padH / padW.coerceAtLeast(1).toFloat())
+
     ToolScreen(t, back) {
-        Panel("ارسم توقيعك") {
+        Panel {
+            Segmented(listOf("ارسم توقيعًا", "توقيعي المحفوظ", "ختم أو صورة"), source) { if (it == 0 || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sign)) source = it }
+            Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) { PlusBadge() }
+        }
+        if (source == 1) Panel("توقيعي المحفوظ") {
+            saved?.let { Image(it.asImageBitmap(), "التوقيع المحفوظ", Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(14.dp)).background(Color.White)) }
+                ?: Hint("لا يوجد توقيع محفوظ بعد. ارسم توقيعك في «ارسم توقيعًا» ثم اضغط «حفظ هذا التوقيع».")
+        }
+        if (source == 2) Panel("الختم") {
+            stampImg?.let { Image(it.asImageBitmap(), "الختم", Modifier.fillMaxWidth().height(140.dp)) }
+            SecondaryButton(if (stampImg == null) "اختر صورة الختم (PNG شفاف أفضل)" else "تغيير الصورة", Icons.Rounded.Approval, Modifier.fillMaxWidth()) { pickStamp.launch("image/*") }
+        }
+        if (source == 0) Panel("ارسم توقيعك") {
             Box(
                 Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(14.dp)).background(Color.White).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
                     .pointerInput(Unit) {
@@ -244,7 +272,16 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
                 }
                 if (strokes.isEmpty() && current.isEmpty()) Text("وقّع هنا بإصبعك", Modifier.align(Alignment.Center), color = Color.Gray)
             }
-            TextButton(onClick = { strokes.clear() }) { Text("مسح التوقيع") }
+            Row {
+                TextButton(onClick = { strokes.clear() }) { Text("مسح التوقيع") }
+                Spacer(Modifier.weight(1f))
+                TextButton(enabled = strokes.isNotEmpty(), onClick = {
+                    if (com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sign)) {
+                        val b = signatureBitmap(); sigFile.parentFile?.mkdirs(); sigFile.outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        saved = b; toast(ctx, "حُفظ توقيعك على جهازك")
+                    }
+                }) { Text("حفظ هذا التوقيع") }
+            }
         }
         Panel("المستند") {
             SecondaryButton(if (pdf == null) "اختر ملف PDF" else "تغيير الملف", Icons.Rounded.UploadFile, Modifier.fillMaxWidth()) { pick.launch(arrayOf("application/pdf")) }
@@ -253,7 +290,7 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
                 preview?.let { pv ->
                     Box(Modifier.fillMaxWidth().aspectRatio(pv.width.toFloat() / pv.height)) {
                         Image(pv.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-                        Canvas(Modifier.fillMaxSize()) { drawRect(Color(0x552F4BFF), Offset(x * size.width, y * size.height), androidx.compose.ui.geometry.Size(w * size.width, w * size.width * padH / padW.coerceAtLeast(1))) }
+                        Canvas(Modifier.fillMaxSize()) { drawRect(Color(0x552F4BFF), Offset(x * size.width, y * size.height), androidx.compose.ui.geometry.Size(w * size.width, w * size.width * ratio)) }
                     }
                 }
                 Text("الموضع الأفقي"); Slider(x, { x = it }, valueRange = 0f..(1f - w))
@@ -261,9 +298,11 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
                 Text("الحجم"); Slider(w, { w = it; x = x.coerceAtMost(1f - it) }, valueRange = 0.1f..0.6f)
             }
         }
-        PrimaryButton("توقيع المستند", Icons.Rounded.Draw, enabled = pdf != null && strokes.isNotEmpty()) {
+        val img = if (source == 0 && strokes.isEmpty()) null else if (source == 0) Unit else chosen()
+        PrimaryButton("توقيع المستند", Icons.Rounded.Draw, enabled = pdf != null && img != null) {
+            val bmp = chosen() ?: return@PrimaryButton
             scope.launch {
-                result = withContext(Dispatchers.IO) { listOf(PdfEngine.stamp(pdf!!, page - 1, signatureBitmap(), x, y, w, File(Files.outDir(ctx), "مستند-موقع.pdf"))) }
+                result = withContext(Dispatchers.IO) { listOf(PdfEngine.stamp(pdf!!, page - 1, bmp, x, y, w, File(Files.outDir(ctx), "مستند-موقع.pdf"))) }
                 Store.used(t.id)
             }
         }
