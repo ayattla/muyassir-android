@@ -20,7 +20,7 @@ fun ToolHost(id: String, back: () -> Unit, open: (String) -> Unit) {
         "img_rotate" -> ImgRotate(t, back); "img_enhance" -> ImgEnhance(t, back); "img_bg" -> ImgBackground(t, back)
         "img_batch" -> ImgBatch(t, back); "id_photo" -> IdPhoto(t, back)
         "gpa" -> GpaTool(t, back); "percent" -> PercentTool(t, back); "timetable" -> TimetableTool(t, back)
-        "exams" -> ExamsTool(t, back); "homework" -> HomeworkTool(t, back); "attendance" -> AttendanceTool(t, back)
+        "exams" -> ExamsTool(t, back); "homework" -> HomeworkTool(t, back); "attendance" -> AttendanceTool(t, back); "grades" -> GradesTool(t, back)
         "quiz_maker" -> QuizMaker(t, back); "worksheet" -> WorksheetTool(t, back); "flashcards" -> FlashcardsTool(t, back)
         "study_timer" -> StudyTimer(t, back); "certificate" -> CertificateTool(t, back)
         "vat" -> VatTool(t, back); "salary" -> SalaryTool(t, back); "eos" -> EosTool(t, back); "leave" -> LeaveTool(t, back)
@@ -34,6 +34,7 @@ fun ToolHost(id: String, back: () -> Unit, open: (String) -> Unit) {
         "qr_make" -> QrMake(t, back); "qr_read" -> QrRead(t, back); "text_compare" -> TextCompare(t, back)
         "word_count" -> WordCount(t, back); "dedupe" -> Dedupe(t, back); "tts" -> TtsTool(t, back); "stt" -> SttTool(t, back)
         "zakat" -> ZakatTool(t, back); "overtime" -> OvertimeTool(t, back); "electricity" -> ElectricityTool(t, back); "date_diff" -> DateDiffTool(t, back)
+        "translate" -> TranslateTool(t, back); "summarize" -> SummarizeTool(t, back); "quiz_gen" -> QuizGenTool(t, back); "read_aloud" -> ReadAloudTool(t, back); "pdf_edit" -> PdfEditTool(t, back)
         else -> back()
     }
 }

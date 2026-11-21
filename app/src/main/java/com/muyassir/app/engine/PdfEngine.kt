@@ -207,4 +207,64 @@ object PdfEngine {
         }
         bmp.recycle(); return out
     }
+
+    /** One overlay placed on a page, in relative coordinates (0..1 from the top-left of the page). */
+    data class Overlay(val page: Int, val rx: Float, val ry: Float, val rw: Float, val rh: Float, val bitmap: Bitmap)
+
+    /** Draws text boxes, highlights and white-outs (rendered by Android, so Arabic is shaped correctly) onto the pages. */
+    fun annotate(input: File, items: List<Overlay>, out: File): File {
+        PDDocument.load(input).use { d ->
+            items.groupBy { it.page }.forEach { (pg, list) ->
+                if (pg !in 0 until d.numberOfPages) return@forEach
+                val p = d.getPage(pg); val box = p.cropBox
+                PDPageContentStream(d, p, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
+                    list.forEach { o ->
+                        val img = LosslessFactory.createFromImage(d, o.bitmap)
+                        val w = box.width * o.rw; val h = box.height * o.rh
+                        cs.drawImage(img, box.lowerLeftX + box.width * o.rx, box.upperRightY - box.height * o.ry - h, w, h)
+                    }
+                }
+            }
+            d.save(out)
+        }
+        return out
+    }
+
+    data class FormField(val name: String, val label: String, val page: Int, val rx: Float, val ry: Float, val rw: Float, val rh: Float, val value: String)
+
+    /** Text fields of a fillable PDF form, with where each one sits on its page. */
+    fun formFields(input: File): List<FormField> = PDDocument.load(input).use { d ->
+        val form = d.documentCatalog.acroForm ?: return@use emptyList()
+        form.fieldTree.filterIsInstance<com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField>().mapNotNull { f ->
+            val w = f.widgets.firstOrNull() ?: return@mapNotNull null
+            val page = w.page?.let { d.pages.indexOf(it) }?.takeIf { it >= 0 } ?: 0
+            val box = d.getPage(page).cropBox; val r = w.rectangle ?: return@mapNotNull null
+            FormField(f.fullyQualifiedName, f.alternateFieldName ?: f.partialName ?: f.fullyQualifiedName, page,
+                (r.lowerLeftX - box.lowerLeftX) / box.width, (box.upperRightY - r.upperRightY) / box.height, r.width / box.width, r.height / box.height, f.valueAsString ?: "")
+        }
+    }
+
+    /**
+     * Fills form fields. Latin values go into the field itself; Arabic (which the form's own font usually cannot show)
+     * is drawn onto the page at the field's place instead. [render] makes the bitmap for a value at a given size.
+     */
+    fun fillForm(input: File, values: Map<String, String>, out: File, render: (String, Float, Float) -> Bitmap): File {
+        val overlays = ArrayList<Overlay>()
+        val tmp = File(out.parentFile, "form-${System.nanoTime()}.pdf")
+        PDDocument.load(input).use { d ->
+            val form = d.documentCatalog.acroForm
+            val fields = formFields(input).associateBy { it.name }
+            values.filterValues { it.isNotBlank() }.forEach { (name, v) ->
+                val f = form?.getField(name)
+                val ok = v.all { it.code < 128 } && runCatching { f?.setValue(v) }.isSuccess
+                if (!ok) fields[name]?.let { ff ->
+                    runCatching { f?.setValue("") }
+                    val box = d.getPage(ff.page).cropBox
+                    overlays += Overlay(ff.page, ff.rx, ff.ry, ff.rw, ff.rh, render(v, box.width * ff.rw, box.height * ff.rh))
+                }
+            }
+            d.save(tmp)
+        }
+        return if (overlays.isEmpty()) tmp.copyTo(out, true).also { tmp.delete() } else annotate(tmp, overlays, out).also { tmp.delete() }
+    }
 }

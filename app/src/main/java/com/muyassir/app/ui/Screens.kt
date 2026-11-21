@@ -302,6 +302,7 @@ fun SettingsScreen() {
                     cleared?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = Brand.Mint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
                 }
             }
+            item { BackupPanel() }
             item {
                 Panel("الدعم والملاحظات") {
                     Text(if (com.muyassir.app.core.Plus.active) "مشتركو بلس تصل رسائلهم بعلامة «بلس» ويُرد عليها أولًا." else "أرسل اقتراحك أو بلّغ عن مشكلة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())

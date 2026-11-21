@@ -1,6 +1,8 @@
 package com.muyassir.app.tools
 
 import android.media.AudioManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.media.ToneGenerator
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -275,6 +277,36 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
             }
         }
         SecondaryButton("إضافة سؤال", Icons.Rounded.Add, Modifier.fillMaxWidth()) { qs.add(JSONObject().put("type", 0).put("mark", "1")) }
+        // Question bank: reuse questions across tests (kept on the device).
+        var showBank by remember { mutableStateOf(false) }
+        var bankMsg by remember { mutableStateOf<String?>(null) }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SecondaryButton("حفظ في بنك الأسئلة", Icons.Rounded.Inventory2, Modifier.weight(1f)) {
+                val bank = Store.list("qbank"); val have = bank.map { it.optString("q") }.toSet()
+                val add = qs.filter { it.optString("q").isNotBlank() && it.optString("q") !in have }.map { JSONObject(it.toString()).put("subject", subject) }
+                Store.saveList("qbank", bank + add); bankMsg = "أُضيف ${add.size} سؤالًا إلى البنك (${bank.size + add.size} إجمالًا)"
+            }
+            SecondaryButton("من البنك", Icons.Rounded.LibraryAdd, Modifier.weight(1f)) { showBank = true }
+        }
+        bankMsg?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = Brand.Mint) }
+        if (showBank) {
+            val bank = remember { Store.list("qbank") }
+            val picked = remember { mutableStateListOf<Int>() }
+            AlertDialog(onDismissRequest = { showBank = false }, title = { Text("بنك الأسئلة (${bank.size})") },
+                text = {
+                    Column(Modifier.heightIn(max = 420.dp).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                        if (bank.isEmpty()) Text("البنك فارغ. احفظ أسئلة اختبار لتعيد استخدامها لاحقًا.")
+                        bank.forEachIndexed { i, b ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(i in picked, { on -> if (on) picked.add(i) else picked.remove(i) })
+                                Text(b.optString("q") + (b.optString("subject").takeIf { it.isNotBlank() }?.let { " — $it" } ?: ""), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { picked.sorted().forEach { qs.add(JSONObject(bank[it].toString())) }; showBank = false }) { Text("إضافة ${picked.size}") } },
+                dismissButton = { TextButton(onClick = { showBank = false }) { Text("إغلاق") } })
+        }
         SwitchRow("إنشاء نموذج إجابة منفصل", withKey) { withKey = it }
         TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf, enabled = qs.isNotEmpty()) {
@@ -335,6 +367,16 @@ fun CertificateTool(t: Tool, back: () -> Unit) {
     var date by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var color by remember { mutableIntStateOf(0) }
     val colors = listOf("أزرق" to 0xFF2F4BFF.toInt(), "ذهبي" to 0xFFB8860B.toInt(), "أخضر" to 0xFF15803D.toInt(), "عنابي" to 0xFF7F1D3A.toInt())
+    var bulk by remember { mutableStateOf(false) }; var names by remember { mutableStateOf("") }
+    val importNames = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { u ->
+        u ?: return@rememberLauncherForActivityResult
+        runCatching {
+            val f = Files.toCache(ctx, u)
+            val rows = if (Files.name(ctx, u).lowercase().endsWith(".xlsx")) com.muyassir.app.engine.Office.readXlsx(f).firstOrNull()?.second.orEmpty().map { it.firstOrNull().orEmpty() }
+                else f.readLines().map { it.split(',', ';', '\t').first().trim().trim('"') }
+            names = rows.filter { it.isNotBlank() && it !in setOf("الاسم", "name", "Name", "الطالب") }.joinToString("\n")
+        }
+    }
     var result by remember { mutableStateOf<List<File>>(emptyList()) }
     ToolScreen(t, back) {
         Panel {
@@ -345,19 +387,36 @@ fun CertificateTool(t: Tool, back: () -> Unit) {
             DateField("التاريخ", date, false) { date = it }
             ChipRow { colors.forEachIndexed { i, (n, _) -> Chip(n, i == color) { color = i } } }
         }
+        // Teacher pack: one certificate per name, from a typed list or an Excel/CSV file.
+        Panel {
+            SwitchRow("شهادات جماعية من قائمة أسماء", bulk) { bulk = it }
+            if (bulk) {
+                TextField2("الأسماء (اسم في كل سطر)", names, { names = it }, Modifier.testTag("bulkNames"), lines = 6)
+                SecondaryButton("استيراد الأسماء من Excel أو CSV", Icons.Rounded.TableChart, Modifier.fillMaxWidth()) {
+                    importNames.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv", "text/comma-separated-values", "text/plain"))
+                }
+                val n = names.lines().count { it.isNotBlank() }
+                Text("$n اسمًا${if (!com.muyassir.app.core.Plus.unlocked) " • المجاني حتى 10 أسماء في المرة" else ""}", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
+            }
+        }
         TemplatePanel(styles = false)
-        PrimaryButton("إنشاء الشهادة", Icons.Rounded.WorkspacePremium, enabled = name.isNotBlank()) {
+        PrimaryButton(if (bulk) "إنشاء الشهادات" else "إنشاء الشهادة", Icons.Rounded.WorkspacePremium, enabled = if (bulk) names.isNotBlank() else name.isNotBlank(), modifier = Modifier.testTag("action")) {
+            val list = if (bulk) names.lines().map { it.trim() }.filter { it.isNotBlank() }.distinct() else listOf(name.trim())
+            if (list.size > 10 && !com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Files)) return@PrimaryButton
             val b = Templates.apply(ctx, DocBuilder(ctx, landscape = true)).apply { border = colors[color].second; layoutStyle = 0; accent = colors[color].second; pageNumbers = false }
-            b.add(Block.Space(30f))
-            b.add(Block.Para(org, 14f, center = true, color = DocBuilder.MUTED))
-            b.add(Block.Para(kinds[kind], 34f, bold = true, center = true, color = colors[color].second))
-            b.add(Block.Space(10f))
-            b.add(Block.Para("يسرّنا أن نقدّم هذه الشهادة إلى", 14f, center = true))
-            b.add(Block.Para(name, 28f, bold = true, center = true))
-            if (reason.isNotBlank()) b.add(Block.Para(reason, 14f, center = true))
-            b.add(Block.Space(30f))
-            b.add(Block.Para("${dayFmt.format(Date(date))}\n$signer\n...............................", 12f, center = true, color = DocBuilder.MUTED))
-            result = listOf(b.save(File(Files.outDir(ctx), "شهادة-$name.pdf"))); Store.used(t.id, name)
+            list.forEachIndexed { i, who ->
+                if (i > 0) b.add(Block.PageBreak)
+                b.add(Block.Space(30f))
+                b.add(Block.Para(org, 14f, center = true, color = DocBuilder.MUTED))
+                b.add(Block.Para(kinds[kind], 34f, bold = true, center = true, color = colors[color].second))
+                b.add(Block.Space(10f))
+                b.add(Block.Para("يسرّنا أن نقدّم هذه الشهادة إلى", 14f, center = true))
+                b.add(Block.Para(who, 28f, bold = true, center = true))
+                if (reason.isNotBlank()) b.add(Block.Para(reason, 14f, center = true))
+                b.add(Block.Space(30f))
+                b.add(Block.Para("${dayFmt.format(Date(date))}\n$signer\n...............................", 12f, center = true, color = DocBuilder.MUTED))
+            }
+            result = listOf(b.save(File(Files.outDir(ctx), if (list.size > 1) "شهادات-${kinds[kind]}-${list.size}.pdf" else "شهادة-${list.first()}.pdf"))); Store.used(t.id, list.first())
         }
         if (result.isNotEmpty()) ResultFiles(result)
     }

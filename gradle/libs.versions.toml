@@ -46,6 +46,8 @@ biometric = { group = "androidx.biometric", name = "biometric", version = "1.1.0
 fragment = { group = "androidx.fragment", name = "fragment-ktx", version = "1.9.1" }
 glance = { group = "androidx.glance", name = "glance-appwidget", version = "1.1.1" }
 review = { group = "com.google.android.play", name = "review-ktx", version = "2.0.2" }
+mlkit-translate = { group = "com.google.mlkit", name = "translate", version = "17.0.3" }
+mlkit-langid = { group = "com.google.mlkit", name = "language-id", version = "17.0.6" }
 json = { group = "org.json", name = "json", version = "20250517" }
 
 [plugins]

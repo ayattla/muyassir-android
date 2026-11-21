@@ -384,3 +384,74 @@ fun AttendanceTool(t: Tool, back: () -> Unit) {
         }
     }
 }
+
+/** Teacher pack: grade sheet shared with the attendance student list. */
+@Composable
+fun GradesTool(t: Tool, back: () -> Unit) {
+    val ctx = LocalContext.current
+    var students by remember { mutableStateOf(Store.list("students").map { it.optString("name") }) }
+    var items by remember { mutableStateOf(Store.list("grade_items")) }   // {name, max}
+    var marks by remember { mutableStateOf(Store.obj("grades")) }          // "student|item" -> score
+    var newName by remember { mutableStateOf("") }
+    var itemName by remember { mutableStateOf("") }; var itemMax by remember { mutableStateOf("") }
+    var sel by remember { mutableIntStateOf(0) }
+    fun saveStudents(l: List<String>) { students = l; Store.saveList("students", l.map { JSONObject().put("name", it) }) }
+    fun score(s: String, i: String) = marks.optString("$s|$i").toDoubleOrNull()
+    val total = items.sumOf { it.optDouble("max", 0.0) }
+    fun sum(s: String) = items.sumOf { score(s, it.optString("name")) ?: 0.0 }
+    ToolScreen(t, back) {
+        Panel("الطلاب (${students.size})") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextField2("اسم الطالب أو عدة أسماء بفاصلة", newName, { newName = it }, Modifier.weight(1f).testTag("studentName"))
+                IconButton(onClick = {
+                    val add = newName.split(',', '،', '\n').map { it.trim() }.filter { it.isNotEmpty() && it !in students }
+                    if (add.isNotEmpty()) { saveStudents(students + add); newName = "" }
+                }, modifier = Modifier.testTag("addStudent")) { Icon(Icons.Rounded.PersonAdd, "إضافة") }
+            }
+            Hint("نفس قائمة الطلاب في أداة الحضور والغياب.")
+        }
+        Panel("التقييمات (المجموع $total)") {
+            items.forEach { o -> LabelValue(o.optString("name"), "من ${fmt(o.optDouble("max"), 1)}") }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextField2("اسم التقييم (اختبار 1، مشاركة…)", itemName, { itemName = it }, Modifier.weight(1f).testTag("itemName"))
+                Spacer(Modifier.width(8.dp))
+                NumField("الدرجة العظمى", itemMax, { itemMax = it }, Modifier.width(130.dp).testTag("itemMax"))
+            }
+            SecondaryButton("إضافة التقييم", Icons.Rounded.Add, Modifier.fillMaxWidth().testTag("addItem")) {
+                val m = itemMax.toDoubleOrNull() ?: return@SecondaryButton
+                if (itemName.isBlank() || items.any { it.optString("name") == itemName.trim() }) return@SecondaryButton
+                items = items + JSONObject().put("name", itemName.trim()).put("max", m); Store.saveList("grade_items", items); itemName = ""; itemMax = ""
+            }
+        }
+        if (students.isNotEmpty() && items.isNotEmpty()) {
+            Panel("رصد الدرجات") {
+                ChipRow { items.forEachIndexed { i, o -> Chip(o.optString("name"), i == sel.coerceAtMost(items.size - 1)) { sel = i } } }
+                val it0 = items[sel.coerceAtMost(items.size - 1)]; val iname = it0.optString("name"); val max = it0.optDouble("max")
+                students.forEach { s ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(s, Modifier.weight(1f))
+                        NumField("من ${fmt(max, 1)}", marks.optString("$s|$iname"), { v ->
+                            val clean = v.toDoubleOrNull()?.let { if (it > max) fmt(max, 1) else v } ?: v
+                            marks = JSONObject(marks.toString()).put("$s|$iname", clean); Store.saveObj("grades", marks)
+                        }, Modifier.width(120.dp))
+                    }
+                }
+            }
+            Panel("النتائج") {
+                students.sortedByDescending { sum(it) }.forEach { s ->
+                    LabelValue(s, "${fmt(sum(s), 1)} / ${fmt(total, 1)} • ${if (total > 0) fmt(100 * sum(s) / total, 0) else "0"}%")
+                }
+                val avg = students.map { sum(it) }.average()
+                Hint("متوسط الصف ${fmt(avg, 1)} من ${fmt(total, 1)}")
+                SecondaryButton("تصدير Excel وPDF", Icons.Rounded.TableChart, Modifier.fillMaxWidth().testTag("exportGrades")) {
+                    if (!Plus.allow(Plus.Reason.Export)) return@SecondaryButton
+                    val header = listOf("الطالب") + items.map { "${it.optString("name")} (${fmt(it.optDouble("max"), 1)})" } + listOf("المجموع", "النسبة")
+                    val rows = students.map { s -> listOf(s) + items.map { i -> score(s, i.optString("name"))?.let { fmt(it, 1) } ?: "-" } + listOf(fmt(sum(s), 1), if (total > 0) "${fmt(100 * sum(s) / total, 0)}%" else "-") }
+                    val out = File(Files.outDir(ctx), "كشف-الدرجات.xlsx"); Office.writeXlsx(out, listOf("الدرجات" to (listOf(header) + rows)))
+                    Files.share(ctx, listOf(out, exportPdf(ctx, "كشف الدرجات", header, rows)))
+                    Store.used(t.id)
+                }
+            }
+        }
+    }
+}

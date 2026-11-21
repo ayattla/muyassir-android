@@ -31,7 +31,7 @@ object Plus {
         "pdf_word", "word_pdf", "pdf_excel", "excel_pdf", "pdf_ppt", "ppt_pdf", "pdf_img", "img_pdf", "pdf_merge", "pdf_split",
         "pdf_compress", "pdf_reorder", "pdf_delete", "pdf_extract", "pdf_rotate", "ocr", "pdf_protect", "pdf_unlock",
         "zip", "unzip", "img_convert", "img_compress", "img_resize", "img_crop", "img_rotate", "img_enhance", "img_bg",
-        "img_batch", "id_photo",
+        "img_batch", "id_photo", "pdf_edit",
     )
 
     enum class Reason(val title: String, val body: String) {
@@ -113,6 +113,17 @@ object Plus {
 
     /** Max OCR pages for one run. */
     val ocrPages: Int get() = if (unlocked) Int.MAX_VALUE else FREE_OCR_PAGES
+
+    /** Smart text tools (summary, review questions): free users get one a day, Plus has no limit. */
+    fun useAi(): Boolean {
+        if (unlocked) return true
+        rollDay()
+        val o = Store.obj("plus_ai")
+        val used = if (o.optString("day") == day) o.optInt("n") else 0
+        if (used >= 1) { paywall = Reason.Ai; return false }
+        runCatching { Store.saveObj("plus_ai", JSONObject().put("day", day).put("n", used + 1)) }
+        return true
+    }
 
     fun grantDayPass(from: Long) { dayPassUntil = maxOf(dayPassUntil, from + 24 * 3600_000L); save() }
     fun toggleNotify() { notifyWhenLive = !notifyWhenLive; save() }

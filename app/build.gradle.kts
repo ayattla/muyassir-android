@@ -103,6 +103,8 @@ dependencies {
     implementation(libs.fragment)
     implementation(libs.glance)
     implementation(libs.review)
+    implementation(libs.mlkit.translate)
+    implementation(libs.mlkit.langid)
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.androidx.test.junit)

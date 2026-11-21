@@ -30,6 +30,7 @@ object Tools {
 
     val all = listOf(
         // ---- files ----
+        Tool("pdf_edit", listOf("files"), "محرر PDF", "كتابة وتظليل وإخفاء وتعبئة النماذج", Icons.Rounded.EditNote, "تعديل pdf كتابة تظليل نموذج تعبئة توقيع"),
         Tool("pdf_word", listOf("files"), "PDF إلى Word", "استخراج النص إلى ملف DOCX قابل للتعديل", Icons.AutoMirrored.Rounded.Article, "pdf word docx تحويل وورد"),
         Tool("word_pdf", listOf("files"), "Word إلى PDF", "تحويل DOCX إلى PDF بخط عربي سليم", Icons.Rounded.PictureAsPdf, "word pdf docx وورد"),
         Tool("pdf_excel", listOf("files"), "PDF إلى Excel", "الأسطر والجداول إلى XLSX", Icons.Rounded.TableChart, "pdf excel xlsx اكسل جدول"),
@@ -68,11 +69,12 @@ object Tools {
         Tool("exams", listOf("study"), "جدول الاختبارات", "مع عدّ تنازلي وتذكير", Icons.AutoMirrored.Rounded.EventNote, "اختبارات امتحانات"),
         Tool("homework", listOf("study"), "تنظيم الواجبات", "حسب المادة وموعد التسليم", Icons.AutoMirrored.Rounded.Assignment, "واجبات"),
         Tool("attendance", listOf("study"), "متابعة الحضور", "سجل حضور وغياب الطلاب", Icons.Rounded.HowToReg, "حضور غياب طلاب"),
+        Tool("grades", listOf("study"), "كشف الدرجات", "رصد درجات الطلاب وتصديرها Excel وPDF", Icons.Rounded.Grading, "درجات كشف رصد طلاب معلم"),
         Tool("quiz_maker", listOf("study"), "إنشاء الاختبارات", "أسئلة اختيار وصح وخطأ إلى PDF", Icons.Rounded.Quiz, "انشاء اختبار اسئلة"),
         Tool("worksheet", listOf("study"), "أوراق العمل", "ورقة عمل جاهزة للطباعة", Icons.Rounded.Description, "ورقة عمل"),
         Tool("flashcards", listOf("study"), "بطاقات المراجعة", "احفظ بالتكرار المتباعد", Icons.Rounded.Style, "بطاقات مراجعة"),
         Tool("study_timer", listOf("study"), "مؤقت المذاكرة", "جلسات تركيز واستراحات", Icons.Rounded.Timer, "مؤقت مذاكرة بومودورو"),
-        Tool("certificate", listOf("study", "docs"), "شهادات الإنجاز", "شهادة شكر أو تفوق بصيغة PDF", Icons.Rounded.WorkspacePremium, "شهادة شكر تقدير"),
+        Tool("certificate", listOf("study", "docs"), "شهادات الإنجاز", "شهادة واحدة أو شهادات جماعية من قائمة أسماء", Icons.Rounded.WorkspacePremium, "شهادة شكر تقدير"),
         // ---- saudi ----
         Tool("vat", listOf("saudi", "calc"), "ضريبة القيمة المضافة", "15% إضافة أو استخراج", Icons.Rounded.Receipt, "ضريبة vat قيمة مضافة"),
         Tool("salary", listOf("saudi"), "حاسبة الراتب", "الإجمالي وخصم التأمينات والصافي", Icons.Rounded.Payments, "راتب تأمينات gosi"),
@@ -111,6 +113,10 @@ object Tools {
         Tool("qr_make", listOf("smart"), "إنشاء رمز QR", "رابط أو نص أو واي فاي أو جهة اتصال", Icons.Rounded.QrCode2, "qr باركود انشاء"),
         Tool("qr_read", listOf("smart"), "قراءة QR والباركود", "بالكاميرا أو من صورة", Icons.Rounded.QrCodeScanner, "قراءة qr باركود"),
         Tool("text_compare", listOf("smart"), "مقارنة النصوص", "إبراز الإضافات والحذف", Icons.AutoMirrored.Rounded.CompareArrows, "مقارنة نصوص"),
+        Tool("translate", listOf("smart", "study"), "الترجمة على الجهاز", "عربي وإنجليزي لنص أو صورة أو ملف، دون إنترنت", Icons.Rounded.Translate, "ترجمه ترجم translate انجليزي عربي"),
+        Tool("summarize", listOf("smart", "study"), "التلخيص الذكي", "أهم الجمل والكلمات المفتاحية من أي نص أو ملف", Icons.Rounded.Summarize, "تلخيص ملخص لخص summary"),
+        Tool("quiz_gen", listOf("study", "smart"), "مولّد أسئلة المراجعة", "أسئلة اختيار من ملاحظاتك وبطاقات مراجعة", Icons.Rounded.Psychology, "اسئله مراجعه اختبار توليد بطاقات"),
+        Tool("read_aloud", listOf("smart", "study"), "اقرأ لي", "صوّر ورقة أو اختر ملفًا ليُقرأ بصوت عربي", Icons.Rounded.RecordVoiceOver, "اقرا صوت قراءه نطق مكفوفين"),
         Tool("word_count", listOf("smart"), "عداد الكلمات والحروف", "مع زمن القراءة", Icons.Rounded.FormatSize, "عداد كلمات حروف"),
         Tool("dedupe", listOf("smart"), "إزالة التكرار", "حذف الأسطر المكررة", Icons.Rounded.FilterList, "تكرار حذف"),
         Tool("tts", listOf("smart"), "تحويل النص إلى صوت", "قراءة بصوت عربي وحفظ ملف", Icons.Rounded.RecordVoiceOver, "نص صوت"),
@@ -171,7 +177,7 @@ object Tools {
     /** What each kind of user reaches for first (chosen once on first run, changeable in Settings). */
     val byRole = mapOf(
         "student" to listOf("gpa", "flashcards", "study_timer", "exams", "ocr", "scan"),
-        "teacher" to listOf("quiz_maker", "worksheet", "attendance", "certificate", "scan", "pdf_merge"),
+        "teacher" to listOf("quiz_maker", "grades", "attendance", "certificate", "quiz_gen", "pdf_edit"),
         "employee" to listOf("salary", "overtime", "eos", "letter", "sign_pdf", "pdf_compress"),
         "business" to listOf("invoice", "quote", "vat", "sign_pdf", "expenses", "scan"),
     )
