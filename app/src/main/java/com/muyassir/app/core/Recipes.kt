@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.material.icons.rounded.AutoMode
 import com.muyassir.app.engine.ImageEngine
 import com.muyassir.app.engine.Ocr
 import com.muyassir.app.engine.Office
