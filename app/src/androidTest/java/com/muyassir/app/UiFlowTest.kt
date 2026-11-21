@@ -151,6 +151,17 @@ class UiFlowTest {
         if (err != null) fail("$id failed: " + err.config.getOrNull(SemanticsProperties.Text)?.joinToString())
     }
 
+    // ---------- failure handling: a wrong file gives a clear message, never a crash or a blank screen ----------
+    @Test fun unsupportedFileShowsClearError() {
+        TestHooks.inputs = listOf(Uri.fromFile(png("not-a-pdf.png")))
+        launch("pdf_merge")
+        rule.onNodeWithTag("action").performScrollTo().performClick()
+        rule.waitUntil(30_000) { rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("results").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithTag("error").assertExists("a PNG given to PDF merge must produce an error message")
+        rule.onNodeWithTag("action").assertExists() // the user can retry
+    }
+    @Test fun currencyWorksOfflineWithPeggedRate() { launch("currency"); waitText("3.75") }
+
     @Test fun pdfToWord() = runFileTool("pdf_word", listOf(pdf("a.pdf", 2)))
     @Test fun wordToPdf() { val d = File(dir, "a.docx"); Office.writeDocx(d, listOf(Office.Para.Text("عنوان", 1), Office.Para.Text("فقرة عربية"))); runFileTool("word_pdf", listOf(d)) }
     @Test fun pdfToExcel() = runFileTool("pdf_excel", listOf(pdf("a.pdf", 1)))
