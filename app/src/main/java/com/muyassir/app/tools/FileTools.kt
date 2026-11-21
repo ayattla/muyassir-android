@@ -51,9 +51,19 @@ private fun OcrSwitch(state: MutableState<Boolean>) {
 fun PdfToWord(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     val ocr = remember { mutableStateOf(false) }
+    val review = remember { mutableStateOf<Pair<String, List<String>>?>(null) }
     FileTool(t, back, PDF, false, "اختر ملف PDF", "تحويل إلى Word", options = {
-        Panel { OcrSwitch(ocr); Hint("يُستخرج النص والفقرات مع اتجاه عربي صحيح. التنسيق المعقد والصور لا تُنقل؛ لنسخة مطابقة للشكل استخدم «PDF إلى صور» أو «PDF إلى PowerPoint».") }
-    }) { ins, out, p ->
+        Panel {
+            SwitchRow("إعادة بناء العناوين والجداول بالتعرف الضوئي (للمسح الضوئي والجداول، أبطأ)", ocr.value) { ocr.value = it }
+            Hint("بدونه يُستخرج النص والفقرات من طبقة النص مع اتجاه عربي صحيح. معه تُقرأ كل صفحة كصورة ويُعاد بناء الجداول والعناوين، وتظهر الكلمات غير المؤكدة لمراجعتها قبل الحفظ.")
+        }
+    }, after = { ReviewPanel(review, "مستند") }) { ins, out, p ->
+        if (ocr.value) {
+            val (pages, _) = ocrPages(ctx, ins, p, com.muyassir.app.core.Plus.ocrPages.coerceAtMost(80))
+            val o = File(out, base(ctx, ins[0]) + ".docx"); Office.writeDocx(o, docxFrom(pages))
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { review.value = pages.joinToString("\n\n") { it.plain() } to pages.flatMap { it.unsure }.distinct() }
+            return@FileTool listOf(o)
+        }
         val f = cache(ctx, ins[0])
         val pages = pdfLines(ctx, f, ocr.value, p)
         val paras = ArrayList<Office.Para>()

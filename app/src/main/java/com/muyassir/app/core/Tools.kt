@@ -31,6 +31,9 @@ object Tools {
     val all = listOf(
         // ---- files ----
         Tool("pdf_edit", listOf("files"), "محرر PDF", "كتابة وتظليل وإخفاء وتعبئة النماذج", Icons.Rounded.EditNote, "تعديل pdf كتابة تظليل نموذج تعبئة توقيع"),
+        Tool("img_word", listOf("files", "docs"), "صور إلى Word", "نص وعناوين وجداول قابلة للتعديل من الصور", Icons.Rounded.DocumentScanner, "صور الى وورد word تحويل صوره مستند جدول"),
+        Tool("exam_doc", listOf("study", "files"), "اختبار مصوّر إلى مستند", "يستخرج الأسئلة والاختيارات من صورة الاختبار", Icons.Rounded.FactCheck, "اختبار مصور اسئلة استخراج تحويل ورقة"),
+        Tool("pdf_pages", listOf("files"), "ترويسة وتذييل وترقيم", "أضفها لكل صفحات ملف PDF", Icons.Rounded.FormatListNumbered, "ترقيم صفحات ترويسة تذييل header footer"),
         Tool("pdf_word", listOf("files"), "PDF إلى Word", "استخراج النص إلى ملف DOCX قابل للتعديل", Icons.AutoMirrored.Rounded.Article, "pdf word docx تحويل وورد"),
         Tool("word_pdf", listOf("files"), "Word إلى PDF", "تحويل DOCX إلى PDF بخط عربي سليم", Icons.Rounded.PictureAsPdf, "word pdf docx وورد"),
         Tool("pdf_excel", listOf("files"), "PDF إلى Excel", "الأسطر والجداول إلى XLSX", Icons.Rounded.TableChart, "pdf excel xlsx اكسل جدول"),
@@ -177,7 +180,7 @@ object Tools {
     /** What each kind of user reaches for first (chosen once on first run, changeable in Settings). */
     val byRole = mapOf(
         "student" to listOf("gpa", "flashcards", "study_timer", "exams", "ocr", "scan"),
-        "teacher" to listOf("quiz_maker", "grades", "attendance", "certificate", "quiz_gen", "pdf_edit"),
+        "teacher" to listOf("quiz_maker", "worksheet", "exam_doc", "grades", "certificate", "quiz_gen"),
         "employee" to listOf("salary", "overtime", "eos", "letter", "sign_pdf", "pdf_compress"),
         "business" to listOf("invoice", "quote", "vat", "sign_pdf", "expenses", "scan"),
     )

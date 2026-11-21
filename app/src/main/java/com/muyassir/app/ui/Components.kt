@@ -20,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -289,7 +291,7 @@ fun <T> Picker(label: String, options: List<T>, selected: T, name: (T) -> String
             value = name(selected), onValueChange = {}, readOnly = true, label = { Text(label) }, modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp), trailingIcon = { Icon(Icons.Rounded.ExpandMore, null) },
         )
-        Box(Modifier.matchParentSize().clickable { open = true })
+        Box(Modifier.matchParentSize().semantics { contentDescription = label }.clickable { open = true })
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEach { o -> DropdownMenuItem(text = { Text(name(o)) }, onClick = { onSelect(o); open = false }) }
         }

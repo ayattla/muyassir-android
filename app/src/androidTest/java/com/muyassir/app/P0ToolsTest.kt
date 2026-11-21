@@ -51,6 +51,10 @@ class P0ToolsTest {
     private fun SemanticsNodeInteraction.scrolled() = apply { runCatching { performScrollTo() } } // dialogs have no scroll parent
     private fun input(label: String, value: String) { rule.onNode(hasSetTextAction() and hasText(label, substring = true)).scrolled().performTextReplacement(value) }
     private fun click(label: String) { rule.onAllNodes(hasText(label, substring = true) and hasClickAction()).onFirst().scrolled().performClick(); rule.waitForIdle() }
+    private fun pick(label: String, option: String) {
+        rule.onNode(hasContentDescription(label) and hasClickAction()).scrolled().performClick(); rule.waitForIdle()
+        rule.onAllNodes(hasText(option) and hasClickAction()).onLast().performClick(); rule.waitForIdle()
+    }
     private fun clickTag(tag: String) { rule.onNodeWithTag(tag).performScrollTo().performClick(); rule.waitForIdle() }
     private fun waitResults(ms: Long = 60_000) {
         try { rule.waitUntil(ms) { rule.onAllNodesWithTag("results").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty() } }
@@ -182,4 +186,33 @@ class P0ToolsTest {
         TestHooks.inputs = listOf(Uri.fromFile(big)); launch("pdf_compress"); clickTag("action"); waitResults(300_000)
         android.util.Log.i("MuyassirTiming", "merge 62 pages: ${merge} ms, compress 60 pages: ${System.currentTimeMillis() - t1} ms")
     }
+
+    // ---------- P1: document studio and education studio ----------
+    private fun textImage(name: String, lines: List<String>): File {
+        val bmp = Bitmap.createBitmap(1400, 120 + lines.size * 90, Bitmap.Config.ARGB_8888); val c = android.graphics.Canvas(bmp); c.drawColor(Color.WHITE)
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK; textSize = 56f; textAlign = android.graphics.Paint.Align.RIGHT }
+        lines.forEachIndexed { i, l -> c.drawText(l, 1340f, 110f + i * 90, p) }
+        val f = File(dir, name); FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }; return f
+    }
+    @Test fun imagesToWordWithReview() {
+        TestHooks.inputs = listOf(Uri.fromFile(textImage("doc.png", listOf("تقرير المبيعات", "هذا نص عربي واضح للاختبار"))))
+        launch("img_word"); clickTag("action"); waitResults(180_000); rule.onNodeWithTag("reviewText").assertExists()
+        clickTag("saveReviewed"); waitText("مراجع.docx")
+    }
+    @Test fun examPhotoBecomesQuestions() {
+        TestHooks.inputs = listOf(Uri.fromFile(textImage("exam.png", listOf("1) ما عاصمة السعودية؟", "أ) جدة", "ب) الرياض", "2) الشمس نجم ( )"))))
+        launch("exam_doc"); clickTag("action"); waitResults(180_000); rule.onNodeWithTag("examQuestions").assertExists()
+    }
+    @Test fun pdfHeaderFooterNumbers() {
+        TestHooks.inputs = listOf(Uri.fromFile(pdf("n.pdf", 3))); launch("pdf_pages"); input("الترويسة", "مدرسة الاختبار"); clickTag("action"); waitResults()
+    }
+    @Test fun quizMakerAllTypesAndWord() {
+        launch("quiz_maker"); input("الصف", "الخامس"); input("المادة", "علوم")
+        click("إضافة سؤال"); input("نص السؤال", "كم عدد أيام الأسبوع؟"); input("الخيار أ", "سبعة")
+        pick("نوع السؤال الجديد", "إكمال الفراغ"); click("إضافة سؤال"); input("اكتب ___", "الماء يغلي عند ___ درجة"); input("الإجابة الصحيحة", "100")
+        pick("نوع السؤال الجديد", "توصيل"); click("إضافة سؤال"); input("الأزواج", "الرياض = السعودية\nالقاهرة = مصر")
+        clickTag("action"); waitResults(); waitText(".docx")
+    }
+    @Test fun worksheetBloomTemplate() { launch("worksheet"); pick("القالب", "مستويات بلوم"); clickTag("action"); waitResults(); waitText(".docx") }
+    @Test fun worksheetExitTickets() { launch("worksheet"); pick("القالب", "بطاقات الخروج (3-2-1)"); clickTag("action"); waitResults() }
 }
