@@ -98,7 +98,7 @@ private val featured = listOf("pdf_word", "pdf_merge", "img_compress", "ocr", "s
 private fun Header() {
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(top = Space.s), verticalAlignment = Alignment.CenterVertically) {
         val dark = tokens.dark
-        IconButton(onClick = { Prefs.setTheme(if (dark) "light" else "dark") }) {
+        IconButton(onClick = { Prefs.chooseTheme(if (dark) "light" else "dark") }) {
             Icon(if (tokens.dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, if (tokens.dark) "الوضع الفاتح" else "الوضع الداكن", tint = tokens.textSecondary)
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {

@@ -30,8 +30,8 @@ object Prefs {
     private fun save() = Store.saveObj("settings", org.json.JSONObject().put("theme", theme).put("name", name)
         .put("hidden", JSONArray(hidden.toList())).put("searches", JSONArray(searches.toList())))
 
-    fun setTheme(v: String) { theme = v; save() }
-    fun setName(v: String) { name = v.trim().take(24); save() }
+    fun chooseTheme(v: String) { theme = v; save() }
+    fun changeName(v: String) { name = v.trim().take(24); save() }
     fun toggleSection(id: String) { if (id in hidden) hidden.remove(id) else hidden.add(id); save() }
     fun shows(id: String) = id !in hidden
     fun addSearch(q: String) {

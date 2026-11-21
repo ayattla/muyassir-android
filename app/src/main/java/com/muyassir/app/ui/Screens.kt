@@ -222,12 +222,12 @@ fun SettingsScreen() {
         LazyColumn(Modifier.fillMaxSize().testTag("settings"), verticalArrangement = Arrangement.spacedBy(Space.m), contentPadding = PaddingValues(bottom = Space.xxxl)) {
             item {
                 Panel("المظهر") {
-                    Segmented(listOf("فاتح", "داكن", "حسب الجهاز"), when (Prefs.theme) { "dark" -> 1; "system" -> 2; else -> 0 }) { Prefs.setTheme(listOf("light", "dark", "system")[it]) }
+                    Segmented(listOf("فاتح", "داكن", "حسب الجهاز"), when (Prefs.theme) { "dark" -> 1; "system" -> 2; else -> 0 }) { Prefs.chooseTheme(listOf("light", "dark", "system")[it]) }
                 }
             }
             item {
                 Panel("الترحيب") {
-                    TextField2("اسمك (اختياري) يظهر في التحية", name, { name = it; Prefs.setName(it) })
+                    TextField2("اسمك (اختياري) يظهر في التحية", name, { name = it; Prefs.changeName(it) })
                 }
             }
             item {
