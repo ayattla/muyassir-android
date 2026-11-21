@@ -157,4 +157,29 @@ class P0ToolsTest {
         // The language model downloads once (about 30 MB); afterwards it works offline.
         launch("translate"); rule.onNodeWithTag("sourceText").performScrollTo().performTextReplacement("مرحبا بكم في التطبيق"); clickTag("action"); waitResults(240_000)
     }
+
+    // ---------- broken and large inputs: a clear message, never a crash or a blank screen ----------
+    private fun expectError(tool: String, file: File) {
+        TestHooks.inputs = listOf(Uri.fromFile(file)); launch(tool); clickTag("action")
+        try { rule.waitUntil(60_000) { rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("results").fetchSemanticsNodes().isNotEmpty() } }
+        catch (e: Throwable) { fail("$tool: no message for a broken file") }
+        if (rule.onAllNodesWithTag("error").fetchSemanticsNodes().isEmpty()) fail("$tool accepted a broken file without a warning")
+    }
+    private fun junk(name: String) = File(dir, name).apply { writeBytes(ByteArray(4096) { (it * 37 % 251).toByte() }) }
+    @Test fun brokenPdfIsRejected() = expectError("pdf_word", junk("bad.pdf"))
+    @Test fun brokenWordIsRejected() = expectError("word_pdf", junk("bad.docx"))
+    @Test fun brokenExcelIsRejected() = expectError("excel_pdf", junk("bad.xlsx"))
+    @Test fun brokenZipIsRejected() = expectError("unzip", junk("bad.zip"))
+    @Test fun brokenImageIsRejected() = expectError("img_compress", junk("bad.png"))
+
+    /** A 60-page document goes through merge and compression, and the time is reported in the test log. */
+    @Test fun largePdfMergeAndCompress() {
+        val big = pdf("big.pdf", 60)
+        val t0 = System.currentTimeMillis()
+        TestHooks.inputs = listOf(Uri.fromFile(big), Uri.fromFile(pdf("small.pdf", 2))); launch("pdf_merge"); clickTag("action"); waitResults(180_000)
+        val merge = System.currentTimeMillis() - t0; scenario?.close()
+        val t1 = System.currentTimeMillis()
+        TestHooks.inputs = listOf(Uri.fromFile(big)); launch("pdf_compress"); clickTag("action"); waitResults(300_000)
+        android.util.Log.i("MuyassirTiming", "merge 62 pages: ${merge} ms, compress 60 pages: ${System.currentTimeMillis() - t1} ms")
+    }
 }
