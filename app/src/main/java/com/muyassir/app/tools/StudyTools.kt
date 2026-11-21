@@ -122,7 +122,7 @@ fun TimetableTool(t: Tool, back: () -> Unit) {
                                 Box(
                                     Modifier.width(92.dp).height(54.dp).clip(RoundedCornerShape(10.dp))
                                         .background(if (v.isBlank()) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).clickable { edit = d to p },
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp)).testTag("cell-$d-$p").clickable { edit = d to p },
                                     contentAlignment = Alignment.Center,
                                 ) { Text(v, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center, maxLines = 2) }
                             }

@@ -273,6 +273,11 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
         u?.let { scope.launch { withContext(Dispatchers.IO) { val f = Files.toCache(ctx, it); pdf = f; pages = PdfEngine.pageCount(f); page = pages; preview = PdfEngine.render(f, page - 1, 60) } } }
     }
     LaunchedEffect(page, pdf) { pdf?.let { f -> preview = withContext(Dispatchers.IO) { PdfEngine.render(f, page - 1, 60) } } }
+    LaunchedEffect(Unit) {
+        (com.muyassir.app.core.TestHooks.inputs ?: com.muyassir.app.core.Incoming.take())?.firstOrNull()?.let { u ->
+            withContext(Dispatchers.IO) { runCatching { val f = Files.toCache(ctx, u); pdf = f; pages = PdfEngine.pageCount(f); page = pages } }
+        }
+    }
 
     fun signatureBitmap(): Bitmap {
         val bmp = Bitmap.createBitmap(padW, padH, Bitmap.Config.ARGB_8888)
@@ -300,6 +305,7 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
         if (source == 0) Panel("ارسم توقيعك") {
             Box(
                 Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(14.dp)).background(Color.White).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                    .testTag("signPad")
                     .pointerInput(Unit) {
                         padW = size.width; padH = size.height
                         detectDragGestures(onDragStart = { current = listOf(it) }, onDragEnd = { strokes.add(current); current = emptyList() }) { ch, _ -> current = current + ch.position }
@@ -337,7 +343,7 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
             }
         }
         val img = if (source == 0 && strokes.isEmpty()) null else if (source == 0) Unit else chosen()
-        PrimaryButton("توقيع المستند", Icons.Rounded.Draw, enabled = pdf != null && img != null) {
+        PrimaryButton("توقيع المستند", Icons.Rounded.Draw, enabled = pdf != null && img != null, modifier = Modifier.testTag("action")) {
             val bmp = chosen() ?: return@PrimaryButton
             scope.launch {
                 result = withContext(Dispatchers.IO) { listOf(PdfEngine.stamp(pdf!!, page - 1, bmp, x, y, w, File(Files.outDir(ctx), "مستند-موقع.pdf"))) }

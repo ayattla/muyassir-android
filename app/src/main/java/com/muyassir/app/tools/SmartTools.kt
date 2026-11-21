@@ -94,14 +94,15 @@ fun QrRead(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     var value by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u ->
-        u ?: return@rememberLauncherForActivityResult
+    fun read(u: android.net.Uri) {
         runCatching {
             val bmp = ImageEngine.load(ctx, u, 2000)
             val px = IntArray(bmp.width * bmp.height); bmp.getPixels(px, 0, bmp.width, 0, 0, bmp.width, bmp.height)
             MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bmp.width, bmp.height, px))), mapOf(DecodeHintType.TRY_HARDER to true)).text
         }.onSuccess { value = it; error = null; Store.used(t.id, it.take(40)) }.onFailure { error = "لم يُعثر على رمز في الصورة" }
     }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u -> u?.let { read(it) } }
+    LaunchedEffect(Unit) { (com.muyassir.app.core.TestHooks.inputs ?: com.muyassir.app.core.Incoming.take())?.firstOrNull()?.let { read(it) } }
     ToolScreen(t, back) {
         PrimaryButton("مسح بالكاميرا", Icons.Rounded.QrCodeScanner) {
             GmsBarcodeScanning.getClient(ctx).startScan()
