@@ -41,6 +41,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
          openRecipes: () -> Unit = {}, openRecipe: (String) -> Unit = {}) {
     val ctx = LocalContext.current
     val outputs = remember(Store.recents.size) { Files.outputs(ctx).take(4) }
+    val wideHome = LocalWide.current
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(if (LocalWide.current) 8 else 4),
@@ -59,7 +60,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
             }
             if (Prefs.shows("recipes")) {
                 item(span = full) { SectionHead("الوصفات", "عدة أدوات بلمسة واحدة", "الكل" to openRecipes) }
-                items(com.muyassir.app.core.Recipes.builtIn.take(if (LocalWide.current) 4 else 2), key = { "rc" + it.id }, span = { half(this) }) { r -> RecipeCard(r) { openRecipe(r.id) } }
+                items(com.muyassir.app.core.Recipes.builtIn.take(if (wideHome) 4 else 2), key = { "rc" + it.id }, span = { half(this) }) { r -> RecipeCard(r) { openRecipe(r.id) } }
             }
             if (Prefs.shows("cats")) {
                 item(span = full) { SectionHead("الأقسام", "${Tools.all.size} أداة في ${Tools.categories.size} أقسام") }
