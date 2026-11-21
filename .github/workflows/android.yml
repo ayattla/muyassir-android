@@ -44,8 +44,8 @@ jobs:
           SIGNER=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)apksigner
           if [ -n "$MYS_KS_PASS" ]; then KS="$MYS_KS"; ALIAS=upload; PASS="$MYS_KS_PASS"; else KS=app/preview.jks; ALIAS=preview; PASS=muyassir-preview; fi
           for a in app/build/outputs/apk/release/*.apk; do
-            $SIGNER sign --ks "$KS" --ks-key-alias $ALIAS --ks-pass pass:$PASS --key-pass pass:$PASS --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true "$a"
-            $SIGNER verify --verbose --min-sdk-version 21 "$a" 2>/dev/null | tee /tmp/sig.txt; unzip -l "$a" | grep -E "META-INF/[^/]+\.(SF|RSA)$"
+            $SIGNER sign --ks "$KS" --ks-key-alias $ALIAS --ks-pass pass:$PASS --key-pass pass:$PASS --min-sdk-version 16 --v1-signing-enabled true --v2-signing-enabled true "$a"
+            $SIGNER verify --verbose --min-sdk-version 16 "$a" 2>/dev/null | tee /tmp/sig.txt; unzip -l "$a" | grep -E "META-INF/[^/]+\.(SF|RSA)$"
             grep -q "v1 scheme (JAR signing): true" /tmp/sig.txt; grep -q "v2 scheme (APK Signature Scheme v2): true" /tmp/sig.txt
           done
       - uses: actions/upload-artifact@v7
@@ -137,8 +137,10 @@ jobs:
       - name: Publish the preview APK
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          apk=$(ls out/apk/release/*.apk | head -1)
-          cp "$apk" muyassir-preview.apk
+          cp out/apk/release/*arm64-v8a*.apk muyassir-preview.apk
+          cp out/apk/release/*armeabi-v7a*.apk muyassir-preview-32bit.apk
+          cp out/apk/release/*universal*.apk muyassir-preview-universal.apk
+          ls -la muyassir-preview*.apk
           gh release delete preview --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh release create preview muyassir-preview.apk --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+          gh release create preview muyassir-preview.apk muyassir-preview-32bit.apk muyassir-preview-universal.apk --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
             --title "نسخة المعاينة" --notes "آخر نسخة من الفرع الرئيسي بعد نجاح الفحوص ($(date -u +%F))."

@@ -34,6 +34,16 @@ android {
         }
     }
 
+    // One APK per processor type keeps the download small (about a third of the universal APK).
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

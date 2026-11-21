@@ -1,5 +1,5 @@
 #!/bin/bash
-APK=$(ls out/apk/release/*.apk | head -1)
+APK=$(ls out/apk/release/*universal*.apk | head -1)
 adb install -r "$APK" || exit 1
 adb logcat -c
 adb shell am start -W -n com.muyassir.app/.MainActivity; sleep 12

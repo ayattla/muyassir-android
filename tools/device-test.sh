@@ -3,7 +3,7 @@
 set -u
 PKG=com.muyassir.app
 mkdir -p shots
-adb install -r -g out/apk/debug/*debug.apk || exit 1
+adb install -r -g out/apk/debug/*universal*debug.apk || exit 1
 adb install -r -g out/apk/androidTest/debug/*.apk || exit 1
 adb logcat -c
 
