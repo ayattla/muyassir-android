@@ -209,7 +209,7 @@ fun ImgBackground(t: Tool, back: () -> Unit) {
         Panel {
             Text("الخلفية الجديدة", style = MaterialTheme.typography.labelLarge)
             ChipRow { colors.forEachIndexed { i, (n, _) -> Chip(n, i == bg) { bg = i } } }
-            Hint("يعمل على الجهاز بنموذج من خدمات Google Play، وقد يُنزَّل النموذج مرة واحدة عند أول استخدام.")
+            Hint("يعمل على جهازك دون رفع الصورة. يدعم الأشخاص فورًا، ويدعم أي عنصر بعد أن تنزّل خدمات Google Play نموذجها الإضافي تلقائيًا.")
         }
     }) { ins, out, p ->
         ins.mapIndexed { i, u ->
@@ -268,7 +268,7 @@ fun IdPhoto(t: Tool, back: () -> Unit) {
     }) { ins, out, p ->
         var b = ImageEngine.load(ctx, ins[0], 2400)
         if (removeBg) {
-            val cut = runCatching { ImageEngine.removeBackground(ctx, b, maxWaitSec = 20) { p.label = it } }
+            val cut = runCatching { ImageEngine.removeBackground(ctx, b) { p.label = it } }
             if (cut.isSuccess) b = ImageEngine.flatten(cut.getOrThrow(), bgs[bg].second)
             else p.label = "تعذّر استبدال الخلفية (${cut.exceptionOrNull()?.message ?: "لا يوجد شخص واضح"})، فحُفظت بخلفيتها الأصلية"
         }

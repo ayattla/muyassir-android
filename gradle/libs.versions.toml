@@ -31,6 +31,7 @@ mlkit-text = { group = "com.google.mlkit", name = "text-recognition", version = 
 mlkit-docscan = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version = "16.0.0" }
 mlkit-codescan = { group = "com.google.android.gms", name = "play-services-code-scanner", version = "16.1.0" }
 gms-base = { group = "com.google.android.gms", name = "play-services-base", version = "18.5.0" }
+mlkit-selfie = { group = "com.google.mlkit", name = "segmentation-selfie", version = "16.0.0-beta6" }
 mlkit-segment = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version = "16.0.0-beta1" }
 tesseract = { group = "cz.adaptech.tesseract4android", name = "tesseract4android", version = "4.9.0" }
 exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version = "1.4.1" }

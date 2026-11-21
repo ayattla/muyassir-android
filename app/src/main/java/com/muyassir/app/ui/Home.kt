@@ -44,7 +44,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit) {
     // Phones get two category tiles per row; tool rows take the full width (half on tablets).
     val full: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
     val row: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(if (maxLineSpan >= 4) maxLineSpan / 2 else maxLineSpan) }
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(), contentAlignment = Alignment.TopCenter) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(160.dp),
             modifier = Modifier.widthIn(max = 1100.dp).fillMaxSize().testTag("homeGrid"),
@@ -97,7 +97,7 @@ private fun Hero(q: String, onChange: (String) -> Unit) {
     Column(
         Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp, topStart = 28.dp, topEnd = 28.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF3B57FF), Color(0xFF1E2FC4))))
-            .statusBarsPadding().padding(horizontal = 18.dp, vertical = 18.dp),
+            .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

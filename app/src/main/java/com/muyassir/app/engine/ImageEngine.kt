@@ -15,7 +15,8 @@ import androidx.exifinterface.media.ExifInterface
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.common.MlKitException
+import com.google.mlkit.vision.segmentation.Segmentation
+import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions
 import java.util.concurrent.TimeUnit
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
@@ -123,33 +124,41 @@ object ImageEngine {
     }
 
     /**
-     * On-device background removal with ML Kit subject segmentation. The model is an optional Google Play services
-     * module: on first use we ask Play services to install it and wait (no image ever leaves the device).
+     * On-device background removal. Uses ML Kit subject segmentation (any object) when its Google Play services
+     * module is installed; otherwise asks Play services to install it in the background and immediately uses the
+     * selfie segmentation model bundled inside the app (people), so the tool works offline and on first use.
+     * No image ever leaves the device.
      */
-    fun removeBackground(ctx: Context, b: Bitmap, maxWaitSec: Int = 120, onStatus: (String) -> Unit = {}): Bitmap {
+    fun removeBackground(ctx: Context, b: Bitmap, onStatus: (String) -> Unit = {}): Bitmap {
         val seg = SubjectSegmentation.getClient(SubjectSegmenterOptions.Builder().enableForegroundBitmap().build())
         try {
             val installer = ModuleInstall.getClient(ctx)
-            val available = runCatching { Tasks.await(installer.areModulesAvailable(seg)).areModulesAvailable() }.getOrDefault(true)
-            if (!available) {
-                onStatus("تنزيل نموذج إزالة الخلفية من خدمات Google Play (مرة واحدة)…")
-                installer.installModules(ModuleInstallRequest.newBuilder().addApi(seg).build())
-                if (maxWaitSec == 0) throw IllegalStateException("نموذج إزالة الخلفية ما زال يُنزَّل")
-            }
-            var last: Throwable? = null
-            repeat(maxOf(1, maxWaitSec / 4)) {
-                try {
-                    val r = Tasks.await(seg.process(InputImage.fromBitmap(b, 0)), 60, TimeUnit.SECONDS)
-                    return r.foregroundBitmap ?: throw IllegalStateException("لم يُعثر على عنصر واضح في الصورة")
-                } catch (e: java.util.concurrent.ExecutionException) {
-                    last = e.cause ?: e
-                    val waiting = (last as? MlKitException)?.errorCode == MlKitException.UNAVAILABLE || last?.message?.contains("download", true) == true
-                    if (!waiting) throw last!!
-                    onStatus("بانتظار اكتمال تنزيل النموذج…"); Thread.sleep(4000)
-                }
-            }
-            throw IllegalStateException("تعذّر تجهيز نموذج إزالة الخلفية. اتصل بالإنترنت مرة واحدة ثم أعد المحاولة.", last)
+            val available = runCatching { Tasks.await(installer.areModulesAvailable(seg), 10, TimeUnit.SECONDS).areModulesAvailable() }.getOrDefault(false)
+            if (available) {
+                val subject = runCatching { Tasks.await(seg.process(InputImage.fromBitmap(b, 0)), 60, TimeUnit.SECONDS).foregroundBitmap }.getOrNull()
+                if (subject != null) return subject
+            } else runCatching { installer.installModules(ModuleInstallRequest.newBuilder().addApi(seg).build()) }
         } finally { seg.close() }
+        onStatus("فصل الشخص عن الخلفية…")
+        return selfieCutout(b)
+    }
+
+    /** Person cut-out with the bundled ML Kit selfie segmenter: alpha = per-pixel confidence. */
+    fun selfieCutout(src: Bitmap): Bitmap {
+        val b = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)
+        val client = Segmentation.getClient(SelfieSegmenterOptions.Builder().setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE).build())
+        try {
+            val mask = Tasks.await(client.process(InputImage.fromBitmap(b, 0)), 60, TimeUnit.SECONDS)
+            val mw = mask.width; val mh = mask.height; val buf = mask.buffer.apply { rewind() }.asFloatBuffer()
+            val conf = FloatArray(mw * mh).also { buf.get(it) }
+            if (conf.count { it > 0.5f } < conf.size / 200) throw IllegalStateException("لم يُعثر على شخص أو عنصر واضح في الصورة")
+            val small = IntArray(mw * mh) { i -> (conf[i].coerceIn(0f, 1f) * 255).toInt() shl 24 }
+            val alpha = Bitmap.createScaledBitmap(Bitmap.createBitmap(small, mw, mh, Bitmap.Config.ARGB_8888), b.width, b.height, true)
+            val px = IntArray(b.width * b.height); b.getPixels(px, 0, b.width, 0, 0, b.width, b.height)
+            val ap = IntArray(px.size); alpha.getPixels(ap, 0, b.width, 0, 0, b.width, b.height)
+            for (i in px.indices) px[i] = (px[i] and 0x00FFFFFF) or (ap[i] and 0xFF000000.toInt())
+            return Bitmap.createBitmap(px, b.width, b.height, Bitmap.Config.ARGB_8888)
+        } finally { client.close() }
     }
 
     /** ID/passport photo: fits the subject into W×H mm at 300 dpi on a plain background. */
