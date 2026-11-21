@@ -35,7 +35,7 @@ private val tabs = listOf(
 )
 
 @Composable
-fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String? = null) {
+fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String? = null, startScreen: String? = null) {
     val ctx = LocalContext.current
     Store.init(ctx); Prefs.load(ctx)
     val nav = rememberNavController()
@@ -43,11 +43,14 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
     // A launcher shortcut or the automated UI test can open a tool or a category directly.
     // Deep links are applied once the navigation graph exists (from the home destination), never before.
     var pendingStart by rememberSaveable { mutableStateOf(true) }
+    var seenIncoming by rememberSaveable { mutableStateOf(0) }
     fun applyStart() {
         if (!pendingStart) return; pendingStart = false
         if (!startTool.isNullOrBlank() && Tools.byId.containsKey(startTool)) nav.navigate("tool/$startTool")
         else if (!startCat.isNullOrBlank() && Tools.categories.any { it.id == startCat }) nav.navigate("cat/$startCat")
         else if (startTab in setOf("search", "assistant", "activity", "settings")) nav.navigate(startTab!!)
+        else if (startScreen == "recipes") nav.navigate("recipes")
+        else if (startScreen?.startsWith("recipe:") == true) nav.navigate("recipe/${startScreen.removePrefix("recipe:")}")
     }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "home"
@@ -88,9 +91,18 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
                     popEnterTransition = { fadeIn(androidx.compose.animation.core.tween(180)) },
                     popExitTransition = { fadeOut(androidx.compose.animation.core.tween(120)) + slideOutHorizontally(androidx.compose.animation.core.tween(200)) { -it / 12 } },
                 ) {
-                    composable("home") { LaunchedEffect(Unit) { applyStart() }; Home(open = openTool, openCat = { nav.navigate("cat/$it") }, openSearch = { go("search") }, openAssistant = { go("assistant") }, openActivity = { go("activity") }) }
+                    composable("home") {
+                        LaunchedEffect(Unit) { applyStart() }
+                        // Files shared from another app («فتح في مُيسّر») open the choice screen.
+                        LaunchedEffect(com.muyassir.app.core.Incoming.version) { if (com.muyassir.app.core.Incoming.version > seenIncoming) { seenIncoming = com.muyassir.app.core.Incoming.version; nav.navigate("incoming") } }
+                        Home(open = openTool, openCat = { nav.navigate("cat/$it") }, openSearch = { go("search") }, openAssistant = { go("assistant") }, openActivity = { go("activity") },
+                            openRecipes = { nav.navigate("recipes") }, openRecipe = { nav.navigate("recipe/$it") })
+                    }
+                    composable("incoming") { IncomingScreen(openTool = { nav.navigate("tool/$it") { popUpTo("incoming") { inclusive = true } } }, openRecipe = { nav.navigate("recipe/$it") { popUpTo("incoming") { inclusive = true } } }, back = { nav.popBackStack() }) }
+                    composable("recipes") { RecipesScreen(open = { nav.navigate("recipe/$it") }, back = { nav.popBackStack() }) }
+                    composable("recipe/{id}") { e -> RecipeRun(e.arguments?.getString("id") ?: "", back = { nav.popBackStack() }) }
                     composable("search") { SearchScreen(open = openTool, openAssistant = { go("assistant") }) }
-                    composable("assistant") { AssistantScreen(open = openTool) }
+                    composable("assistant") { AssistantScreen(open = openTool, openRecipe = { nav.navigate("recipe/$it") }) }
                     composable("activity") { ActivityScreen(open = openTool) }
                     composable("settings") { SettingsScreen() }
                     composable("cat/{id}") { e -> CategoryScreen(e.arguments?.getString("id") ?: "files", open = openTool, back = { nav.popBackStack() }) }

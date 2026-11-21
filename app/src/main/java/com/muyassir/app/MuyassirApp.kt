@@ -15,6 +15,7 @@ class MuyassirApp : Application() {
         )
         // Temporary files policy: outputs older than 24 hours and all cached inputs are removed at launch.
         Files.cleanOld(this)
+        com.muyassir.app.core.Incoming.clean(this)
     }
 
     companion object { const val CHANNEL = "reminders" }

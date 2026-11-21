@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.muyassir.app.core.Files
 import com.muyassir.app.core.Store
@@ -61,6 +62,7 @@ fun CvTool(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     val f = rememberForm("cv"); val tick = remember { mutableIntStateOf(0) }
     var photo by remember { mutableStateOf<Bitmap?>(null) }
+    var cvLang by remember { mutableIntStateOf(0) }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u -> u?.let { photo = runCatching { ImageEngine.cropRatio(ImageEngine.load(ctx, it, 800), 1f, 1f) }.getOrNull() } }
     var result by remember { mutableStateOf<List<File>>(emptyList()) }
     ToolScreen(t, back) {
@@ -78,18 +80,21 @@ fun CvTool(t: Tool, back: () -> Unit) {
                 F(f, "langs", "اللغات", tick = tick); F(f, "courses", "الدورات والشهادات", 3, tick)
             }
         }
+        Panel { Segmented(listOf("سيرة عربية", "English CV"), cvLang) { cvLang = it }; if (cvLang == 1) Hint("اكتب البيانات بالإنجليزية؛ تُكتب العناوين بالإنجليزية ويُحاذى النص لليسار.") }
         TemplatePanel(useLogo = false)
         PrimaryButton("إنشاء السيرة الذاتية", Icons.Rounded.PictureAsPdf, enabled = f.optString("name").isNotBlank()) {
             Store.saveObj("form_cv", f)
-            val b = Templates.apply(ctx, DocBuilder(ctx), useLogo = false)
+            val en = cvLang == 1
+            val h = if (en) mapOf("نبذة" to "Summary", "الخبرات العملية" to "Experience", "التعليم" to "Education", "المهارات" to "Skills", "اللغات" to "Languages", "الدورات والشهادات" to "Courses & certificates") else emptyMap()
+            val b = Templates.apply(ctx, DocBuilder(ctx), useLogo = false).apply { ltr = en }
             photo?.let { b.add(Block.Image(it, 110f, center = false)) }
             b.add(Block.Title(f.optString("name"), f.optString("title")))
             b.add(Block.Para(listOf(f.optString("phone"), f.optString("email"), f.optString("city")).filter { it.isNotBlank() }.joinToString("   |   "), 10f, color = DocBuilder.MUTED))
-            fun sec(h: String, k: String, bullets: Boolean = true) { val v = f.optString(k); if (v.isNotBlank()) { b.add(Block.Heading(h)); v.lines().filter { it.isNotBlank() }.forEach { b.add(Block.Para(if (bullets) "• $it" else it)) } } }
+            fun sec(title: String, k: String, bullets: Boolean = true) { val v = f.optString(k); if (v.isNotBlank()) { b.add(Block.Heading(h[title] ?: title)); v.lines().filter { it.isNotBlank() }.forEach { b.add(Block.Para(if (bullets) "• $it" else it)) } } }
             sec("نبذة", "summary", false); sec("الخبرات العملية", "exp"); sec("التعليم", "edu")
-            f.optString("skills").takeIf { it.isNotBlank() }?.let { b.add(Block.Heading("المهارات")); b.add(Block.Para(it.split(',', '،').joinToString("  •  ") { s -> s.trim() })) }
+            f.optString("skills").takeIf { it.isNotBlank() }?.let { b.add(Block.Heading(h["المهارات"] ?: "المهارات")); b.add(Block.Para(it.split(',', '،').joinToString("  •  ") { s -> s.trim() })) }
             sec("اللغات", "langs"); sec("الدورات والشهادات", "courses")
-            result = listOf(b.save(File(Files.outDir(ctx), "السيرة-الذاتية-${f.optString("name")}.pdf"))); Store.used(t.id)
+            result = listOf(b.save(File(Files.outDir(ctx), (if (en) "CV-" else "السيرة-الذاتية-") + "${f.optString("name")}.pdf"))); Store.used(t.id)
         }
         if (result.isNotEmpty()) ResultFiles(result)
     }
@@ -97,17 +102,26 @@ fun CvTool(t: Tool, back: () -> Unit) {
 
 /** Invoice and quotation share one form: seller, buyer, line items, VAT. */
 @Composable
-private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean) {
+private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean, open: (String) -> Unit = {}) {
     val ctx = LocalContext.current
     val f = rememberForm(if (quote) "quote" else "invoice"); val tick = remember { mutableIntStateOf(0) }
     val items = remember { mutableStateListOf(Triple("", "1", "")) }
+    // A quote turned into an invoice arrives with its items.
+    LaunchedEffect(Unit) { if (!quote) BillingDraft.take()?.let { (form, list) -> form.keys().forEach { k -> f.put(k, form.get(k)) }; items.clear(); items.addAll(list); tick.intValue++ } }
+    val clients = remember { mutableStateListOf<JSONObject>().apply { addAll(Store.list("clients")) } }
     var withVat by remember { mutableStateOf(true) }
     var result by remember { mutableStateOf<List<File>>(emptyList()) }
     ToolScreen(t, back) {
         key(tick.intValue) {
             Panel("البائع") { F(f, "seller", "اسم المنشأة", tick = tick); F(f, "vatNo", "الرقم الضريبي", tick = tick); F(f, "sellerInfo", "العنوان والتواصل", 2, tick) }
-            Panel("العميل") { F(f, "buyer", "اسم العميل", tick = tick); F(f, "buyerInfo", "بيانات العميل (اختياري)", 2, tick) }
-            Panel { F(f, "no", if (quote) "رقم العرض" else "رقم الفاتورة", tick = tick); F(f, "notes", if (quote) "الشروط ومدة صلاحية العرض" else "ملاحظات وطريقة الدفع", 3, tick) }
+            Panel("العميل") {
+                if (clients.isNotEmpty()) {
+                    Text("عملاء سابقون", style = MaterialTheme.typography.labelLarge)
+                    ChipRow { clients.take(12).forEach { c -> Chip(c.optString("buyer")) { f.put("buyer", c.optString("buyer")); f.put("buyerInfo", c.optString("buyerInfo")); tick.intValue++ } } }
+                }
+                F(f, "buyer", "اسم العميل", tick = tick); F(f, "buyerInfo", "بيانات العميل (اختياري)", 2, tick)
+            }
+            Panel { F(f, "no", if (quote) "رقم العرض (فارغ = ترقيم تلقائي)" else "رقم الفاتورة (فارغ = ترقيم تلقائي)", tick = tick); F(f, "notes", if (quote) "الشروط ومدة صلاحية العرض" else "ملاحظات وطريقة الدفع", 3, tick) }
         }
         Panel("البنود") {
             items.forEachIndexed { i, (d, q, p) ->
@@ -126,11 +140,21 @@ private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean) {
         ResultCard("الإجمالي" to money(v.total), listOf("المجموع قبل الضريبة" to money(v.net), "الضريبة" to money(v.vat)))
         TemplatePanel()
         PrimaryButton(if (quote) "إنشاء عرض السعر" else "إنشاء الفاتورة", Icons.Rounded.PictureAsPdf, enabled = sub > 0) {
-            Store.saveObj(if (quote) "form_quote" else "form_invoice", f)
+            // automatic numbering and the saved clients list
+            val counter = Store.obj("billing_counter"); val key = if (quote) "q" else "i"
+            val number = f.optString("no").ifBlank { (if (quote) "Q-" else "INV-") + "%04d".format(counter.optInt(key, 0) + 1) }
+            if (f.optString("no").isBlank()) Store.saveObj("billing_counter", counter.put(key, counter.optInt(key, 0) + 1))
+            if (f.optString("buyer").isNotBlank()) {
+                clients.removeAll { it.optString("buyer") == f.optString("buyer") }
+                clients.add(0, JSONObject().put("buyer", f.optString("buyer")).put("buyerInfo", f.optString("buyerInfo")))
+                while (clients.size > 30) clients.removeAt(clients.lastIndex)
+                Store.saveList("clients", clients.toList())
+            }
+            Store.saveObj(if (quote) "form_quote" else "form_invoice", JSONObject(f.toString()).put("no", ""))
             val b = Templates.apply(ctx, DocBuilder(ctx))
             b.add(Block.Title(if (quote) "عرض سعر" else if (withVat) "فاتورة ضريبية مبسطة" else "فاتورة", "${f.optString("seller")}${f.optString("vatNo").takeIf { it.isNotBlank() }?.let { "  •  الرقم الضريبي: $it" } ?: ""}"))
             b.add(Block.KeyValues(listOfNotNull(
-                (if (quote) "رقم العرض" else "رقم الفاتورة") to f.optString("no").ifBlank { "${System.currentTimeMillis() / 1000 % 100000}" },
+                (if (quote) "رقم العرض" else "رقم الفاتورة") to number,
                 "التاريخ" to dayFmt.format(Date()), "العميل" to f.optString("buyer"),
                 f.optString("buyerInfo").takeIf { it.isNotBlank() }?.let { "بيانات العميل" to it },
                 f.optString("sellerInfo").takeIf { it.isNotBlank() }?.let { "بيانات البائع" to it },
@@ -143,12 +167,26 @@ private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean) {
             if (!quote && withVat) b.add(Block.Para("تنبيه: هذا مستند مبسط. الفوترة الإلكترونية الإلزامية (فاتورة) تتطلب نظامًا معتمدًا من هيئة الزكاة والضريبة والجمارك.", 8.5f, color = DocBuilder.MUTED))
             result = listOf(b.save(File(Files.outDir(ctx), "${if (quote) "عرض-سعر" else "فاتورة"}-${f.optString("buyer").ifBlank { "عميل" }}.pdf"))); Store.used(t.id, f.optString("buyer"))
         }
-        if (result.isNotEmpty()) ResultFiles(result)
+        if (result.isNotEmpty()) {
+            ResultFiles(result)
+            if (quote) SecondaryButton("تحويل العرض إلى فاتورة", Icons.Rounded.Receipt, Modifier.fillMaxWidth().testTag("quoteToInvoice")) {
+                BillingDraft.put(JSONObject().put("seller", f.optString("seller")).put("vatNo", f.optString("vatNo")).put("sellerInfo", f.optString("sellerInfo"))
+                    .put("buyer", f.optString("buyer")).put("buyerInfo", f.optString("buyerInfo")), items.toList())
+                open("invoice")
+            }
+        }
     }
 }
 
+/** Hands a quote's details to the invoice screen. */
+object BillingDraft {
+    private var pending: Pair<JSONObject, List<Triple<String, String, String>>>? = null
+    fun put(form: JSONObject, items: List<Triple<String, String, String>>) { pending = form to items }
+    fun take() = pending.also { pending = null }
+}
+
 @Composable fun InvoiceTool(t: Tool, back: () -> Unit) = BillingDoc(t, back, false)
-@Composable fun QuoteTool(t: Tool, back: () -> Unit) = BillingDoc(t, back, true)
+@Composable fun QuoteTool(t: Tool, back: () -> Unit, open: (String) -> Unit = {}) = BillingDoc(t, back, true, open)
 
 @Composable
 fun LetterTool(t: Tool, back: () -> Unit) {

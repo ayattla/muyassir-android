@@ -133,4 +133,52 @@ object Calc {
     fun gradeWord(pct: Double): String = when {
         pct >= 90 -> "ممتاز"; pct >= 80 -> "جيد جدًا"; pct >= 70 -> "جيد"; pct >= 60 -> "مقبول"; else -> "راسب"
     }
+
+    // ---- Zakat: 2.5% of zakatable wealth held a full lunar year, when it reaches the nisab ----
+    data class Zakat(val wealth: Double, val nisab: Double, val due: Double, val reached: Boolean)
+
+    /** [nisab] = value of 85 g of gold (or 595 g of silver) at today's price, entered by the user. */
+    fun zakat(cash: Double, gold: Double, silver: Double, trade: Double, receivables: Double, debts: Double, nisab: Double): Zakat {
+        val w = (cash + gold + silver + trade + receivables - debts).coerceAtLeast(0.0)
+        val reached = nisab > 0 && w >= nisab
+        return Zakat(w, nisab, if (reached) w * 0.025 else 0.0, reached)
+    }
+
+    // ---- Overtime, Saudi Labor Law article 107: hourly wage + 50% of the basic hourly wage ----
+    data class Overtime(val hourly: Double, val basicHourly: Double, val perHour: Double, val total: Double)
+
+    fun overtime(basic: Double, allowances: Double, dailyHours: Double, hours: Double): Overtime {
+        val dh = if (dailyHours > 0) dailyHours else 8.0
+        val hourly = (basic + allowances) / 30.0 / dh
+        val basicHourly = basic / 30.0 / dh
+        val per = hourly + basicHourly * 0.5
+        return Overtime(hourly, basicHourly, per, per * hours)
+    }
+
+    // ---- Residential electricity bill estimate (Saudi Electricity, two tiers at 6,000 kWh) ----
+    data class Power(val tier1: Double, val tier2: Double, val fixed: Double, val vat: Double, val total: Double)
+
+    /** [rate1]/[rate2] in halalas per kWh; [fixed] = the monthly fixed fee from the bill, in riyals. */
+    fun electricity(kwh: Double, rate1: Double, rate2: Double, fixed: Double = 0.0, vatRate: Double = VAT_RATE): Power {
+        val t1 = minOf(kwh, 6000.0).coerceAtLeast(0.0) * rate1 / 100.0
+        val t2 = (kwh - 6000.0).coerceAtLeast(0.0) * rate2 / 100.0
+        val net = t1 + t2 + fixed
+        val v = net * vatRate / 100.0
+        return Power(t1, t2, fixed, v, net + v)
+    }
+
+    // ---- Difference between two dates ----
+    data class Span(val years: Int, val months: Int, val days: Int, val totalDays: Long)
+
+    fun span(fromMillis: Long, toMillis: Long): Span {
+        val a = java.util.Calendar.getInstance().apply { timeInMillis = minOf(fromMillis, toMillis) }
+        val b = java.util.Calendar.getInstance().apply { timeInMillis = maxOf(fromMillis, toMillis) }
+        var y = b.get(java.util.Calendar.YEAR) - a.get(java.util.Calendar.YEAR)
+        var m = b.get(java.util.Calendar.MONTH) - a.get(java.util.Calendar.MONTH)
+        var d = b.get(java.util.Calendar.DAY_OF_MONTH) - a.get(java.util.Calendar.DAY_OF_MONTH)
+        if (d < 0) { m -= 1; val prev = b.clone() as java.util.Calendar; prev.add(java.util.Calendar.MONTH, -1); d += prev.getActualMaximum(java.util.Calendar.DAY_OF_MONTH) }
+        if (m < 0) { y -= 1; m += 12 }
+        val total = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(b.timeInMillis - a.timeInMillis)
+        return Span(y, m, d, total)
+    }
 }

@@ -18,24 +18,34 @@ object Prefs {
         private set
     var icon by mutableStateOf("Default")
         private set
+    /** student | teacher | employee | business, or "" before the first-run question (skip = "none"). */
+    var role by mutableStateOf("")
+        private set
+    var successes by mutableStateOf(0)
+        private set
     val hidden = mutableStateListOf<String>()      // home sections the user switched off
     val searches = mutableStateListOf<String>()    // recent search terms
     private var loaded = false
 
-    val sections = listOf("quick" to "الأدوات السريعة", "cats" to "التصنيفات", "favs" to "المفضلة", "most" to "الأكثر استخدامًا",
+    val sections = listOf("quick" to "الأدوات السريعة", "recipes" to "الوصفات", "cats" to "التصنيفات", "favs" to "المفضلة", "most" to "الأكثر استخدامًا",
         "rec" to "مقترحة لك", "recent" to "آخر العمليات", "files" to "الملفات الناتجة")
 
     fun load(ctx: Context) {
         if (loaded) return; loaded = true; Store.init(ctx)
         val o = Store.obj("settings")
-        theme = o.optString("theme", "light"); name = o.optString("name", ""); accent = o.optInt("accent", 0); icon = o.optString("icon", "Default")
+        theme = o.optString("theme", "light"); name = o.optString("name", ""); accent = o.optInt("accent", 0); icon = o.optString("icon", "Default"); role = o.optString("role", ""); successes = o.optInt("ok", 0)
         hidden.clear(); o.optJSONArray("hidden")?.let { a -> (0 until a.length()).forEach { hidden.add(a.optString(it)) } }
         searches.clear(); o.optJSONArray("searches")?.let { a -> (0 until a.length()).forEach { searches.add(a.optString(it)) } }
     }
-    private fun save() = Store.saveObj("settings", org.json.JSONObject().put("theme", theme).put("name", name).put("accent", accent).put("icon", icon)
+    private fun save() = Store.saveObj("settings", org.json.JSONObject().put("theme", theme).put("name", name).put("accent", accent).put("icon", icon).put("role", role).put("ok", successes)
         .put("hidden", JSONArray(hidden.toList())).put("searches", JSONArray(searches.toList())))
 
     fun chooseTheme(v: String) { theme = v; save() }
+    val roles = listOf("student" to "طالب", "teacher" to "معلم", "employee" to "موظف", "business" to "صاحب منشأة")
+    fun chooseRole(v: String) { role = v; save() }
+    /** Counts successful operations; returns true exactly once, on the third, to ask for a store rating. */
+    fun success(): Boolean { successes++; save(); return successes == 3 }
+
     fun chooseAccent(v: Int) { accent = v; save() }
 
     val icons = listOf("Default" to "الأصلية", "Paper" to "فاتحة", "Saffron" to "زعفرانية")

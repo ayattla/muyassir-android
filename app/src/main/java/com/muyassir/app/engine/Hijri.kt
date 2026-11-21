@@ -30,6 +30,7 @@ object Hijri {
         return D(g.get(Calendar.YEAR), g.get(Calendar.MONTH) + 1, g.get(Calendar.DAY_OF_MONTH), g.get(Calendar.DAY_OF_WEEK))
     }
 
+    fun fromMillis(ms: Long): D { val g = GregorianCalendar().apply { timeInMillis = ms }; return toHijri(g.get(Calendar.YEAR), g.get(Calendar.MONTH) + 1, g.get(Calendar.DAY_OF_MONTH)) }
     fun today(): D { val g = GregorianCalendar(); return toHijri(g.get(Calendar.YEAR), g.get(Calendar.MONTH) + 1, g.get(Calendar.DAY_OF_MONTH)) }
     fun monthLength(y: Int, m: Int): Int { val h = islamic(); h.clear(); h.set(y, m - 1, 1); return h.getActualMaximum(Calendar.DAY_OF_MONTH) }
 }

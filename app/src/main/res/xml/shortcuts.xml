@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="scan" android:enabled="true" android:icon="@drawable/ic_sc_scan"
+        android:shortcutShortLabel="@string/sc_scan" android:shortcutLongLabel="@string/sc_scan">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.muyassir.app" android:targetClass="com.muyassir.app.MainActivity">
+            <extra android:name="tool" android:value="scan" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="recipes" android:enabled="true" android:icon="@drawable/ic_sc_recipes"
+        android:shortcutShortLabel="@string/sc_recipes" android:shortcutLongLabel="@string/sc_recipes">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.muyassir.app" android:targetClass="com.muyassir.app.MainActivity">
+            <extra android:name="screen" android:value="recipes" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="compress" android:enabled="true" android:icon="@drawable/ic_sc_compress"
+        android:shortcutShortLabel="@string/sc_compress" android:shortcutLongLabel="@string/sc_compress">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.muyassir.app" android:targetClass="com.muyassir.app.MainActivity">
+            <extra android:name="tool" android:value="pdf_compress" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="img_pdf" android:enabled="true" android:icon="@drawable/ic_sc_pdf"
+        android:shortcutShortLabel="@string/sc_img_pdf" android:shortcutLongLabel="@string/sc_img_pdf">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.muyassir.app" android:targetClass="com.muyassir.app.MainActivity">
+            <extra android:name="tool" android:value="img_pdf" />
+        </intent>
+    </shortcut>
+</shortcuts>

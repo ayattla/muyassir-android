@@ -62,4 +62,16 @@ object Assistant {
         }
         return Plan(steps, if (steps.size > 1) "نفّذ الخطوات بالترتيب. افتح كل أداة واختر ملفاتك فيها." else null)
     }
+
+    /** A built-in recipe that does the whole plan in one tap, if there is one. */
+    fun recipeFor(ids: List<String>): String? {
+        val set = ids.toSet()
+        return when {
+            "img_pdf" in set && "pdf_compress" in set -> "doc"
+            "pdf_merge" in set && "pdf_compress" in set -> "merge"
+            set == setOf("ocr") -> "text"
+            set.isNotEmpty() && set.all { it in setOf("img_compress", "img_resize") } -> "light"
+            else -> null
+        }
+    }
 }

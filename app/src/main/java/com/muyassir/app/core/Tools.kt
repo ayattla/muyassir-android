@@ -83,6 +83,10 @@ object Tools {
         Tool("hijri", listOf("saudi", "calc"), "التاريخ الهجري والميلادي", "تقويم أم القرى الرسمي", Icons.Rounded.DateRange, "هجري ميلادي تحويل تاريخ"),
         Tool("gov_dir", listOf("saudi"), "دليل المنصات الحكومية", "روابط المنصات الرسمية", Icons.Rounded.Apps, "منصات حكومية ابشر توكلنا"),
         Tool("emergency", listOf("saudi"), "أرقام الطوارئ", "اتصال مباشر بلمسة", Icons.Rounded.LocalHospital, "طوارئ اسعاف شرطة"),
+        Tool("zakat", listOf("saudi", "calc"), "حاسبة الزكاة", "النقد والذهب والتجارة مع النصاب", Icons.Rounded.VolunteerActivism, "زكاه زكاة نصاب ذهب"),
+        Tool("overtime", listOf("saudi"), "العمل الإضافي", "وفق المادة 107 من نظام العمل", Icons.Rounded.MoreTime, "اضافي اوفر تايم overtime ساعات"),
+        Tool("electricity", listOf("saudi", "calc"), "فاتورة الكهرباء", "تقدير بالتعرفة السكنية الحالية والجديدة", Icons.Rounded.Bolt, "كهرباء فاتوره استهلاك كيلو"),
+        Tool("date_diff", listOf("calc", "saudi"), "حساب العمر والمدة", "الفرق بين تاريخين بالميلادي والهجري", Icons.Rounded.Cake, "عمر مده فرق تاريخين ميلاد"),
         Tool("documents", listOf("saudi", "productivity"), "الوثائق والمواعيد", "تنبيه قبل انتهاء الوثائق", Icons.Rounded.FolderShared, "وثائق انتهاء هوية جواز موعد"),
         // ---- productivity ----
         Tool("notes", listOf("productivity"), "المفكرة", "ملاحظات سريعة محفوظة على جهازك", Icons.Rounded.StickyNote2, "مفكرة ملاحظات"),
@@ -164,6 +168,14 @@ object Tools {
         return all.map { it to score(it) }.filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }
     }
 
+    /** What each kind of user reaches for first (chosen once on first run, changeable in Settings). */
+    val byRole = mapOf(
+        "student" to listOf("gpa", "flashcards", "study_timer", "exams", "ocr", "scan"),
+        "teacher" to listOf("quiz_maker", "worksheet", "attendance", "certificate", "scan", "pdf_merge"),
+        "employee" to listOf("salary", "overtime", "eos", "letter", "sign_pdf", "pdf_compress"),
+        "business" to listOf("invoice", "quote", "vat", "sign_pdf", "expenses", "scan"),
+    )
+
     /** Suggestions: what tends to follow the last thing done, then popular starters. */
     fun suggestions(): List<Tool> {
         val follow = mapOf(
@@ -172,7 +184,7 @@ object Tools {
             "pdf_word" to listOf("word_pdf"), "salary" to listOf("eos", "leave"), "gpa" to listOf("percent", "study_timer"),
         )
         val last = Store.recents.firstOrNull()?.tool
-        val ids = (follow[last] ?: emptyList()) + listOf("scan", "pdf_merge", "img_bg", "vat", "qr_make", "gpa")
+        val ids = (follow[last] ?: emptyList()) + (byRole[Prefs.role] ?: listOf("scan", "pdf_merge", "img_bg", "vat", "qr_make", "gpa"))
         return ids.distinct().filter { it != last }.mapNotNull { byId[it] }.take(6)
     }
 }

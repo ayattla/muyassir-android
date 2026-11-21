@@ -375,16 +375,29 @@ fun ScanTool(t: Tool, back: () -> Unit) {
     val scope = rememberCoroutineScope()
     var results by remember { mutableStateOf<List<File>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    var autoText by remember { mutableStateOf(true) }
+    var working by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
         if (r.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
         val res = GmsDocumentScanningResult.fromActivityResultIntent(r.data) ?: return@rememberLauncherForActivityResult
         scope.launch {
+            working = true
             results = withContext(Dispatchers.IO) {
                 val out = Files.outDir(ctx); val list = ArrayList<File>()
-                res.pdf?.let { pdf -> File(out, "مستند-ممسوح.pdf").also { f -> ctx.contentResolver.openInputStream(pdf.uri)!!.use { i -> f.outputStream().use { i.copyTo(it) } }; list += f } }
-                res.pages?.forEachIndexed { i, pg -> File(out, "صفحة-${i + 1}.jpg").also { f -> ctx.contentResolver.openInputStream(pg.imageUri)!!.use { s -> f.outputStream().use { s.copyTo(it) } }; list += f } }
-                list
+                val pages = res.pages?.mapIndexed { i, pg -> File(out, "صفحة-${i + 1}.jpg").also { f -> ctx.contentResolver.openInputStream(pg.imageUri)!!.use { s -> f.outputStream().use { s.copyTo(it) } } } }.orEmpty()
+                // Optional: read the text on the device, and name the PDF after the document's first line.
+                var title = "مستند-ممسوح"
+                if (autoText && pages.isNotEmpty()) runCatching {
+                    val text = pages.joinToString("\n\n") { Ocr.recognize(ctx, ImageEngine.load(ctx, android.net.Uri.fromFile(it), 2400), Ocr.Lang.AR) }.trim()
+                    if (text.isNotBlank()) {
+                        list += File(out, "نص-المستند.txt").apply { writeText(text) }
+                        text.lines().map { it.trim() }.firstOrNull { it.length in 3..60 }?.let { title = it.replace(Regex("[\\\\/:*?\"<>|]"), " ").trim().take(40) }
+                    }
+                }
+                res.pdf?.let { pdf -> File(out, "$title.pdf").also { f -> ctx.contentResolver.openInputStream(pdf.uri)!!.use { i -> f.outputStream().use { i.copyTo(it) } }; list.add(0, f) } }
+                list + pages
             }
+            working = false
             Store.used(t.id, results.firstOrNull()?.name ?: "")
         }
     }
@@ -399,7 +412,11 @@ fun ScanTool(t: Tool, back: () -> Unit) {
                     .addOnSuccessListener { launcher.launch(IntentSenderRequest.Builder(it).build()) }
                     .addOnFailureListener { error = "الماسح غير متاح على هذا الجهاز. تأكد من تحديث خدمات Google Play." }
             }
+            SwitchRow("استخراج النص وتسمية الملف تلقائيًا", autoText) { autoText = it }
             Hint("الماسح من خدمات Google Play ويعمل على الجهاز دون رفع الصور.")
+        }
+        if (working) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text("جارٍ قراءة النص على جهازك…")
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (results.isNotEmpty()) ResultFiles(results)

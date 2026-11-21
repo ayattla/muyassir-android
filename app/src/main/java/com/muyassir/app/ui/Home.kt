@@ -37,7 +37,8 @@ private val half: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(2) }
 
 /** The smart home: brand header, greeting, search, featured tools, categories, then the user's own history. */
 @Composable
-fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Unit, openAssistant: () -> Unit, openActivity: () -> Unit) {
+fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Unit, openAssistant: () -> Unit, openActivity: () -> Unit,
+         openRecipes: () -> Unit = {}, openRecipe: (String) -> Unit = {}) {
     val ctx = LocalContext.current
     val outputs = remember(Store.recents.size) { Files.outputs(ctx).take(4) }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
@@ -50,10 +51,15 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
             item(span = full) { Header() }
             item(span = full) { Greeting() }
             item(span = full) { SearchEntry(openSearch, openAssistant) }
+            if (Prefs.role.isEmpty()) item(span = full) { RoleCard() }
 
             if (Prefs.shows("quick")) {
                 item(span = full) { SectionHead("أدوات سريعة", "أكثر ما يحتاجه الناس يوميًا") }
-                items(featured, key = { "q$it" }, span = { half(this) }) { id -> FeaturedCard(id) { open(id) } }
+                items(featuredFor(Prefs.role), key = { "q$it" }, span = { half(this) }) { id -> FeaturedCard(id) { open(id) } }
+            }
+            if (Prefs.shows("recipes")) {
+                item(span = full) { SectionHead("الوصفات", "عدة أدوات بلمسة واحدة", "الكل" to openRecipes) }
+                items(com.muyassir.app.core.Recipes.builtIn.take(if (LocalWide.current) 4 else 2), key = { "rc" + it.id }, span = { half(this) }) { r -> RecipeCard(r) { openRecipe(r.id) } }
             }
             if (Prefs.shows("cats")) {
                 item(span = full) { SectionHead("الأقسام", "${Tools.all.size} أداة في ${Tools.categories.size} أقسام") }
@@ -93,6 +99,20 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
 }
 
 private val featured = listOf("pdf_word", "pdf_merge", "img_compress", "ocr", "scan", "img_convert")
+
+/** Quick tools: the user's role first, then the general favourites. */
+private fun featuredFor(role: String) = ((Tools.byRole[role] ?: emptyList()).take(4) + featured).distinct().take(6)
+
+/** First-run question: who are you? It only reorders the home screen; nothing is locked. */
+@Composable
+private fun RoleCard() {
+    Column(Modifier.fillMaxWidth().cardSurface(Radius.l).padding(Space.l).testTag("roleCard"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        Text("لنرتّب مُيسّر لك", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
+        Text("اختر ما يصفك لنقدّم الأدوات التي تحتاجها أولًا. يمكنك تغييره من الإعدادات.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        ChipRow { Prefs.roles.forEach { (id, label) -> Chip(label) { Prefs.chooseRole(id) } } }
+        TextButton(onClick = { Prefs.chooseRole("none") }) { Text("تخطٍّ") }
+    }
+}
 
 @Composable
 private fun Header() {

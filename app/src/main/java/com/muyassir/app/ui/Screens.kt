@@ -129,7 +129,7 @@ private fun AssistantPromo(openAssistant: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AssistantScreen(open: (String) -> Unit) {
+fun AssistantScreen(open: (String) -> Unit, openRecipe: (String) -> Unit = {}) {
     var q by rememberSaveable { mutableStateOf("") }
     var asked by rememberSaveable { mutableStateOf("") }
     val plan = remember(asked) { Assistant.plan(asked) }
@@ -150,6 +150,14 @@ fun AssistantScreen(open: (String) -> Unit) {
                 item { Hint("المساعد يعمل على جهازك دون إنترنت، ويقترح فقط: أنت من يفتح الأداة ويختار ملفاتك وينفّذ.") }
             } else {
                 plan.note?.let { item { Text(it, style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) } }
+                Assistant.recipeFor(plan.steps.map { it.tool.id })?.let { rid -> com.muyassir.app.core.Recipes.byId(rid)?.let { r ->
+                    item(key = "recipe") {
+                        Column(Modifier.fillMaxWidth().testTag("assistantRecipe"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("أو نفّذها كلها بلمسة واحدة:", style = MaterialTheme.typography.labelLarge, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            RecipeCard(r) { openRecipe(r.id) }
+                        }
+                    }
+                } }
                 itemsIndexed(plan.steps, key = { _, s -> s.tool.id }) { i, s ->
                     AnimatedVisibility(true, enter = fadeIn() + slideInVertically { it / 4 }) {
                         Row(Modifier.fillMaxWidth().cardSurface().padding(Space.l), verticalAlignment = Alignment.CenterVertically) {
@@ -175,6 +183,7 @@ fun ActivityScreen(open: (String) -> Unit) {
     val ctx = LocalContext.current
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var refresh by remember { mutableIntStateOf(0) }
+    var fileQuery by rememberSaveable { mutableStateOf("") }
     val files = remember(refresh, tab) { Files.outputs(ctx) }
     TabPage("نشاطي", "عملياتك وملفاتك الناتجة ومفضلتك، محفوظة على جهازك فقط") {
         Segmented(listOf("العمليات", "الملفات", "المفضلة"), tab) { tab = it }
@@ -195,16 +204,18 @@ fun ActivityScreen(open: (String) -> Unit) {
                     }
                     item { TextButton(onClick = { Store.clearRecents() }, modifier = Modifier.fillMaxWidth()) { Text("مسح السجل") } }
                 }
-                1 -> if (files.isEmpty()) item { EmptyState(Icons.Rounded.FolderOpen, "لا توجد ملفات ناتجة", "نتائج التحويل والضغط تبقى هنا 24 ساعة ثم تُحذف تلقائيًا.") }
+                1 -> if (files.isEmpty()) item { EmptyState(Icons.Rounded.FolderOpen, "لا توجد ملفات ناتجة", "نتائج التحويل والضغط تبقى هنا 24 ساعة ثم تُحذف تلقائيًا، إلا ما تختار إبقاءه.") }
                 else {
-                    items(files, key = { it.path }) { f ->
+                    item(key = "fileSearch") { TextField2("ابحث في ملفاتك", fileQuery, { fileQuery = it }, Modifier.fillMaxWidth()) }
+                    items(files.filter { fileQuery.isBlank() || Tools.norm(it.name).contains(Tools.norm(fileQuery)) }, key = { it.path }) { f ->
                         Row(Modifier.fillMaxWidth().cardSurface(Radius.m).padding(start = Space.m, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(fileIcon(f), null, tint = tokens.accent)
                             Spacer(Modifier.width(Space.m))
                             Column(Modifier.weight(1f)) {
                                 Text(f.name, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, maxLines = 1)
-                                Text("${Files.human(f.length())} • ${ago(f.lastModified())}", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
+                                Text("${Files.human(f.length())} • ${ago(f.lastModified())}${if (Files.isKept(ctx, f)) " • محفوظ" else " • يُحذف بعد 24 ساعة"}", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
                             }
+                            if (!Files.isKept(ctx, f)) IconButton(onClick = { Files.keep(ctx, f); refresh++ }) { Icon(Icons.Rounded.PushPin, "إبقاء الملف", tint = tokens.textSecondary) }
                             IconButton(onClick = { Files.open(ctx, f) }) { Icon(Icons.Rounded.OpenInNew, "فتح", tint = tokens.textSecondary) }
                             IconButton(onClick = { Files.share(ctx, listOf(f)) }) { Icon(Icons.Rounded.Share, "مشاركة", tint = tokens.textSecondary) }
                             IconButton(onClick = { f.delete(); refresh++ }) { Icon(Icons.Rounded.DeleteOutline, "حذف", tint = tokens.textSecondary) }
@@ -259,6 +270,8 @@ fun SettingsScreen() {
             item {
                 Panel("الترحيب") {
                     TextField2("اسمك (اختياري) يظهر في التحية", name, { name = it; Prefs.changeName(it) })
+                    Text("ما يصفك (يرتّب الأدوات المقترحة)", style = MaterialTheme.typography.labelLarge, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    ChipRow { (Prefs.roles + ("none" to "بلا تخصيص")).forEach { (id, label) -> Chip(label, Prefs.role == id) { Prefs.chooseRole(id) } } }
                 }
             }
             item {

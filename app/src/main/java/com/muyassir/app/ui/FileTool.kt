@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.muyassir.app.ui
 
 import android.net.Uri
@@ -5,6 +7,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.ui.draganddrop.mimeTypes
+import androidx.compose.ui.draganddrop.toAndroidDragEvent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,11 +64,27 @@ fun FileTool(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val progress = remember { Progress() }
-    LaunchedEffect(Unit) { com.muyassir.app.core.TestHooks.inputs?.let { if (inputs.isEmpty()) inputs.addAll(it) } }
+    LaunchedEffect(Unit) {
+        (com.muyassir.app.core.TestHooks.inputs ?: com.muyassir.app.core.Incoming.take())?.let { if (inputs.isEmpty()) inputs.addAll(if (multiple) it else it.take(1)) }
+    }
 
     val pickMany = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { if (it.isNotEmpty()) { inputs.addAll(it.filter { u -> u !in inputs }); results = emptyList() } }
     val pickOne = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { if (it != null) { inputs.clear(); inputs.add(it); results = emptyList() } }
 
+    // Tablets and split screen: files can also be dragged in from another app.
+    val drop = remember {
+        object : androidx.compose.ui.draganddrop.DragAndDropTarget {
+            override fun onDrop(event: androidx.compose.ui.draganddrop.DragAndDropEvent): Boolean {
+                val e = event.toAndroidDragEvent()
+                ctx.activity()?.requestDragAndDropPermissions(e)
+                val clip = e.clipData ?: return false
+                val uris = (0 until clip.itemCount).mapNotNull { clip.getItemAt(it).uri }
+                if (uris.isEmpty()) return false
+                if (multiple) inputs.addAll(uris.filter { it !in inputs }) else { inputs.clear(); inputs.add(uris.first()) }
+                results = emptyList(); return true
+            }
+        }
+    }
     ToolScreen(tool, onBack) {
         Panel {
             val accent = tokens.accent
@@ -73,7 +94,9 @@ fun FileTool(
                         drawRoundRect(accent.copy(alpha = 0.45f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
                             style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(14f, 10f))))
                     }
-                    .pressable { if (multiple) pickMany.launch(mimes) else pickOne.launch(mimes) }.padding(vertical = 28.dp),
+                    .pressable { if (multiple) pickMany.launch(mimes) else pickOne.launch(mimes) }
+                    .dragAndDropTarget(shouldStartDragAndDrop = { ev -> ev.mimeTypes().isNotEmpty() }, target = drop)
+                    .padding(vertical = 28.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -88,7 +111,7 @@ fun FileTool(
                     }
                 }
             }
-            if (tool.id in com.muyassir.app.core.Plus.metered && !com.muyassir.app.core.Plus.unlocked) {
+            if (com.muyassir.app.core.Plus.isMetered(tool.id) && !com.muyassir.app.core.Plus.unlocked) {
                 val left = com.muyassir.app.core.Plus.opsLeft
                 Row(Modifier.fillMaxWidth().testTag("opsLeft"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Text(if (left > 0) "متبقٍ لك اليوم $left من ${com.muyassir.app.core.Plus.FREE_OPS_PER_DAY} عمليات مجانية" else "انتهت عملياتك المجانية لليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
@@ -141,6 +164,7 @@ fun FileTool(
                     results = withContext(Dispatchers.IO) { run(inputs.toList(), out, progress) }
                     Store.used(tool.id, results.firstOrNull()?.name ?: "")
                     com.muyassir.app.core.Plus.counted(tool.id)
+                    maybeAskForReview(ctx)
                     if (System.currentTimeMillis() - started > 6000) notifyDone(ctx, tool.title, results.size)
                 } catch (t: Throwable) {
                     android.util.Log.e("Muyassir", "tool ${tool.id} failed", t)

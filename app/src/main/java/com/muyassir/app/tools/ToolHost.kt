@@ -28,11 +28,12 @@ fun ToolHost(id: String, back: () -> Unit, open: (String) -> Unit) {
         "gov_dir" -> GovDirectory(t, back); "emergency" -> EmergencyTool(t, back); "documents" -> DocumentsTool(t, back)
         "notes" -> NotesTool(t, back); "tasks" -> TasksTool(t, back); "calendar" -> CalendarTool(t, back)
         "reminders" -> RemindersTool(t, back); "budget" -> BudgetTool(t, back); "expenses" -> ExpensesTool(t, back)
-        "cv" -> CvTool(t, back); "invoice" -> InvoiceTool(t, back); "quote" -> QuoteTool(t, back)
+        "cv" -> CvTool(t, back); "invoice" -> InvoiceTool(t, back); "quote" -> QuoteTool(t, back, open)
         "letter" -> LetterTool(t, back); "sign_pdf" -> SignPdfTool(t, back); "text_pdf" -> TextPdfTool(t, back)
         "scientific" -> ScientificCalc(t, back); "units" -> UnitsTool(t, back); "currency" -> CurrencyTool(t, back); "area_volume" -> AreaVolume(t, back)
         "qr_make" -> QrMake(t, back); "qr_read" -> QrRead(t, back); "text_compare" -> TextCompare(t, back)
         "word_count" -> WordCount(t, back); "dedupe" -> Dedupe(t, back); "tts" -> TtsTool(t, back); "stt" -> SttTool(t, back)
+        "zakat" -> ZakatTool(t, back); "overtime" -> OvertimeTool(t, back); "electricity" -> ElectricityTool(t, back); "date_diff" -> DateDiffTool(t, back)
         else -> back()
     }
 }

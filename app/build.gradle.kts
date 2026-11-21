@@ -101,6 +101,8 @@ dependencies {
     implementation(libs.billing)
     implementation(libs.biometric)
     implementation(libs.fragment)
+    implementation(libs.glance)
+    implementation(libs.review)
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.androidx.test.junit)

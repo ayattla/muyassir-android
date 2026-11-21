@@ -47,6 +47,9 @@ object Plus {
         Lock("قفل الملاحظات والوثائق من ميزات بلس", "احمِ ملاحظاتك ووثائقك ببصمة الإصبع أو الوجه."),
         Look("تخصيص المظهر من ميزات بلس", "اختر لونًا مميزًا للتطبيق وأيقونة بديلة."),
         Support("الدعم ذو الأولوية من ميزات بلس", "رسائلك تصل بعلامة «بلس» ويُرد عليها أولًا."),
+        Recipe("الوصفات المخصصة من ميزات بلس", "الوصفات الجاهزة مجانية للجميع. مع بلس اصنع وصفاتك الخاصة واحفظها."),
+        Ai("المساعد الذكي من ميزات بلس", "جرّب التلخيص والتدقيق مرة يوميًا مجانًا. مع بلس بلا حدود."),
+        Backup("النسخ الاحتياطي من ميزات بلس", "احفظ نسخة مشفّرة من بياناتك في المكان الذي تختاره، واستعدها على جهاز جديد."),
         Menu("مُيسّر بلس", ""),
     }
 
@@ -93,8 +96,10 @@ object Plus {
      * Check a metered run before it starts. Returns the reason it is blocked, or null.
      * [sizes] are the input sizes in bytes.
      */
+    fun isMetered(tool: String) = tool in metered || tool.startsWith("recipe:")
+
     fun check(tool: String, sizes: List<Long>): Reason? {
-        if (tool !in metered) return null
+        if (!isMetered(tool)) return null
         val maxFiles = if (unlocked) PLUS_FILES else FREE_FILES
         val maxBytes = (if (unlocked) PLUS_MB else FREE_MB) * 1024L * 1024L
         if (!unlocked) { rollDay(); if (usedToday >= FREE_OPS_PER_DAY) return Reason.Daily }
@@ -104,7 +109,7 @@ object Plus {
     }
 
     /** Count one finished metered run. */
-    fun counted(tool: String) { if (tool in metered && !active) { rollDay(); usedToday++; save() } }
+    fun counted(tool: String) { if (isMetered(tool) && !active) { rollDay(); usedToday++; save() } }
 
     /** Max OCR pages for one run. */
     val ocrPages: Int get() = if (unlocked) Int.MAX_VALUE else FREE_OCR_PAGES

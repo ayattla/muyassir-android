@@ -59,6 +59,8 @@ class DocBuilder(ctx: Context, private val landscape: Boolean = false) {
     var accent: Int = LAPIS
     var layoutStyle = 0
     var logo: Bitmap? = null
+    /** Left-to-right document (English CV): text starts on the left and the accent bar sits on the left. */
+    var ltr = false
     private var titled = false
     private var startY = 0f
 
@@ -100,7 +102,7 @@ class DocBuilder(ctx: Context, private val landscape: Boolean = false) {
 
     private fun layout(text: String, tp: TextPaint, width: Float, align: Layout.Alignment = Layout.Alignment.ALIGN_NORMAL) =
         StaticLayout.Builder.obtain(text, 0, text.length, tp, width.toInt())
-            .setAlignment(align).setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
+            .setAlignment(align).setTextDirection(if (ltr) TextDirectionHeuristics.FIRSTSTRONG_LTR else TextDirectionHeuristics.FIRSTSTRONG_RTL)
             .setLineSpacing(0f, 1.15f).setIncludePad(false).build()
 
     private fun ensure(h: Float) { if (page == null || y + h > ph - margin - 10) newPage() }
@@ -145,7 +147,7 @@ class DocBuilder(ctx: Context, private val landscape: Boolean = false) {
                 else -> {
                     drawText(layout(b.text, paint(22f, true, INK), cw)); y += 4
                     if (b.sub.isNotBlank()) { drawText(layout(b.sub, paint(10.5f, false, MUTED), cw)) }
-                    ensure(10f); c.drawRect(pw - margin - 56f, y + 6, pw - margin, y + 10, Paint().apply { color = accent }); y += 22; titled = true
+                    ensure(10f); val bx = if (ltr) margin else pw - margin - 56f; c.drawRect(bx, y + 6, bx + 56f, y + 10, Paint().apply { color = accent }); y += 22; titled = true
                 }
             }
             is Block.Heading -> { y += 6; drawText(layout(b.text, paint(14f, true, accent), cw, if (layoutStyle == 3) Layout.Alignment.ALIGN_CENTER else Layout.Alignment.ALIGN_NORMAL)); y += 6 }

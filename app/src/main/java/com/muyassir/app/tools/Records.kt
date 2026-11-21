@@ -14,6 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.muyassir.app.core.Files
@@ -76,6 +79,43 @@ fun DateField(label: String, value: Long, withTime: Boolean, onChange: (Long) ->
     }
 }
 
+/** A pre-filled new record (e.g. from a photo of a document) that the open list shows in its form. */
+object RecordDraft { var pending by mutableStateOf<JSONObject?>(null) }
+
+/** Reads the expiry date from a photo of an ID, passport or licence, on the device. Only the date is kept. */
+@Composable
+fun ExpiryFromPhoto() {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var found by remember { mutableStateOf<List<com.muyassir.app.engine.DateFinder.Found>?>(null) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u ->
+        u ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            busy = true
+            found = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { com.muyassir.app.engine.DateFinder.find(com.muyassir.app.engine.Ocr.recognize(ctx, com.muyassir.app.engine.ImageEngine.load(ctx, u, 2400), com.muyassir.app.engine.Ocr.Lang.AR)) }.getOrDefault(emptyList())
+            }
+            busy = false
+        }
+    }
+    SecondaryButton(if (busy) "جارٍ القراءة…" else "قراءة تاريخ الانتهاء من صورة الوثيقة", Icons.Rounded.DocumentScanner, Modifier.fillMaxWidth().testTag("expiryPhoto")) { if (!busy) pick.launch("image/*") }
+    found?.let { list ->
+        if (list.isEmpty()) Text("لم أجد تاريخًا واضحًا في الصورة. جرّب صورة أوضح أو أدخله يدويًا.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        else {
+            Text("اختر تاريخ الانتهاء:", style = MaterialTheme.typography.labelLarge)
+            ChipRow {
+                list.sortedByDescending { it.millis }.forEach { f ->
+                    Chip(dayFmt.format(Date(f.millis)) + if (f.hijri) " (${f.text} هـ)" else "") {
+                        RecordDraft.pending = JSONObject().put("id", System.currentTimeMillis()).put("expiry", f.millis).put("days", "30"); found = null
+                    }
+                }
+            }
+        }
+    }
+    Text("تُقرأ الصورة على جهازك ولا تُحفظ؛ يُحفظ التاريخ فقط.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
 /** A simple table PDF for exported records. */
 fun exportPdf(ctx: android.content.Context, title: String, header: List<String>, rows: List<List<String>>): File {
     val b = com.muyassir.app.engine.DocBuilder(ctx, landscape = header.size > 5)
@@ -97,6 +137,7 @@ fun RecordList(
     val ctx = LocalContext.current
     var items by remember { mutableStateOf(Store.list(store)) }
     var editing by remember { mutableStateOf<JSONObject?>(null) }
+    LaunchedEffect(RecordDraft.pending) { RecordDraft.pending?.let { editing = it; RecordDraft.pending = null } }
     val notif = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     fun save(list: List<JSONObject>) { items = list.toMutableList(); Store.saveList(store, list) }
 
@@ -238,6 +279,7 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
         val soon = list.count { val d = daysUntil(it.optLong("expiry")); d in 0..30 }
         val expired = list.count { daysUntil(it.optLong("expiry")) < 0 }
         if (list.isNotEmpty()) ResultCard(null, listOf("تنتهي خلال 30 يومًا" to "$soon", "منتهية" to "$expired"))
+        ExpiryFromPhoto()
         Hint("لا تكتب أرقام الوثائق الكاملة. البيانات تبقى على جهازك فقط. التجديد يتم عبر أبشر أو المنصة المختصة.")
     })
 }

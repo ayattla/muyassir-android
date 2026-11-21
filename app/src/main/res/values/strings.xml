@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">مُيسّر</string>
+    <string name="widget_name">مُيسّر السريع</string>
+    <string name="widget_desc">مسح ودمج وضغط بلمسة، وأقرب موعد</string>
+    <string name="sc_scan">مسح مستند</string>
+    <string name="sc_recipes">الوصفات</string>
+    <string name="sc_compress">ضغط PDF</string>
+    <string name="sc_img_pdf">صور إلى PDF</string>
 </resources>

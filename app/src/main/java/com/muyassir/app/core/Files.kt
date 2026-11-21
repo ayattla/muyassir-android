@@ -34,9 +34,19 @@ object Files {
     }
 
     /** Every result file still on the device, newest first (they are removed after 24 hours). */
-    fun outputs(ctx: Context): List<File> = File(ctx.filesDir, "out").walkTopDown().filter { it.isFile }.sortedByDescending { it.lastModified() }.toList()
+    fun outputs(ctx: Context): List<File> = (File(ctx.filesDir, "out").walkTopDown() + File(ctx.filesDir, "kept").walkTopDown())
+        .filter { it.isFile }.sortedByDescending { it.lastModified() }.toList()
 
-    fun clearAll(ctx: Context) { File(ctx.filesDir, "out").deleteRecursively(); File(ctx.cacheDir, "in").deleteRecursively() }
+    /** Kept results live outside the 24-hour clean-up until the user deletes them. */
+    fun isKept(ctx: Context, f: File) = f.absolutePath.startsWith(File(ctx.filesDir, "kept").absolutePath)
+    fun keep(ctx: Context, f: File): File {
+        val dir = File(ctx.filesDir, "kept").apply { mkdirs() }
+        var t = File(dir, f.name); var n = 2
+        while (t.exists()) { t = File(dir, "${f.nameWithoutExtension}-$n.${f.extension}"); n++ }
+        return if (f.renameTo(t)) t else f.copyTo(t).also { f.delete() }
+    }
+
+    fun clearAll(ctx: Context) { File(ctx.filesDir, "out").deleteRecursively(); File(ctx.filesDir, "kept").deleteRecursively(); File(ctx.cacheDir, "in").deleteRecursively() }
 
     fun cleanOld(ctx: Context) {
         val limit = System.currentTimeMillis() - 24L * 3600 * 1000
