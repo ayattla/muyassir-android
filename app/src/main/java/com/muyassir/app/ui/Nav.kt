@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
@@ -40,9 +41,14 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
     val nav = rememberNavController()
     val wide = LocalConfiguration.current.screenWidthDp >= 600
     // A launcher shortcut or the automated UI test can open a tool or a category directly.
-    LaunchedEffect(startTool) { if (!startTool.isNullOrBlank() && Tools.byId.containsKey(startTool)) nav.navigate("tool/$startTool") }
-    LaunchedEffect(startCat) { if (!startCat.isNullOrBlank() && Tools.categories.any { it.id == startCat }) nav.navigate("cat/$startCat") }
-    LaunchedEffect(startTab) { if (startTab in setOf("search", "assistant", "activity", "settings")) nav.navigate(startTab!!) }
+    // Deep links are applied once the navigation graph exists (from the home destination), never before.
+    var pendingStart by rememberSaveable { mutableStateOf(true) }
+    fun applyStart() {
+        if (!pendingStart) return; pendingStart = false
+        if (!startTool.isNullOrBlank() && Tools.byId.containsKey(startTool)) nav.navigate("tool/$startTool")
+        else if (!startCat.isNullOrBlank() && Tools.categories.any { it.id == startCat }) nav.navigate("cat/$startCat")
+        else if (startTab in setOf("search", "assistant", "activity", "settings")) nav.navigate(startTab!!)
+    }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "home"
     val top = tabs.any { it.route == route }
@@ -82,7 +88,7 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
                     popEnterTransition = { fadeIn(androidx.compose.animation.core.tween(180)) },
                     popExitTransition = { fadeOut(androidx.compose.animation.core.tween(120)) + slideOutHorizontally(androidx.compose.animation.core.tween(200)) { -it / 12 } },
                 ) {
-                    composable("home") { Home(open = openTool, openCat = { nav.navigate("cat/$it") }, openSearch = { go("search") }, openAssistant = { go("assistant") }, openActivity = { go("activity") }) }
+                    composable("home") { LaunchedEffect(Unit) { applyStart() }; Home(open = openTool, openCat = { nav.navigate("cat/$it") }, openSearch = { go("search") }, openAssistant = { go("assistant") }, openActivity = { go("activity") }) }
                     composable("search") { SearchScreen(open = openTool, openAssistant = { go("assistant") }) }
                     composable("assistant") { AssistantScreen(open = openTool) }
                     composable("activity") { ActivityScreen(open = openTool) }
