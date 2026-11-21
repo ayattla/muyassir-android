@@ -37,7 +37,8 @@ android {
     // One APK per processor type keeps the download small (about a third of the universal APK).
     splits {
         abi {
-            isEnable = true
+            // Only for APK builds (-PabiSplits); app bundles are split by Google Play itself.
+            isEnable = providers.gradleProperty("abiSplits").isPresent
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = true

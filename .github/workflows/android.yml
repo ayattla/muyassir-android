@@ -37,7 +37,9 @@ jobs:
         run: gradle --no-daemon lintDebug
       - name: Build bundle and APKs
         env: { MYS_KS_PASS: '${{ secrets.MYS_KS_PASS }}' }
-        run: gradle --no-daemon bundleRelease assembleRelease assembleDebug assembleDebugAndroidTest
+        run: |
+          gradle --no-daemon bundleRelease
+          gradle --no-daemon -PabiSplits assembleRelease assembleDebug assembleDebugAndroidTest
       - name: Add v1 (JAR) signature and verify (some phones refuse APKs without it)
         env: { MYS_KS_PASS: '${{ secrets.MYS_KS_PASS }}' }
         run: |
