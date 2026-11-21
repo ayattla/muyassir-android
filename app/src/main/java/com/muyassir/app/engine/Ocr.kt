@@ -79,7 +79,7 @@ object Ocr {
                 val k = if (bmp.width < 1200) 2 else 1
                 val src = if (k == 2) Bitmap.createScaledBitmap(bmp, bmp.width * 2, bmp.height * 2, true) else bmp
                 api.setImage(src.copy(Bitmap.Config.ARGB_8888, false))
-                api.getUTF8Text()
+                val text = api.getUTF8Text()?.trim().orEmpty()
                 val out = ArrayList<Layout.Word>()
                 val it = api.resultIterator
                 if (it != null) {
@@ -91,6 +91,9 @@ object Ocr {
                     } while (it.next(level))
                     it.delete()
                 }
+                android.util.Log.i("MuyassirOcr", "words=${out.size} chars=${text.length}")
+                // Some engines return text without word boxes: keep the text, one pseudo-word per line, so nothing is lost.
+                if (out.isEmpty() && text.isNotBlank()) text.lines().filter { it.isNotBlank() }.forEachIndexed { i, l -> out += Layout.Word(l.trim(), 0, i * 40, bmp.width, i * 40 + 30, 50f) }
                 out
             } finally { api.recycle() }
         }

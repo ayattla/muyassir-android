@@ -107,4 +107,17 @@ class EnginesTest {
     }
 
     @Test fun qrEncodes() = assertEquals(900, qrBitmap("https://ayattla.com").width)
+
+    /** Arabic OCR at word level, with positions, as the document studio uses it. The recognised text is in the failure message. */
+    @Test fun ocrWordsArabic() {
+        val bmp = android.graphics.Bitmap.createBitmap(1400, 420, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp); c.drawColor(android.graphics.Color.WHITE)
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.BLACK; textSize = 64f; textAlign = android.graphics.Paint.Align.RIGHT }
+        c.drawText("تقرير المبيعات السنوي", 1340f, 120f, p); c.drawText("Muyassir 2026", 1340f, 240f, p); c.drawText("هذا نص عربي واضح", 1340f, 360f, p)
+        val text = com.muyassir.app.engine.Ocr.recognize(ctx, bmp, com.muyassir.app.engine.Ocr.Lang.AR)
+        val words = com.muyassir.app.engine.Ocr.recognizeWords(ctx, bmp, com.muyassir.app.engine.Ocr.Lang.AR)
+        org.junit.Assert.assertTrue("text=[$text] words=${words.map { it.text }}", words.isNotEmpty() && text.contains("2026"))
+        val r = com.muyassir.app.engine.Layout.analyze(words)
+        org.junit.Assert.assertTrue("blocks=${r.blocks}", r.blocks.isNotEmpty())
+    }
 }
