@@ -18,14 +18,14 @@ data class Tool(val id: String, val cats: List<String>, val title: String, val s
 
 object Tools {
     val categories = listOf(
-        Category("files", "تحويل الملفات", "PDF وWord وExcel وPowerPoint والضغط", Icons.Rounded.SwapHoriz, Color(0xFF2F4BFF)),
-        Category("images", "الصور والتصميم", "ضغط وقص وإزالة خلفية وتحسين", Icons.Rounded.Image, Color(0xFF7A5CFF)),
-        Category("study", "الطالب والمعلم", "المعدل والجداول والاختبارات", Icons.Rounded.School, Color(0xFF0FA98A)),
-        Category("saudi", "خدمات سعودية", "الضريبة والرواتب ونهاية الخدمة", Icons.Rounded.AccountBalance, Color(0xFF15803D)),
-        Category("productivity", "الإنتاجية والتنظيم", "مفكرة ومهام وميزانية وتذكيرات", Icons.Rounded.Checklist, Color(0xFFE08A00)),
-        Category("docs", "إنشاء المستندات", "سيرة ذاتية وفواتير وخطابات وتوقيع", Icons.Rounded.NoteAdd, Color(0xFFE8487A)),
-        Category("calc", "الحسابات والمحولات", "علمية ووحدات وعملات ومساحات", Icons.Rounded.Calculate, Color(0xFF1A9BD7)),
-        Category("smart", "أدوات ذكية", "QR ونصوص وصوت", Icons.Rounded.AutoAwesome, Color(0xFF5B4BDB)),
+        Category("files", "تحويل الملفات", "PDF وWord وExcel وPowerPoint والضغط", Icons.Rounded.SwapHoriz, Color(0xFF3346D3)),
+        Category("images", "الصور والتصميم", "ضغط وقص وإزالة خلفية وتحسين", Icons.Rounded.Image, Color(0xFF7340D0)),
+        Category("study", "الطالب والمعلم", "المعدل والجداول والاختبارات", Icons.Rounded.School, Color(0xFF0B7F7A)),
+        Category("saudi", "خدمات سعودية", "الضريبة والرواتب ونهاية الخدمة", Icons.Rounded.AccountBalance, Color(0xFF23814A)),
+        Category("productivity", "الإنتاجية والتنظيم", "مفكرة ومهام وميزانية وتذكيرات", Icons.Rounded.Checklist, Color(0xFFB0600A)),
+        Category("docs", "إنشاء المستندات", "سيرة ذاتية وفواتير وخطابات وتوقيع", Icons.Rounded.NoteAdd, Color(0xFFC02A63)),
+        Category("calc", "الحسابات والمحولات", "علمية ووحدات وعملات ومساحات", Icons.Rounded.Calculate, Color(0xFF1F6FB8)),
+        Category("smart", "أدوات ذكية", "QR ونصوص وصوت", Icons.Rounded.AutoAwesome, Color(0xFFA14522)),
     )
 
     val all = listOf(
@@ -122,13 +122,46 @@ object Tools {
     fun norm(s: String) = s.lowercase().replace(Regex("[\\u064B-\\u0652\\u0640]"), "")
         .replace(Regex("[أإآ]"), "ا").replace('ى', 'ي').replace('ة', 'ه')
 
+    /** Words people type → words the tools are described with (Arabic and English). */
+    private val synonyms: Map<String, List<String>> = listOf(
+        listOf("تصغير", "ضغط", "تقليل", "صغر", "حجم", "compress", "shrink", "reduce", "smaller"),
+        listOf("دمج", "جمع", "ضم", "merge", "combine", "join"),
+        listOf("تحويل", "حول", "convert", "الى", "to"),
+        listOf("تقسيم", "فصل", "قسم", "split"),
+        listOf("صوره", "صور", "image", "photo", "picture", "jpg", "png", "صوره"),
+        listOf("pdf", "بي دي اف", "مستند"),
+        listOf("ورد", "word", "docx"), listOf("اكسل", "excel", "xlsx", "جدول"), listOf("بوربوينت", "powerpoint", "pptx", "عرض"),
+        listOf("نص", "كتابه", "ocr", "text", "استخراج"),
+        listOf("مسح", "سكانر", "scan", "scanner", "كاميرا"),
+        listOf("خلفيه", "background", "bg", "قص الخلفيه"),
+        listOf("ابعاد", "مقاس", "resize", "size", "تكبير"),
+        listOf("قص", "crop"), listOf("تدوير", "rotate", "قلب"),
+        listOf("حمايه", "قفل", "كلمه مرور", "password", "protect", "lock", "تشفير"),
+        listOf("ضريبه", "vat", "قيمه مضافه"), listOf("راتب", "رواتب", "salary", "تامينات", "gosi"),
+        listOf("معدل", "gpa", "درجات", "نسبه"), listOf("هجري", "تاريخ", "hijri", "ميلادي"),
+        listOf("qr", "كيو ار", "باركود", "barcode", "رمز"),
+        listOf("صوت", "اقرا", "tts", "speech", "نطق"), listOf("املاء", "تفريغ", "stt", "dictation"),
+        listOf("فاتوره", "invoice"), listOf("سيره", "cv", "resume"), listOf("توقيع", "sign", "signature"),
+        listOf("عمله", "عملات", "currency", "دولار", "صرف"), listOf("وحدات", "units", "تحويل وحدات"),
+        listOf("ملاحظه", "ملاحظات", "notes", "مفكره"), listOf("مهام", "tasks", "todo"), listOf("تذكير", "منبه", "reminder"),
+    ).map { g -> g.map { norm(it) } }.flatMap { g -> g.map { it to g } }.toMap()
+
+    private fun expand(word: String): List<String> = (synonyms[word] ?: synonyms.entries.firstOrNull { (k, _) -> k.length > 2 && (word.startsWith(k) || k.startsWith(word)) }?.value ?: emptyList()) + word
+
+    /** Instant search by name, purpose or synonym. Exact matches first, then partial matches. */
     fun search(q: String): List<Tool> {
         val n = norm(q.trim()); if (n.isEmpty()) return emptyList()
-        val words = n.split(Regex("\\s+"))
-        return all.map { t -> t to norm("${t.title} ${t.sub} ${t.keys}") }
-            .filter { (_, h) -> words.all { it in h } }
-            .sortedByDescending { (t, _) -> (if (norm(t.title).startsWith(n)) 10 else 0) + (Store.usage[t.id] ?: 0) }
-            .map { it.first }
+        val words = n.split(Regex("\\s+")).filter { it.isNotBlank() && it !in setOf("ال", "من", "في", "على", "الى", "ملف", "ملفات", "اريد", "ابي", "ابغى", "كيف") || n.length <= 3 }.ifEmpty { listOf(n) }
+        val hay = all.associateWith { t -> norm("${t.title} ${t.sub} ${t.keys} ${t.id.replace('_', ' ')}") }
+        fun score(t: Tool): Int {
+            val h = hay.getValue(t); var s = 0; var hits = 0
+            words.forEach { w -> val alts = expand(w); if (alts.any { it in h }) { hits++; s += if (alts.any { it in norm(t.title) }) 6 else 3 } }
+            if (hits == 0) return 0
+            if (hits == words.size) s += 10
+            if (norm(t.title).startsWith(n)) s += 12
+            return s + (Store.usage[t.id] ?: 0).coerceAtMost(5)
+        }
+        return all.map { it to score(it) }.filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }
     }
 
     /** Suggestions: what tends to follow the last thing done, then popular starters. */

@@ -4,8 +4,10 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-    <style name="Theme.Muyassir.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/lapis</item>
+    <!-- Splash: calm paper background, the mark on its ink tile (Android 12+ draws the circle). -->
+    <style name="Theme.Muyassir.Splash" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/surface</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/ink</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.Muyassir</item>
     </style>

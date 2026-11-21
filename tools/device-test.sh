@@ -40,6 +40,22 @@ for id in $IDS; do
   adb exec-out screencap -p > "shots/$(printf %02d $n)-$id.png"
 done
 home 99-home-after
+echo "== tabs, dark mode and tablet layout"
+shot() { adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity "$@" >/dev/null; sleep 4; }
+for t in search assistant activity settings; do shot --es tab $t; adb exec-out screencap -p > "shots/tab-$t.png"; done
+shot --es theme dark; adb exec-out screencap -p > shots/dark-home.png
+adb shell input swipe 500 1700 500 500 400; sleep 1; adb exec-out screencap -p > shots/dark-home-scrolled.png
+shot --es cat files; adb exec-out screencap -p > shots/dark-cat-files.png
+shot --es tool vat; adb exec-out screencap -p > shots/dark-vat.png
+shot --es tool pdf_merge; adb exec-out screencap -p > shots/dark-pdf_merge.png
+shot --es tab settings; adb exec-out screencap -p > shots/dark-settings.png
+shot --es theme light
+adb shell wm size 1600x2560; adb shell wm density 320; sleep 2
+shot; adb exec-out screencap -p > shots/tablet-home.png
+shot --es cat study; adb exec-out screencap -p > shots/tablet-cat-study.png
+shot --es tool pdf_compress; adb exec-out screencap -p > shots/tablet-pdf_compress.png
+shot --es tab search; adb exec-out screencap -p > shots/tablet-search.png
+adb shell wm size reset; adb shell wm density reset; sleep 2
 adb shell input swipe 500 1600 500 500 400; sleep 1; adb exec-out screencap -p > shots/99-home-scrolled.png
 adb logcat -d -s AndroidRuntime:E > shots/crashes.txt
 adb logcat -d -s Muyassir:E > shots/tool-errors.txt; head -60 shots/tool-errors.txt

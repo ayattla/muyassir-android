@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Muyassir mark: a shadda that turns into a check, with a saffron spark. 108dp adaptive canvas. -->
+<!-- Muyassir mark: a shadda that becomes a check, with a saffron spark. 108dp adaptive canvas (safe zone = inner 66dp). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="1024" android:viewportHeight="1024">
-    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="512" android:pivotY="512">
+    <group android:scaleX="0.58" android:scaleY="0.58" android:pivotX="512" android:pivotY="512" android:translateY="18">
         <path
             android:pathData="M228,420 C236,610 352,610 362,470 C372,610 488,610 498,470 L498,520 C520,600 560,640 590,660 L800,380"
-            android:strokeColor="#FFFFFF" android:strokeWidth="78"
+            android:strokeColor="#FFFFFF" android:strokeWidth="84"
             android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" />
-        <path android:fillColor="#FFC23D"
-            android:pathData="M776,250 m-54,0 a54,54 0 1,0 108,0 a54,54 0 1,0 -108,0" />
+        <path android:fillColor="#F2B01E"
+            android:pathData="M776,250 m-58,0 a58,58 0 1,0 116,0 a58,58 0 1,0 -116,0" />
     </group>
 </vector>

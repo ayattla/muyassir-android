@@ -255,7 +255,7 @@ fun ScientificCalc(t: Tool, back: () -> Unit) {
                                         }
                                     },
                                 contentAlignment = Alignment.Center,
-                            ) { Text(k, fontSize = 18.sp, color = if (k == "=") Color.White else MaterialTheme.colorScheme.onSurface) }
+                            ) { Text(k, fontSize = 18.sp, color = if (k == "=") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface) }
                         }
                     }
                 }

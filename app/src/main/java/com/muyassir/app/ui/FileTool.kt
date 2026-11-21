@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 
 class Progress { var value by mutableFloatStateOf(-1f); var label by mutableStateOf("") }
 
@@ -59,30 +66,42 @@ fun FileTool(
 
     ToolScreen(tool, onBack) {
         Panel {
+            val accent = tokens.accent
             Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
-                    .clickable { if (multiple) pickMany.launch(mimes) else pickOne.launch(mimes) }.padding(vertical = 26.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(tokens.accentSoft.copy(alpha = if (tokens.dark) 0.6f else 0.55f))
+                    .drawBehind {
+                        drawRoundRect(accent.copy(alpha = 0.45f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(14f, 10f))))
+                    }
+                    .pressable { if (multiple) pickMany.launch(mimes) else pickOne.launch(mimes) }.padding(vertical = 28.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Rounded.UploadFile, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
-                    Text(pickLabel, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                    Text("تتم المعالجة على جهازك ولا تُرفع ملفاتك", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Box(Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(tokens.surface), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.UploadFile, null, tint = accent, modifier = Modifier.size(28.dp))
+                    }
+                    Text(if (inputs.isEmpty()) pickLabel else if (multiple) "إضافة ملفات أخرى" else "تغيير الملف", style = MaterialTheme.typography.titleSmall, color = accent)
+                    Text(if (multiple) "يمكنك اختيار عدة ملفات دفعة واحدة" else "اختر ملفًا من جهازك أو من خدمات التخزين", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Lock, null, tint = tokens.textTertiary, modifier = Modifier.size(13.dp)); Spacer(Modifier.width(4.dp))
+                        Text("تتم المعالجة على جهازك ولا تُرفع ملفاتك", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary)
+                    }
                 }
             }
+            if (inputs.isNotEmpty()) Text("${inputs.size} ${if (inputs.size == 1) "ملف" else "ملفات"} جاهزة", style = MaterialTheme.typography.labelLarge, color = tokens.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
             inputs.forEachIndexed { i, u ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Description, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(tokens.surfaceSunken).padding(Space.s), verticalAlignment = Alignment.CenterVertically) {
+                    Thumb(u)
+                    Spacer(Modifier.width(Space.m))
                     Column(Modifier.weight(1f)) {
-                        Text(Files.name(ctx, u), style = MaterialTheme.typography.bodyMedium, maxLines = 1)
-                        Text(Files.human(Files.size(ctx, u)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(Files.name(ctx, u), style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary, maxLines = 1)
+                        Text(Files.human(Files.size(ctx, u)), style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
                     }
                     if (reorderable && inputs.size > 1) {
                         IconButton(enabled = i > 0, onClick = { inputs.add(i - 1, inputs.removeAt(i)) }) { Icon(Icons.Rounded.KeyboardArrowUp, "أعلى") }
                         IconButton(enabled = i < inputs.lastIndex, onClick = { inputs.add(i + 1, inputs.removeAt(i)) }) { Icon(Icons.Rounded.KeyboardArrowDown, "أسفل") }
                     }
-                    IconButton(onClick = { inputs.removeAt(i); results = emptyList() }) { Icon(Icons.Rounded.Close, "إزالة") }
+                    IconButton(onClick = { inputs.removeAt(i); results = emptyList() }) { Icon(Icons.Rounded.Close, "إزالة", tint = tokens.textSecondary) }
                 }
             }
         }
@@ -93,18 +112,26 @@ fun FileTool(
 
         if (busy) {
             Panel {
-                Text(progress.label.ifBlank { "جارٍ المعالجة…" }, style = MaterialTheme.typography.bodyMedium)
-                if (progress.value >= 0) LinearProgressIndicator(progress = { progress.value }, Modifier.fillMaxWidth())
-                else LinearProgressIndicator(Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = tokens.accent); Spacer(Modifier.width(Space.s))
+                    Text(progress.label.ifBlank { "جارٍ المعالجة على جهازك…" }, style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary)
+                }
+                if (progress.value >= 0) {
+                    val v by androidx.compose.animation.core.animateFloatAsState(progress.value, label = "p")
+                    LinearProgressIndicator(progress = { v }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), trackColor = tokens.surfaceSunken)
+                    Text("${(progress.value * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, color = tokens.textTertiary, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                } else LinearProgressIndicator(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), trackColor = tokens.surfaceSunken)
             }
         } else PrimaryButton(actionLabel, Icons.Rounded.Bolt, enabled = inputs.isNotEmpty(), modifier = Modifier.testTag("action")) {
             error = validate(inputs)
             if (error == null) scope.launch {
                 busy = true; progress.value = -1f; progress.label = ""
+                val started = System.currentTimeMillis()
                 try {
                     val out = Files.outDir(ctx)
                     results = withContext(Dispatchers.IO) { run(inputs.toList(), out, progress) }
                     Store.used(tool.id, results.firstOrNull()?.name ?: "")
+                    if (System.currentTimeMillis() - started > 6000) notifyDone(ctx, tool.title, results.size)
                 } catch (t: Throwable) {
                     android.util.Log.e("Muyassir", "tool ${tool.id} failed", t)
                     error = friendly(t)
@@ -115,7 +142,12 @@ fun FileTool(
             }
         }
 
-        if (results.isNotEmpty()) ResultFiles(results)
+        if (results.isNotEmpty()) {
+            val single = inputs.singleOrNull()
+            if (single != null && results.size == 1 && results[0].extension.lowercase() in setOf("jpg", "jpeg", "png", "webp") && Files.name(ctx, single).substringAfterLast('.').lowercase() in setOf("jpg", "jpeg", "png", "webp", "heic"))
+                BeforeAfter(single, results[0])
+            ResultFiles(results)
+        }
         after()
     }
 }
@@ -162,4 +194,76 @@ fun ResultFiles(files: List<File>) {
         }
         if (files.size == 1 && files[0].extension == "pdf") SecondaryButton("طباعة", Icons.Rounded.Print, Modifier.fillMaxWidth()) { Files.printPdf(ctx, files[0]) }
     }
+}
+
+
+/** Small preview of a picked file: the image itself, or the first page of a PDF, otherwise a file icon. */
+@Composable
+fun Thumb(u: Uri) {
+    val ctx = LocalContext.current
+    val bmp by produceState<android.graphics.Bitmap?>(null, u) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val n = Files.name(ctx, u).lowercase()
+                when {
+                    n.endsWith(".pdf") -> ctx.contentResolver.openFileDescriptor(u, "r")?.use { pfd ->
+                        android.graphics.pdf.PdfRenderer(pfd).use { r -> r.openPage(0).use { p ->
+                            val b = android.graphics.Bitmap.createBitmap(96, (96f * p.height / p.width).toInt().coerceIn(40, 160), android.graphics.Bitmap.Config.ARGB_8888)
+                            b.eraseColor(android.graphics.Color.WHITE); p.render(b, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY); b } } }
+                    n.substringAfterLast('.') in setOf("jpg", "jpeg", "png", "webp", "heic", "bmp", "gif") -> ctx.contentResolver.openInputStream(u)?.use {
+                        android.graphics.BitmapFactory.decodeStream(it, null, android.graphics.BitmapFactory.Options().apply { inSampleSize = 8 }) }
+                    else -> null
+                }
+            }.getOrNull()
+        }
+    }
+    Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(tokens.surface), contentAlignment = Alignment.Center) {
+        val b = bmp
+        if (b != null) androidx.compose.foundation.Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+        else Icon(Icons.Rounded.Description, null, tint = tokens.textTertiary, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** Before/after comparison: drag the handle to reveal the result over the original. */
+@Composable
+fun BeforeAfter(before: Uri, after: File) {
+    val ctx = LocalContext.current
+    val pair by produceState<Pair<androidx.compose.ui.graphics.ImageBitmap, androidx.compose.ui.graphics.ImageBitmap>?>(null, before, after) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val o = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }
+                val a = ctx.contentResolver.openInputStream(before)!!.use { android.graphics.BitmapFactory.decodeStream(it, null, o) }!!
+                val b = android.graphics.BitmapFactory.decodeFile(after.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 })!!
+                a.asImageBitmap() to b.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+    val p = pair ?: return
+    var split by remember { mutableFloatStateOf(0.5f) }
+    Panel("قبل وبعد") {
+        val ratio = p.first.width.toFloat() / p.first.height.coerceAtLeast(1)
+        // Physical left = before, right = after, whatever the text direction.
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) { BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(ratio.coerceIn(0.5f, 2f)).clip(RoundedCornerShape(Radius.m)).background(tokens.surfaceSunken)
+            .pointerInput(Unit) { detectHorizontalDragGestures { ch, _ -> split = (ch.position.x / size.width).coerceIn(0f, 1f) } }
+            .pointerInput(Unit) { detectTapGestures { split = (it.x / size.width).coerceIn(0f, 1f) } }) {
+            androidx.compose.foundation.Image(p.second, "بعد", Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+            androidx.compose.foundation.Image(p.first, "قبل", Modifier.fillMaxSize().drawWithContent {
+                clipRect(right = size.width * split) { this@drawWithContent.drawContent() }
+            }, contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+            Box(Modifier.fillMaxHeight().width(3.dp).offset(x = maxWidth * split - 1.5.dp).background(androidx.compose.ui.graphics.Color.White))
+            Text("قبل", style = MaterialTheme.typography.labelSmall, color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(6.dp)).background(androidx.compose.ui.graphics.Color(0x99000000)).padding(horizontal = 6.dp, vertical = 2.dp))
+            Text("بعد", style = MaterialTheme.typography.labelSmall, color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).clip(RoundedCornerShape(6.dp)).background(androidx.compose.ui.graphics.Color(0x99000000)).padding(horizontal = 6.dp, vertical = 2.dp))
+        } }
+        Text("اسحب الخط للمقارنة", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
+}
+
+/** Long operations post a notification when they finish (only if notifications are allowed). */
+fun notifyDone(ctx: android.content.Context, title: String, n: Int) {
+    if (android.os.Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
+    val i = android.app.PendingIntent.getActivity(ctx, 0, android.content.Intent(ctx, com.muyassir.app.MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP), android.app.PendingIntent.FLAG_IMMUTABLE)
+    val note = androidx.core.app.NotificationCompat.Builder(ctx, com.muyassir.app.MuyassirApp.CHANNEL)
+        .setSmallIcon(com.muyassir.app.R.drawable.ic_launcher_foreground).setContentTitle("اكتملت العملية: $title")
+        .setContentText("$n ${if (n == 1) "ملف جاهز" else "ملفات جاهزة"} في مُيسّر").setContentIntent(i).setAutoCancel(true).build()
+    runCatching { androidx.core.app.NotificationManagerCompat.from(ctx).notify(7001, note) }
 }

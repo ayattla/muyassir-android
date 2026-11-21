@@ -222,7 +222,7 @@ fun FlashcardsTool(t: Tool, back: () -> Unit) {
                         .background(if (flipped) Brand.Ink else MaterialTheme.colorScheme.primary).clickable { flipped = !flipped }.padding(24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(if (flipped) c.optString("b") else c.optString("f"), style = MaterialTheme.typography.headlineSmall, color = androidx.compose.ui.graphics.Color.White, textAlign = TextAlign.Center)
+                    Text(if (flipped) c.optString("b") else c.optString("f"), style = MaterialTheme.typography.headlineSmall, color = if (flipped) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onPrimary, textAlign = TextAlign.Center)
                 }
                 Text(if (flipped) "هل عرفت الإجابة؟" else "اضغط البطاقة لرؤية الإجابة", Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 if (flipped) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -393,7 +393,7 @@ fun CalendarTool(t: Tool, back: () -> Unit) {
                                     .background(if (d == selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface).clickable { selected = d },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text("$d", color = if (d == selected) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface)
+                                Text("$d", color = if (d == selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
                                 if (has) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).size(5.dp).clip(RoundedCornerShape(50)).background(Brand.Saffron))
                             }
                         }

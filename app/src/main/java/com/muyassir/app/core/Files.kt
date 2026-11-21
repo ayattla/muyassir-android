@@ -33,6 +33,11 @@ object Files {
         return File(ctx.filesDir, "out/$stamp").apply { mkdirs() }
     }
 
+    /** Every result file still on the device, newest first (they are removed after 24 hours). */
+    fun outputs(ctx: Context): List<File> = File(ctx.filesDir, "out").walkTopDown().filter { it.isFile }.sortedByDescending { it.lastModified() }.toList()
+
+    fun clearAll(ctx: Context) { File(ctx.filesDir, "out").deleteRecursively(); File(ctx.cacheDir, "in").deleteRecursively() }
+
     fun cleanOld(ctx: Context) {
         val limit = System.currentTimeMillis() - 24L * 3600 * 1000
         File(ctx.filesDir, "out").listFiles()?.forEach { if (it.lastModified() < limit) it.deleteRecursively() }

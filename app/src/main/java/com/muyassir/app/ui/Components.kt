@@ -21,6 +21,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -33,16 +37,17 @@ import com.muyassir.app.core.Tool
 import com.muyassir.app.core.Tools
 import java.util.Locale
 
-/** Frame shared by every tool: title bar with back and favourite, scrollable centred column (max 720dp for tablets). */
+/** Frame shared by every tool: centred title bar, a centred header that names the tool, then the tool's content. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToolScreen(tool: Tool, onBack: () -> Unit, scroll: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     val fav = tool.id in Store.favorites
+    val c = tone(Tools.colorOf(tool))
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text(tool.title, style = MaterialTheme.typography.titleLarge) },
+            CenterAlignedTopAppBar(
+                title = { Text(tool.title, style = MaterialTheme.typography.titleMedium, maxLines = 1) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "رجوع") } },
                 actions = {
                     IconButton(onClick = { Store.toggleFavorite(tool.id) }) {
@@ -50,34 +55,57 @@ fun ToolScreen(tool: Tool, onBack: () -> Unit, scroll: Boolean = true, content: 
                             tint = if (fav) Brand.Saffron else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background, scrolledContainerColor = MaterialTheme.colorScheme.background),
             )
         },
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.TopCenter) {
             Column(
                 Modifier.widthIn(max = 720.dp).fillMaxWidth().then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = Space.l, vertical = Space.s),
+                verticalArrangement = Arrangement.spacedBy(Space.m),
             ) {
-                Text(tool.sub, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.fillMaxWidth().padding(bottom = Space.xs), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(toneSoft(Tools.colorOf(tool))), contentAlignment = Alignment.Center) {
+                        Icon(tool.icon, null, tint = c, modifier = Modifier.size(26.dp))
+                    }
+                    Text(tool.sub, style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary, textAlign = TextAlign.Center)
+                }
                 content()
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(Space.xxl))
             }
         }
     }
 }
 
+/** Card surface used for every group of inputs or results. */
 @Composable
 fun Panel(title: String? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier.fillMaxWidth().cardSurface().padding(Space.l),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
-        if (title != null) Text(title, style = MaterialTheme.typography.titleMedium)
+        if (title != null) Text(title, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         content()
     }
+}
+
+/** Raised card: white with hairline border and a soft shadow in light mode; lifted surface in dark mode. */
+@Composable
+fun Modifier.cardSurface(radius: androidx.compose.ui.unit.Dp = Radius.l): Modifier {
+    val k = tokens
+    val shape = RoundedCornerShape(radius)
+    return this.then(if (!k.dark) Modifier.shadow(2.dp, shape, ambientColor = k.shadow, spotColor = k.shadow) else Modifier)
+        .clip(shape).background(k.surface).border(1.dp, k.border, shape)
+}
+
+/** Press feedback: a quick scale-down while pressed (instant when the system turns animations off). */
+@Composable
+fun Modifier.pressable(onClick: () -> Unit): Modifier {
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by src.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.97f else 1f, label = "press")
+    return this.graphicsLayer { scaleX = scale; scaleY = scale }.clickable(interactionSource = src, indication = androidx.compose.material3.ripple(), onClick = onClick)
 }
 
 @Composable
@@ -85,8 +113,9 @@ fun NumField(label: String, value: String, onChange: (String) -> Unit, modifier:
     OutlinedTextField(
         value = value, onValueChange = { v -> onChange(v.map { if (it in '٠'..'٩') ('0' + (it - '٠')) else if (it == '٫') '.' else it }.joinToString("")) },
         label = { Text(label) }, singleLine = true, modifier = modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), shape = RoundedCornerShape(14.dp),
-        suffix = suffix?.let { { Text(it) } },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), shape = RoundedCornerShape(Radius.m),
+        suffix = suffix?.let { { Text(it, color = tokens.textTertiary) } }, colors = fieldColors(),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
     )
 }
 
@@ -94,9 +123,17 @@ fun NumField(label: String, value: String, onChange: (String) -> Unit, modifier:
 fun TextField2(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, lines: Int = 1, keyboard: KeyboardType = KeyboardType.Text) {
     OutlinedTextField(
         value = value, onValueChange = onChange, label = { Text(label) }, singleLine = lines == 1, minLines = lines,
-        modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), keyboardOptions = KeyboardOptions(keyboardType = keyboard),
+        modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(Radius.m), keyboardOptions = KeyboardOptions(keyboardType = keyboard),
+        colors = fieldColors(),
     )
 }
+
+@Composable
+fun fieldColors() = OutlinedTextFieldDefaults.colors(
+    unfocusedContainerColor = tokens.surface, focusedContainerColor = tokens.surface,
+    unfocusedBorderColor = tokens.borderStrong, focusedBorderColor = tokens.accent,
+    unfocusedLabelColor = tokens.textSecondary, focusedLabelColor = tokens.accent,
+)
 
 fun String.num(): Double = trim().replace(",", "").toDoubleOrNull() ?: 0.0
 
@@ -124,71 +161,93 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** Result block: one highlighted figure, then supporting rows. */
+/** Result block: the key figure centred and large, supporting rows underneath. */
 @Composable
 fun ResultCard(main: Pair<String, String>?, rows: List<Pair<String, String>>, note: String? = null) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brand.Ink).padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        main?.let { (k, v) ->
-            Text(k, color = Color(0xFFB7BFDB), style = MaterialTheme.typography.labelLarge)
-            Text(v, color = Color.White, style = MaterialTheme.typography.headlineMedium)
-            if (rows.isNotEmpty()) HorizontalDivider(color = Color(0x33FFFFFF))
-        }
-        rows.forEach { (k, v) ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(k, color = Color(0xFFB7BFDB), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                Text(v, color = Color.White, style = MaterialTheme.typography.titleSmall)
+    val k = tokens
+    androidx.compose.animation.AnimatedVisibility(visible = true, enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically()) {
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(k.accentSoft)
+                .border(1.dp, k.accent.copy(alpha = 0.18f), RoundedCornerShape(Radius.l)).padding(Space.l),
+            verticalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            main?.let { (label, v) ->
+                Text(label, color = k.textSecondary, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text(v, color = k.accent, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                if (rows.isNotEmpty()) HorizontalDivider(color = k.accent.copy(alpha = 0.15f))
             }
+            rows.forEach { (label, v) ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, color = k.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(v, color = k.textPrimary, style = MaterialTheme.typography.titleSmall)
+                }
+            }
+            note?.let { Text(it, color = k.textTertiary, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
         }
-        note?.let { Text(it, color = Color(0xFF9AA3C2), style = MaterialTheme.typography.bodySmall) }
     }
 }
 
 @Composable
 fun PrimaryButton(text: String, icon: ImageVector? = null, enabled: Boolean = true, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = enabled, modifier = modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
-        icon?.let { Icon(it, null); Spacer(Modifier.width(8.dp)) }
+    Button(
+        onClick = onClick, enabled = enabled, modifier = modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(Radius.m),
+        colors = ButtonDefaults.buttonColors(disabledContainerColor = tokens.surfaceSunken, disabledContentColor = tokens.textTertiary),
+    ) {
+        icon?.let { Icon(it, null, Modifier.size(20.dp)); Spacer(Modifier.width(Space.s)) }
         Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
 @Composable
 fun SecondaryButton(text: String, icon: ImageVector? = null, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, modifier = modifier.height(48.dp), shape = RoundedCornerShape(14.dp)) {
-        icon?.let { Icon(it, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)) }
+    OutlinedButton(
+        onClick = onClick, modifier = modifier.height(48.dp), shape = RoundedCornerShape(Radius.m),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tokens.borderStrong),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = tokens.surface, contentColor = tokens.textPrimary),
+    ) {
+        icon?.let { Icon(it, null, Modifier.size(18.dp), tint = tokens.accent); Spacer(Modifier.width(6.dp)) }
         Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
+/** Tool card. Grid style (default): centred icon, name and purpose. Row style for compact lists. */
 @Composable
 fun ToolTile(tool: Tool, modifier: Modifier = Modifier, compact: Boolean = false, onClick: () -> Unit) {
-    val color = Tools.colorOf(tool)
-    Row(
-        modifier.clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)).clickable(onClick = onClick)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val base = Tools.colorOf(tool); val c = tone(base)
+    if (compact) {
+        Row(
+            modifier.fillMaxWidth().cardSurface(Radius.m).pressable(onClick).padding(horizontal = Space.m, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(toneSoft(base)), contentAlignment = Alignment.Center) {
+                Icon(tool.icon, null, tint = c, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(Space.m))
+            Text(tool.title, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, maxLines = 1, modifier = Modifier.weight(1f))
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, null, tint = tokens.textTertiary, modifier = Modifier.size(20.dp))
+        }
+        return
+    }
+    Column(
+        modifier.fillMaxWidth().heightIn(min = 148.dp).cardSurface().pressable(onClick).padding(horizontal = Space.m, vertical = Space.l),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-            Icon(tool.icon, null, tint = color, modifier = Modifier.size(22.dp))
+        Box(Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(toneSoft(base)), contentAlignment = Alignment.Center) {
+            Icon(tool.icon, null, tint = c, modifier = Modifier.size(24.dp))
         }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(tool.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-            if (!compact) Text(tool.sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-        }
+        Spacer(Modifier.height(2.dp))
+        Text(tool.title, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.Center, maxLines = 2)
+        Text(tool.sub, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, maxLines = 2)
     }
 }
 
 @Composable
 fun Chip(text: String, selected: Boolean = false, onClick: () -> Unit) {
     Box(
-        Modifier.clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-            .border(1.dp, if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant, CircleShape)
+        Modifier.clip(CircleShape).background(if (selected) tokens.accent else tokens.surface)
+            .border(1.dp, if (selected) Color.Transparent else tokens.borderStrong, CircleShape)
             .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
-    ) { Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface) }
+    ) { Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) tokens.onAccent else tokens.textPrimary) }
 }
 
 @Composable
@@ -202,20 +261,22 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 fun Hint(text: String) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)).padding(12.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(tokens.surfaceSunken).padding(Space.m),
         verticalAlignment = Alignment.Top,
     ) {
-        Icon(Icons.Rounded.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Rounded.Info, null, tint = tokens.textTertiary, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(Space.s))
+        Text(text, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
     }
 }
 
 @Composable
 fun EmptyState(icon: ImageVector, title: String, text: String) {
     Column(Modifier.fillMaxWidth().padding(vertical = 28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), modifier = Modifier.size(44.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium)
+        Box(Modifier.size(64.dp).clip(CircleShape).background(tokens.accentSoft), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = tokens.accent, modifier = Modifier.size(30.dp))
+        }
+        Text(title, style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary, textAlign = TextAlign.Center)
         Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }

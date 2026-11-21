@@ -79,11 +79,32 @@ class UiFlowTest {
         if (problems.isNotEmpty()) fail(problems.joinToString("\n"))
     }
 
-    @Test fun searchFindsTools() {
+    @Test fun searchFindsToolsByPurpose() {
         launch()
-        rule.onNode(hasSetTextAction()).performTextInput("ضريبة")
-        rule.onNode(hasText("ضريبة القيمة المضافة") and hasClickAction()).performClick()
-        waitText("15% إضافة أو استخراج")
+        rule.onNodeWithContentDescription("بحث").performClick(); rule.waitForIdle()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasSetTextAction()).performTextInput("تصغير ملف")
+        waitText("ضغط PDF"); waitText("ضغط الصور")
+        rule.onNode(hasText("ضغط PDF") and hasClickAction()).performClick()
+        waitText(Tools.byId.getValue("pdf_compress").sub)
+    }
+
+    @Test fun assistantSuggestsStepsInOrder() {
+        launch()
+        rule.onAllNodes(hasText("المساعد") and hasClickAction()).onFirst().performClick(); rule.waitForIdle()
+        rule.onNode(hasSetTextAction()).performTextInput("أريد تحويل خمس صور إلى PDF وتقليل حجمه")
+        rule.onNode(hasText("اقترح الأدوات") and hasClickAction()).performClick()
+        waitText("صور إلى PDF"); waitText("ضغط PDF")
+    }
+
+    @Test fun tabsSettingsAndDarkMode() {
+        launch()
+        rule.onNode(hasText("نشاطي") and hasClickAction()).performClick(); waitText("عملياتك وملفاتك")
+        rule.onNode(hasText("الإعدادات") and hasClickAction()).performClick(); waitText("مظهر التطبيق")
+        rule.onNode(hasText("داكن") and hasClickAction()).performClick(); rule.waitForIdle()
+        rule.onNode(hasText("فاتح") and hasClickAction()).performClick(); rule.waitForIdle()
+        rule.onNode(hasText("الرئيسية") and hasClickAction()).performClick()
+        rule.onNodeWithTag("homeGrid").assertExists()
     }
 
     // ---------- calculators ----------

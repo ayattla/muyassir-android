@@ -16,9 +16,11 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        com.muyassir.app.core.Prefs.load(this)
+        intent?.getStringExtra("theme")?.let { if (it in setOf("light", "dark", "system")) com.muyassir.app.core.Prefs.setTheme(it) }
         setContent {
             MuyassirTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) { AppNav(intent?.getStringExtra("tool"), intent?.getStringExtra("cat")) }
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) { AppNav(intent?.getStringExtra("tool"), intent?.getStringExtra("cat"), intent?.getStringExtra("tab")) }
             }
         }
     }
