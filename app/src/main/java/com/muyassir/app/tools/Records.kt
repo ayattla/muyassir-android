@@ -390,7 +390,7 @@ fun AttendanceTool(t: Tool, back: () -> Unit) {
 fun GradesTool(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     var students by remember { mutableStateOf(Store.list("students").map { it.optString("name") }) }
-    var items by remember { mutableStateOf(Store.list("grade_items")) }   // {name, max}
+    var items by remember { mutableStateOf<List<JSONObject>>(Store.list("grade_items")) }   // {name, max}
     var marks by remember { mutableStateOf(Store.obj("grades")) }          // "student|item" -> score
     var newName by remember { mutableStateOf("") }
     var itemName by remember { mutableStateOf("") }; var itemMax by remember { mutableStateOf("") }
