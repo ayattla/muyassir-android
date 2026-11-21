@@ -240,9 +240,9 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
         if (list.isNotEmpty()) ResultCard(null, listOf("تنتهي خلال 30 يومًا" to "$soon", "منتهية" to "$expired"))
         Hint("لا تكتب أرقام الوثائق الكاملة. البيانات تبقى على جهازك فقط. التجديد يتم عبر أبشر أو المنصة المختصة.")
     })
+}
 
 private val expenseCats = listOf("طعام", "مواصلات", "سكن", "فواتير", "تسوق", "صحة", "تعليم", "ترفيه", "أخرى")
-}
 
 @Composable fun ExpensesTool(t: Tool, back: () -> Unit) = RecordList(t, back, "expenses",
     listOf(FieldSpec("title", "البند", required = true), FieldSpec("amount", "المبلغ", FType.NUM, required = true), FieldSpec("cat", "الفئة", FType.CHOICE, expenseCats), FieldSpec("date", "التاريخ", FType.DATE)),

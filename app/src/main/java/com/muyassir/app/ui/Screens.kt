@@ -181,7 +181,7 @@ fun ActivityScreen(open: (String) -> Unit) {
         val P = com.muyassir.app.core.Plus
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.WorkspacePremium, null, tint = Brand.Saffron, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp))
-            TextButton(onClick = { P.paywall = P.Reason.Menu }) {
+            TextButton(onClick = { P.paywall = com.muyassir.app.core.Plus.Reason.Menu }) {
                 Text(when { P.active -> "مُيسّر بلس مفعّل"; P.live -> "اليوم: ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية • مُيسّر بلس"; else -> "مُيسّر بلس قريبًا" }, style = MaterialTheme.typography.labelMedium)
             }
         }
@@ -327,7 +327,7 @@ fun contactSupport(ctx: android.content.Context) {
 fun PlusCard() {
     val P = com.muyassir.app.core.Plus
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(Brand.Ink).pressable { P.paywall = P.Reason.Menu }.padding(Space.l).testTag("plusCard"),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(Brand.Ink).pressable { P.paywall = com.muyassir.app.core.Plus.Reason.Menu }.padding(Space.l).testTag("plusCard"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
