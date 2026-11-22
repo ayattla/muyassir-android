@@ -27,7 +27,7 @@ import java.io.File
 
 /** Shared vocabulary of the education studio. */
 object Edu {
-    val types = listOf("اختيار من متعدد", "صح وخطأ", "مقالي", "إكمال الفراغ", "توصيل")
+    val types = listOf("اختيار من متعدد", "صح وخطأ", "مقالي", "إكمال الفراغ", "توصيل", "ترتيب", "تصنيف")
     val stages = listOf("ابتدائي", "متوسط", "ثانوي", "جامعي")
     val levels = listOf("سهل", "متوسط", "صعب")
     const val BLANK = "……"
@@ -36,6 +36,8 @@ object Edu {
     fun blanked(s: String) = s.replace(Regex("_{2,}|…{1,}|\\.{4,}"), "..................")
 
     /** Matching pairs: one "left = right" per line. */
+    /** Ordering: the items in their correct order, one per line. */
+    fun items(q: JSONObject) = q.optString("items").lines().map { it.trim() }.filter { it.isNotEmpty() }
     fun pairs(q: JSONObject) = q.optString("pairs").lines().mapNotNull { l -> l.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() } }.filter { it.first.isNotEmpty() }
 
     /** A stable shuffle (same order in the student copy and the key). */
@@ -110,6 +112,8 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
                         2 -> { NumField("عدد أسطر الإجابة", q.optString("lines", "3"), { q.put("lines", it); tick++ }); TextField2("معيار التصحيح (يظهر في نموذج الإجابة)", q.optString("answer"), { q.put("answer", it); tick++ }, lines = 2) }
                         3 -> TextField2("الإجابة الصحيحة", q.optString("answer"), { q.put("answer", it); tick++ })
                         4 -> TextField2("الأزواج: سطر لكل زوج بصيغة «العمود الأول = ما يقابله»", q.optString("pairs"), { q.put("pairs", it); tick++ }, lines = 4)
+                        5 -> TextField2("العناصر بترتيبها الصحيح، عنصر في كل سطر", q.optString("items"), { q.put("items", it); tick++ }, lines = 4)
+                        6 -> TextField2("سطر لكل عنصر بصيغة «العنصر = الفئة»", q.optString("pairs"), { q.put("pairs", it); tick++ }, lines = 4)
                     }
                     NumField("الدرجة", q.optString("mark", "1"), { q.put("mark", it); tick++ })
                     TextButton(onClick = { qs.removeAt(i) }) { Text("حذف السؤال") }
@@ -156,6 +160,15 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
                                 listOf("${k + 1}) ${ps[k].first}", if (key) "${letters.getOrElse(right.indexOf(ps[k].second)) { '-' }}" else "(     )", "${letters.getOrElse(k) { '-' }}) ${right[k]}")
                             }))
                         }
+                        5 -> {
+                            val its = Edu.items(q); val shown = Edu.shuffled(its, i + 11)
+                            b.add(Block.Table(emptyList(), shown.map { x -> listOf(if (key) "${its.indexOf(x) + 1}" else "(     )", x) }))
+                        }
+                        6 -> {
+                            val ps = Edu.pairs(q); val cats = ps.map { it.second }.distinct()
+                            b.add(Block.Para("   ${if (english) "Categories" else "الفئات"}: ${cats.joinToString(" / ")}"))
+                            b.add(Block.Table(emptyList(), Edu.shuffled(ps, i + 13).map { (x, c) -> listOf(x, if (key) c else "..................") }))
+                        }
                     }
                     b.add(Block.Space(6f))
                 }
@@ -173,6 +186,8 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
                         1 -> p += Office.Para.Text("    (     ) ${L["t"]}        (     ) ${L["f"]}")
                         2 -> repeat(q.optString("lines", "3").num().toInt().coerceIn(1, 15)) { p += Office.Para.Text("    ..............................................................") }
                         4 -> { val ps = Edu.pairs(q); val right = Edu.shuffled(ps.map { it.second }, i + 7); p += Office.Para.Table(ps.indices.map { k -> listOf("${k + 1}) ${ps[k].first}", "(     )", "${letters.getOrElse(k) { '-' }}) ${right[k]}") }) }
+                        5 -> p += Office.Para.Table(Edu.shuffled(Edu.items(q), i + 11).map { listOf("(     )", it) })
+                        6 -> { val ps = Edu.pairs(q); p += Office.Para.Text("    ${if (english) "Categories" else "الفئات"}: ${ps.map { it.second }.distinct().joinToString(" / ")}"); p += Office.Para.Table(Edu.shuffled(ps, i + 13).map { listOf(it.first, "..................") }) }
                     }
                 }
                 return File(out, "$title.docx").also { Office.writeDocx(it, p) }

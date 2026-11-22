@@ -26,4 +26,19 @@ class CloudTest {
         assertEquals(true, s.getString("text").contains("1) الرياض"))
         assertEquals(15, m.activity.getInt("minutes")); assertEquals(3, m.activity.getInt("closes_in_days"))
     }
+
+    @Test fun mapsOrderingAndClassification() {
+        val qs = listOf(
+            JSONObject().put("type", 5).put("q", "").put("items", "واحد\nاثنان\nثلاثة"),
+            JSONObject().put("type", 6).put("q", "صنّف").put("pairs", "أسد = ثدييات\nصقر = طيور\nحوت = ثدييات"),
+            JSONObject().put("type", 6).put("q", "فئة واحدة").put("pairs", "أسد = ثدييات\nحوت = ثدييات"),
+        )
+        val m = Cloud.toActivity("ت", qs, 0); val a = m.activity.getJSONArray("questions")
+        assertEquals(2, a.length()); assertEquals(1, m.skipped)
+        val o = a.getJSONObject(0); assertEquals("order", o.getString("type")); assertEquals("رتّب العناصر ترتيبًا صحيحًا", o.getString("text"))
+        assertEquals(listOf("واحد", "اثنان", "ثلاثة"), (0 until 3).map { o.getJSONArray("answer").getString(it) })
+        val c = a.getJSONObject(1); assertEquals("classify", c.getString("type"))
+        assertEquals(listOf("ثدييات", "طيور"), (0 until 2).map { c.getJSONArray("options").getString(it) })
+        assertEquals(listOf("أسد", "صقر", "حوت"), (0 until 3).map { c.getJSONArray("items").getString(it) })
+    }
 }

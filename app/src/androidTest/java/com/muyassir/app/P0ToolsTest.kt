@@ -285,4 +285,27 @@ class P0ToolsTest {
         val gone = java.net.URL("https://ayattla.com/muyassir/q/$code").openConnection() as java.net.HttpURLConnection
         if (gone.responseCode != 404) fail("quiz still on the server after deletion: ${gone.responseCode}")
     }
+
+    // ---------- P5: ordering and classification, printed and played online ----------
+    @Test fun orderAndClassifyOnline() {
+        Store.saveObj("cloud", JSONObject()); Store.saveList("published", emptyList())
+        launch("quiz_maker"); input("عنوان الاختبار", "ترتيب وتصنيف من CI")
+        pick("نوع السؤال الجديد", "ترتيب"); click("إضافة سؤال"); input("العناصر بترتيبها", "واحد\nاثنان\nثلاثة")
+        pick("نوع السؤال الجديد", "تصنيف"); click("إضافة سؤال"); input("سطر لكل عنصر", "أسد = ثدييات\nصقر = طيور\nحوت = ثدييات")
+        clickTag("action"); waitResults()
+        clickTag("publishOnline"); clickTag("consentOk")
+        try { rule.waitUntil(30_000) { rule.onAllNodesWithTag("onlineUrl").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("onlineError").fetchSemanticsNodes().isNotEmpty() } }
+        catch (e: Throwable) { fail("publish did not finish") }
+        rule.onAllNodesWithTag("onlineError").fetchSemanticsNodes().firstOrNull()?.let { fail("publish failed: " + it.config.getOrNull(SemanticsProperties.Text)?.joinToString()) }
+        val code = Store.list("published").first().optString("code")
+        try {
+            val enc = { v: String -> java.net.URLEncoder.encode(v, "UTF-8") }
+            val form = "name=${enc("طالبة")}&q0_0=${enc("واحد")}&q0_1=${enc("اثنان")}&q0_2=${enc("ثلاثة")}&q1_0=${enc("ثدييات")}&q1_1=${enc("طيور")}&q1_2=${enc("ثدييات")}"
+            val c = java.net.URL("https://ayattla.com/muyassir/q/$code").openConnection() as java.net.HttpURLConnection
+            c.requestMethod = "POST"; c.doOutput = true; c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            c.outputStream.use { it.write(form.toByteArray()) }
+            val page = c.inputStream.bufferedReader().readText(); c.disconnect()
+            if (!page.contains("2 من 2")) fail("ordering/classification were not graded: " + page.takeLast(300))
+        } finally { kotlinx.coroutines.runBlocking { com.muyassir.app.core.Cloud.forgetMe() } }
+    }
 }
