@@ -88,8 +88,8 @@ object Cloud {
                 val detail = runCatching { JSONObject(text).opt("detail") }.getOrNull()
                 throw Failure(when {
                     code == 429 -> "طلبات كثيرة خلال وقت قصير، حاول بعد قليل"
+                    detail is String && detail.isNotBlank() -> detail
                     code == 404 -> "الاختبار غير موجود على الخادم (ربما حُذف)"
-                    detail is String -> detail
                     else -> "تعذر الاتصال بالخادم ($code)"
                 })
             }
