@@ -63,7 +63,14 @@ object Ocr {
     }
 
     /** Every word with its position and confidence (0–100), for layout analysis and review of unsure words. */
-    fun recognizeWords(ctx: Context, bmp: Bitmap, lang: Lang): List<Layout.Word> = when (lang) {
+    fun recognizeWords(ctx: Context, bmp: Bitmap, lang: Lang): List<Layout.Word> {
+        val first = recognizeWordsOnce(ctx, bmp, lang, TessBaseAPI.PageSegMode.PSM_AUTO)
+        if (first.isNotEmpty() || lang != Lang.AR) return first
+        // Sparse pages (a title and a line or two) can defeat automatic layout: read them as one block instead.
+        return recognizeWordsOnce(ctx, bmp, lang, TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK)
+    }
+
+    private fun recognizeWordsOnce(ctx: Context, bmp: Bitmap, lang: Lang, psm: Int): List<Layout.Word> = when (lang) {
         Lang.EN -> {
             val rec = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
             try {
@@ -75,7 +82,7 @@ object Ocr {
             val api = TessBaseAPI()
             try {
                 check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذّر تشغيل محرك التعرف" }
-                api.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO
+                api.pageSegMode = psm
                 val k = if (bmp.width < 1200) 2 else 1
                 val src = if (k == 2) Bitmap.createScaledBitmap(bmp, bmp.width * 2, bmp.height * 2, true) else bmp
                 api.setImage(src.copy(Bitmap.Config.ARGB_8888, false))
