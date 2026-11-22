@@ -23,10 +23,10 @@ object Calc {
     /**
      * Contribution base = basic + housing, capped at 45,000 SAR (floor 1,500 for Saudis).
      * Saudi, legacy system (registered before 3 Jul 2024): employee 9% pension + 0.75% SANED; employer 9% + 0.75% + 2% hazards.
-     * Saudi, new system (law M/273): pension share rises 0.5% every July — `newPension` is the current share (9.5% in 2026).
+     * Saudi, new system (law M/273): pension share rises 0.5% every July — `newPension` is today's share from the official schedule.
      * Non-Saudi: employer pays 2% occupational hazards only.
      */
-    fun gosi(basic: Double, housing: Double, saudi: Boolean, system: GosiSystem = GosiSystem.LEGACY, newPension: Double = 9.5): Gosi {
+    fun gosi(basic: Double, housing: Double, saudi: Boolean, system: GosiSystem = GosiSystem.LEGACY, newPension: Double = SaudiRules.newPensionRate()): Gosi {
         var base = (basic + housing).coerceAtMost(45000.0)
         if (saudi) base = base.coerceAtLeast(1500.0)
         if (!saudi) return Gosi(base, 0.0, base * 0.02, 0.0, 2.0)

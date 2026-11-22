@@ -7,7 +7,7 @@ import com.muyassir.app.core.Tools
 fun ToolHost(id: String, back: () -> Unit, open: (String) -> Unit) {
     val t = Tools.byId[id] ?: return back()
     when (id) {
-        "pdf_word" -> PdfToWord(t, back); "img_word" -> ImagesToWord(t, back); "exam_doc" -> ExamToDoc(t, back, open); "pdf_pages" -> PdfHeaderFooter(t, back); "word_pdf" -> WordToPdf(t, back)
+        "pdf_word" -> PdfToWord(t, back); "service_len" -> ServiceTool(t, back); "notice" -> NoticeTool(t, back); "settlement" -> SettlementTool(t, back); "entitlements" -> EntitlementsTool(t, back); "wage_deduct" -> DeductTool(t, back); "img_word" -> ImagesToWord(t, back); "exam_doc" -> ExamToDoc(t, back, open); "pdf_pages" -> PdfHeaderFooter(t, back); "word_pdf" -> WordToPdf(t, back)
         "pdf_excel" -> PdfToExcel(t, back); "excel_pdf" -> ExcelToPdf(t, back)
         "pdf_ppt" -> PdfToPpt(t, back); "ppt_pdf" -> PptToPdf(t, back)
         "pdf_img" -> PdfToImages(t, back); "img_pdf" -> ImagesToPdf(t, back)

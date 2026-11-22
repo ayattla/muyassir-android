@@ -83,6 +83,11 @@ object Tools {
         Tool("salary", listOf("saudi"), "حاسبة الراتب", "الإجمالي وخصم التأمينات والصافي", Icons.Rounded.Payments, "راتب تأمينات gosi"),
         Tool("eos", listOf("saudi"), "مكافأة نهاية الخدمة", "وفق المادتين 84 و85", Icons.Rounded.Work, "نهاية خدمة مكافأة"),
         Tool("leave", listOf("saudi"), "حاسبة الإجازات", "الرصيد المستحق وقيمته", Icons.Rounded.BeachAccess, "اجازة سنوية رصيد"),
+        Tool("service_len", listOf("saudi"), "مدة الخدمة", "من تاريخ المباشرة إلى نهاية العلاقة", Icons.Rounded.Badge, "مده خدمه سنوات عمل"),
+        Tool("notice", listOf("saudi"), "التعويض عن مهلة الإشعار", "المادتان 75 و76 من نظام العمل", Icons.Rounded.NotificationImportant, "اشعار انذار مهله تعويض انهاء"),
+        Tool("settlement", listOf("saudi"), "التسوية النهائية", "المكافأة والإجازة والتعويضات عند انتهاء العقد", Icons.Rounded.RequestQuote, "تسويه نهائيه مستحقات انهاء فصل استقاله"),
+        Tool("entitlements", listOf("saudi"), "المستحقات الوظيفية", "أجر الأيام والعمل الإضافي وبدل الإجازة", Icons.Rounded.Payments, "مستحقات رواتب متاخره اضافي"),
+        Tool("wage_deduct", listOf("saudi"), "الاستقطاع من الأجر", "الحد النظامي للخصم من الراتب", Icons.Rounded.RemoveCircleOutline, "خصم استقطاع سلفه جزاء راتب"),
         Tool("finance", listOf("saudi", "calc"), "التمويل والأقساط", "ثابت أو متناقص مع النسبة الفعلية", Icons.Rounded.AccountBalanceWallet, "تمويل قسط قرض"),
         Tool("discount", listOf("saudi", "calc"), "حاسبة الخصومات", "خصم واحد أو خصومات متتالية", Icons.Rounded.LocalOffer, "خصم تخفيض"),
         Tool("hijri", listOf("saudi", "calc"), "التاريخ الهجري والميلادي", "تقويم أم القرى الرسمي", Icons.Rounded.DateRange, "هجري ميلادي تحويل تاريخ"),
@@ -181,7 +186,7 @@ object Tools {
     val byRole = mapOf(
         "student" to listOf("gpa", "flashcards", "study_timer", "exams", "ocr", "scan"),
         "teacher" to listOf("quiz_maker", "worksheet", "exam_doc", "grades", "certificate", "quiz_gen"),
-        "employee" to listOf("salary", "overtime", "eos", "letter", "sign_pdf", "pdf_compress"),
+        "employee" to listOf("salary", "settlement", "eos", "overtime", "leave", "letter"),
         "business" to listOf("invoice", "quote", "vat", "sign_pdf", "expenses", "scan"),
     )
 

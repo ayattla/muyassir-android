@@ -216,4 +216,19 @@ class P0ToolsTest {
     }
     @Test fun worksheetBloomTemplate() { launch("worksheet"); pick("القالب", "مستويات بلوم"); clickTag("action"); waitResults(); waitText(".docx") }
     @Test fun worksheetExitTickets() { launch("worksheet"); pick("القالب", "بطاقات الخروج (3-2-1)"); clickTag("action"); waitResults() }
+
+    // ---------- P2: Saudi services with formula, source and review date ----------
+    @Test fun noticeCompensation() {
+        launch("notice"); input("أيام الإشعار التي أُعطيت", "20"); input("الأجر الشهري", "9000"); waitText("12,000.00")
+        click("عرض"); waitText("المادتان 75 و76"); waitText("آخر مراجعة")
+    }
+    @Test fun finalSettlementShowsBreakdown() {
+        launch("settlement"); pickDate("تاريخ المباشرة", false); input("آخر أجر شهري", "10000"); input("أيام عمل لم يُدفع أجرها", "10")
+        waitText("إجمالي التسوية التقديرية"); waitText("3,333.33"); waitText("تفاصيل الحساب")
+    }
+    @Test fun governmentSectorIsExplained() { launch("settlement"); click("حكومي"); waitText("نظام الخدمة المدنية") }
+    @Test fun wageDeductionCap() { launch("wage_deduct"); input("الأجر المستحق", "8000"); input("المبلغ المطلوب", "6000"); waitText("4,000.00") }
+    @Test fun entitlementsTotal() { launch("entitlements"); input("الأجر الشهري الكامل", "9000"); input("أيام عمل لم يُدفع أجرها", "10"); waitText("3,000.00") }
+    @Test fun serviceLength() { launch("service_len"); pickDate("تاريخ المباشرة", false); waitText("مدة الخدمة"); waitText("بالأيام") }
+    @Test fun salaryShowsSource() { launch("salary"); click("عرض"); waitText("نسب الاشتراك"); waitText("آخر مراجعة") }
 }
