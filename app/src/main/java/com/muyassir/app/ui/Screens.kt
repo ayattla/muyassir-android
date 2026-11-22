@@ -1,5 +1,7 @@
 package com.muyassir.app.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -133,6 +135,11 @@ fun AssistantScreen(open: (String) -> Unit, openRecipe: (String) -> Unit = {}) {
     var q by rememberSaveable { mutableStateOf("") }
     var asked by rememberSaveable { mutableStateOf("") }
     val plan = remember(asked) { Assistant.plan(asked) }
+    var pending by remember { mutableStateOf<String?>(null) }
+    val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        val id = pending ?: return@rememberLauncherForActivityResult
+        if (uris.isNotEmpty()) { com.muyassir.app.core.Incoming.handTo(uris); Assistant.prefill(asked); open(id) }
+    }
     TabPage("المساعد", "صف ما تريد إنجازه، وسأرشدك إلى الأدوات المناسبة بالترتيب") {
         BigField(q, { q = it }, "مثال: أريد تحويل خمس صور إلى PDF وتقليل حجمه", Icons.Rounded.AutoAwesome, "اكتب طلبك") { asked = q }
         Spacer(Modifier.height(Space.s))
@@ -143,11 +150,11 @@ fun AssistantScreen(open: (String) -> Unit, openRecipe: (String) -> Unit = {}) {
                 item { Text("أمثلة", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
                 item {
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                        listOf("حوّل صوري إلى PDF وصغّر حجمه", "أريد نص هذه الصورة", "صورة شخصية بمقاس الجواز", "ادمج ملفات PDF واحمها بكلمة مرور", "كم صافي راتبي؟", "صوّر أوراقًا ووقّعها")
+                        listOf("حوّل صوري إلى PDF وصغّر حجمه", "أريد تحويل عشر صور إلى Word", "أنشئ ورقة عمل للصف السادس", "أريد حساب مستحقات نهاية الخدمة", "اجمع هذه المستندات في PDF", "استخرج الجداول من هذا التقرير")
                             .forEach { s -> Chip(s) { q = s; asked = s } }
                     }
                 }
-                item { Hint("المساعد يعمل على جهازك دون إنترنت، ويقترح فقط: أنت من يفتح الأداة ويختار ملفاتك وينفّذ.") }
+                item { Hint("المساعد يعمل على جهازك دون إنترنت: يفهم طلبك، ويفتح الأداة الحقيقية بملفاتك وبما ذكرته (الصف، المادة)، ثم تضغط تنفيذ وترى النتيجة. لا يرسل شيئًا خارج جهازك.") }
             } else {
                 plan.note?.let { item { Text(it, style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) } }
                 Assistant.recipeFor(plan.steps.map { it.tool.id })?.let { rid -> com.muyassir.app.core.Recipes.byId(rid)?.let { r ->
@@ -169,7 +176,11 @@ fun AssistantScreen(open: (String) -> Unit, openRecipe: (String) -> Unit = {}) {
                                 Text(s.tool.title, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary)
                                 Text(s.why, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
                             }
-                            FilledTonalButton(onClick = { open(s.tool.id) }, shape = RoundedCornerShape(Radius.s)) { Text("افتح") }
+                            if (i == 0 && com.muyassir.app.core.Plus.isMetered(s.tool.id)) {
+                                FilledTonalButton(onClick = { pending = s.tool.id; pickFiles.launch(arrayOf("*/*")) }, shape = RoundedCornerShape(Radius.s), modifier = Modifier.testTag("assistPick")) { Text("اختر الملفات") }
+                                Spacer(Modifier.width(4.dp))
+                            }
+                            FilledTonalButton(onClick = { Assistant.prefill(asked); open(s.tool.id) }, shape = RoundedCornerShape(Radius.s), modifier = Modifier.testTag("assistOpen-${s.tool.id}")) { Text("افتح") }
                         }
                     }
                 }
@@ -186,7 +197,18 @@ fun ActivityScreen(open: (String) -> Unit) {
     var fileQuery by rememberSaveable { mutableStateOf("") }
     val files = remember(refresh, tab) { Files.outputs(ctx) }
     TabPage("نشاطي", "عملياتك وملفاتك الناتجة ومفضلتك، محفوظة على جهازك فقط") {
-        Segmented(listOf("العمليات", "الملفات", "المفضلة"), tab) { tab = it }
+        Segmented(listOf("العمليات", "الملفات", "مشاريعي", "المفضلة"), tab) { tab = it }
+        var addTo by remember { mutableStateOf<java.io.File?>(null) }
+        var openedProject by remember { mutableStateOf<Long?>(null) }
+        var newProject by remember { mutableStateOf(false) }
+        val pv = Projects.version
+        addTo?.let { f -> AddToProjectDialog(f) { addTo = null; refresh++ } }
+        if (newProject) {
+            var n by remember { mutableStateOf("") }
+            AlertDialog(onDismissRequest = { newProject = false }, title = { Text("مشروع جديد") }, text = { TextField2("اسم المشروع", n, { n = it }) },
+                confirmButton = { TextButton(enabled = n.isNotBlank(), onClick = { Projects.create(n); newProject = false }) { Text("إنشاء") } },
+                dismissButton = { TextButton(onClick = { newProject = false }) { Text("إلغاء") } })
+        }
         val P = com.muyassir.app.core.Plus
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.WorkspacePremium, null, tint = Brand.Saffron, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp))
@@ -216,12 +238,14 @@ fun ActivityScreen(open: (String) -> Unit) {
                                 Text("${Files.human(f.length())} • ${ago(f.lastModified())}${if (Files.isKept(ctx, f)) " • محفوظ" else " • يُحذف بعد 24 ساعة"}", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
                             }
                             if (!Files.isKept(ctx, f)) IconButton(onClick = { Files.keep(ctx, f); refresh++ }) { Icon(Icons.Rounded.PushPin, "إبقاء الملف", tint = tokens.textSecondary) }
+                            IconButton(onClick = { addTo = f }) { Icon(Icons.Rounded.CreateNewFolder, "إلى مشروع", tint = tokens.textSecondary) }
                             IconButton(onClick = { Files.open(ctx, f) }) { Icon(Icons.Rounded.OpenInNew, "فتح", tint = tokens.textSecondary) }
                             IconButton(onClick = { Files.share(ctx, listOf(f)) }) { Icon(Icons.Rounded.Share, "مشاركة", tint = tokens.textSecondary) }
                             IconButton(onClick = { f.delete(); refresh++ }) { Icon(Icons.Rounded.DeleteOutline, "حذف", tint = tokens.textSecondary) }
                         }
                     }
                 }
+                2 -> { pv; projectsTab(open, openedProject, { openedProject = it }, { newProject = true }) }
                 else -> {
                     val favs = Store.favorites.mapNotNull { Tools.byId[it] }
                     if (favs.isEmpty()) item { EmptyState(Icons.Rounded.StarBorder, "لا توجد مفضلة", "اضغط النجمة أعلى أي أداة لتضيفها هنا وفي الرئيسية.") }

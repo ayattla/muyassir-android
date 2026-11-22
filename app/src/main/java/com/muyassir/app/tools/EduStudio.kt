@@ -69,7 +69,8 @@ object Edu {
 @Composable
 fun QuizMaker(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
-    val meta = remember { Store.obj("quiz_meta") }
+    val pre = remember { com.muyassir.app.core.Assistant.takePrefill() }
+    val meta = remember { Store.obj("quiz_meta").apply { listOf("grade", "subject").forEach { k -> pre.optString(k).takeIf { it.isNotBlank() }?.let { put(k, it) } } } }
     var title by remember { mutableStateOf(meta.optString("title", "اختبار قصير")) }; var school by remember { mutableStateOf(meta.optString("school")) }
     var stage by remember { mutableIntStateOf(meta.optInt("stage", 0)) }; var grade by remember { mutableStateOf(meta.optString("grade")) }
     var subject by remember { mutableStateOf(meta.optString("subject")) }; var lesson by remember { mutableStateOf(meta.optString("lesson")) }
@@ -302,6 +303,7 @@ fun WorksheetTool(t: Tool, back: () -> Unit) {
     var minutes by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("1) \n2) \n3) ") }; var lines by remember { mutableStateOf("3") }
     var topic by remember { mutableStateOf("") }; var word by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) { val p = com.muyassir.app.core.Assistant.takePrefill(); val sg = listOf(p.optString("subject"), p.optString("grade")).filter { it.isNotBlank() }.joinToString(" — "); if (sg.isNotBlank()) subject = sg }
     var result by remember { mutableStateOf<List<File>>(emptyList()) }
     val tpl = Strategies.all[kind]
     ToolScreen(t, back) {

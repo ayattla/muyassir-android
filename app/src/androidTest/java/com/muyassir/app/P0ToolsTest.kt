@@ -231,4 +231,32 @@ class P0ToolsTest {
     @Test fun entitlementsTotal() { launch("entitlements"); input("الأجر الشهري الكامل", "9000"); input("أيام عمل لم يُدفع أجرها", "10"); waitText("3,000.00") }
     @Test fun serviceLength() { launch("service_len"); pickDate("تاريخ المباشرة", false); waitText("مدة الخدمة"); waitText("بالأيام") }
     @Test fun salaryShowsSource() { launch("salary"); click("عرض"); waitText("نسب الاشتراك"); waitText("آخر مراجعة") }
+
+    // ---------- P3: the assistant runs the real tools; projects ----------
+    @Test fun assistantUnderstandsTheBriefExamples() {
+        fun first(q: String) = com.muyassir.app.core.Assistant.plan(q).steps.map { it.tool.id }
+        val cases = mapOf(
+            "أريد تحويل عشر صور إلى Word" to "img_word", "أنشئ اختباراً من هذا الملف" to "quiz_gen", "أريد حساب مستحقات نهاية الخدمة" to "settlement",
+            "اجمع هذه المستندات في PDF" to "pdf_merge", "استخرج الجداول من هذا التقرير" to "pdf_excel", "أنشئ ورقة عمل للصف السادس" to "worksheet",
+        )
+        val wrong = cases.filter { (q, id) -> first(q).firstOrNull() != id }.map { (q, id) -> "$q → ${first(q)} (expected $id)" }
+        if (wrong.isNotEmpty()) fail(wrong.joinToString("\n"))
+        org.junit.Assert.assertEquals("الصف السادس", com.muyassir.app.core.Assistant.details("أنشئ ورقة عمل للصف السادس").optString("grade"))
+    }
+    @Test fun assistantOpensWorksheetWithGrade() {
+        val i = Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        scenario = ActivityScenario.launch(i); rule.waitForIdle()
+        rule.onAllNodes(hasText("المساعد") and hasClickAction()).onFirst().performClick(); rule.waitForIdle()
+        rule.onNode(hasSetTextAction()).performTextInput("أنشئ ورقة عمل للصف السادس")
+        click("اقترح الأدوات"); clickTag("assistOpen-worksheet"); waitText("الصف السادس")
+    }
+    @Test fun projectKeepsFiles() {
+        launch("text_pdf"); input("النص", "مستند المشروع"); click("إنشاء PDF"); waitResults(); scenario?.close()
+        val i = Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        scenario = ActivityScenario.launch(i); rule.waitForIdle()
+        rule.onAllNodes(hasText("نشاطي") and hasClickAction()).onFirst().performClick(); click("الملفات")
+        rule.onAllNodesWithContentDescription("إلى مشروع").onFirst().performClick(); rule.waitForIdle()
+        rule.onNodeWithTag("newProject").performTextReplacement("مشروع الاختبار"); clickTag("createProject")
+        click("مشاريعي"); waitText("مشروع الاختبار"); click("فتح"); waitText(".pdf")
+    }
 }

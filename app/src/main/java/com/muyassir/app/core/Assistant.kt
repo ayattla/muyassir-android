@@ -14,7 +14,7 @@ object Assistant {
     private val rules = listOf(
         Rule("img_pdf", "اجمع الصور في ملف PDF واحد", listOf(listOf("صور", "صوره", "image", "photo"), listOf("pdf"))),
         Rule("pdf_img", "حوّل صفحات PDF إلى صور", listOf(listOf("pdf"), listOf("الى صور", "الى صوره", "to image", "to jpg", "صفحات صور"))),
-        Rule("pdf_merge", "ادمج ملفات PDF بالترتيب الذي تريده", listOf(listOf("دمج", "اجمع", "جمع", "ضم", "merge"), listOf("pdf", "ملفات", "مستندات")), none = listOf("صور")),
+        Rule("pdf_merge", "ادمج ملفات PDF بالترتيب الذي تريده", listOf(listOf("دمج", "ادمج", "اجمع", "جمع", "ضم", "merge"), listOf("pdf", "ملفات", "مستندات")), none = listOf("صور")),
         Rule("pdf_compress", "صغّر حجم ملف PDF", listOf(listOf("ضغط", "تصغير", "تقليل", "صغر", "حجم", "compress"), listOf("pdf", "ملف", "مستند"))),
         Rule("img_compress", "صغّر حجم الصور مع الحفاظ على الوضوح", listOf(listOf("ضغط", "تصغير", "تقليل", "حجم", "compress"), listOf("صور", "صوره", "image", "photo")), none = listOf("pdf")),
         Rule("pdf_word", "حوّل PDF إلى ملف Word قابل للتعديل", listOf(listOf("pdf"), listOf("ورد", "word", "تعديل"))),
@@ -38,6 +38,21 @@ object Assistant {
         Rule("qr_read", "اقرأ رمز QR", listOf(listOf("qr", "باركود"), listOf("اقرا", "قراءه", "مسح", "scan", "read"))),
         Rule("tts", "حوّل النص إلى صوت", listOf(listOf("صوت", "اقرا النص", "نطق", "tts"))),
         Rule("zip", "اجمع الملفات في أرشيف ZIP", listOf(listOf("zip", "ارشيف", "مضغوط"))),
+        Rule("settlement", "احسب التسوية النهائية: المكافأة والإجازة والتعويضات", listOf(listOf("مستحقات", "تسويه", "مخالصه", "حقوقي"))),
+        Rule("notice", "احسب التعويض عن مهلة الإشعار", listOf(listOf("مهله الاشعار", "اشعار", "انذار"), listOf("تعويض", "احسب", "كم", "مهله"))),
+        Rule("service_len", "احسب مدة خدمتك", listOf(listOf("مده الخدمه", "مده خدمتي", "سنوات الخدمه"))),
+        Rule("wage_deduct", "اعرف الحد النظامي للخصم من الراتب", listOf(listOf("خصم", "استقطاع"), listOf("راتب", "اجر", "سلفه", "جزاء"))),
+        Rule("img_word", "حوّل الصور إلى ملف Word قابل للتعديل", listOf(listOf("صور", "صوره", "مصور", "image"), listOf("ورد", "word")), none = listOf("pdf الى")),
+        Rule("pdf_excel", "استخرج الجداول إلى Excel", listOf(listOf("جداول", "جدول"), listOf("استخرج", "استخراج", "اكسل", "excel", "من"))),
+        Rule("exam_doc", "حوّل الاختبار المصوّر إلى مستند قابل للتعديل", listOf(listOf("اختبار", "امتحان", "اسئله"), listOf("مصور", "صوره", "صور", "ورقه"))),
+        Rule("quiz_gen", "ولّد أسئلة مراجعة من ملفك أو ملاحظاتك", listOf(listOf("اختبار", "اسئله", "امتحان"), listOf("من هذا الملف", "من الملف", "من ملاحظاتي", "من الدرس", "من النص"))),
+        Rule("quiz_maker", "أنشئ اختبارًا وصدّره PDF وWord", listOf(listOf("اختبار", "امتحان", "اسئله"), listOf("انشئ", "انشاء", "اعمل", "صمم", "جهز", "اكتب")), none = listOf("مصور", "من هذا الملف", "من الملف", "من ملاحظاتي")),
+        Rule("worksheet", "أنشئ ورقة عمل بقالب الاستراتيجية التي تريد", listOf(listOf("ورقه عمل", "اوراق عمل", "نشاط", "بطاقه خروج"))),
+        Rule("summarize", "لخّص النص أو الملف", listOf(listOf("لخص", "تلخيص", "ملخص"))),
+        Rule("translate", "ترجم بين العربية والإنجليزية على جهازك", listOf(listOf("ترجم", "ترجمه", "translate"))),
+        Rule("grades", "ارصد درجات الطلاب وصدّرها", listOf(listOf("درجات", "رصد", "كشف"), listOf("طلاب", "طالب", "الصف", "رصد"))),
+        Rule("certificate", "أنشئ شهادات شكر أو تفوق", listOf(listOf("شهاده", "شهادات"))),
+        Rule("pdf_pages", "أضف ترقيم الصفحات أو ترويسة لملف PDF", listOf(listOf("ترقيم", "ترويسه", "تذييل"))),
         Rule("currency", "حوّل بين العملات", listOf(listOf("عمله", "عملات", "دولار", "صرف", "currency"))),
     )
 
@@ -62,6 +77,24 @@ object Assistant {
         }
         return Plan(steps, if (steps.size > 1) "نفّذ الخطوات بالترتيب. افتح كل أداة واختر ملفاتك فيها." else null)
     }
+
+    private val subjects = listOf("رياضيات", "علوم", "لغتي", "لغه عربيه", "انجليزي", "اجتماعيات", "فيزياء", "كيمياء", "احياء", "دراسات اسلاميه", "توحيد", "فقه", "حديث", "تفسير", "قران", "حاسب", "مهارات رقميه", "تربيه فنيه")
+    private val gradeWords = listOf("الاول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس")
+
+    /** Details found in the request (grade, subject, count) that the opened tool fills in for the user. */
+    fun details(request: String): org.json.JSONObject {
+        val t = Tools.norm(request); val o = org.json.JSONObject()
+        Regex("(?:لل?صف|صف)\\s+(\\S+)(?:\\s+(متوسط|ثانوي|ابتدائي))?").find(t)?.let { m ->
+            val w = m.groupValues[1]; if (w in gradeWords || w.any { it.isDigit() }) o.put("grade", "الصف $w" + (m.groupValues[2].takeIf { it.isNotBlank() }?.let { " $it" } ?: ""))
+        }
+        subjects.firstOrNull { Tools.norm(it) in t }?.let { o.put("subject", it) }
+        Regex("(\\d{1,2})\\s*(?:سؤال|اسئله)").find(t)?.let { o.put("count", it.groupValues[1]) }
+        return o
+    }
+
+    /** Hands the request's details to the tool that will open (read once by that tool). */
+    fun prefill(request: String) { Store.saveObj("assist_prefill", details(request)) }
+    fun takePrefill(): org.json.JSONObject = Store.obj("assist_prefill").also { Store.saveObj("assist_prefill", org.json.JSONObject()) }
 
     /** A built-in recipe that does the whole plan in one tap, if there is one. */
     fun recipeFor(ids: List<String>): String? {
