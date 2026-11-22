@@ -152,4 +152,20 @@ class PlusFlowTest {
         rule.onNodeWithTag("plusCard").performClick()
         waitTag("paywall")
     }
+
+    @Test fun schoolCodeIsCheckedOnTheServerAndOpensPlus() {
+        com.muyassir.app.core.Store.saveObj("cloud", org.json.JSONObject())
+        launch("off", paywall = "Menu")
+        waitTag("paywall")
+        rule.onNodeWithTag("schoolCode").apply { runCatching { performScrollTo() } }.performClick(); waitTag("schoolCodeField")
+        rule.onNodeWithTag("schoolCodeField").performTextReplacement("MSR-AAAA-AAAA")
+        rule.onNodeWithTag("redeemCode").performClick()
+        try { waitText("الكود غير صحيح", 30_000) } finally { kotlinx.coroutines.runBlocking { runCatching { com.muyassir.app.core.Cloud.forgetMe() } } }
+        assert(!Plus.active)
+        // A licence the server confirmed: Plus opens and the paywall names the school.
+        rule.runOnIdle { Plus.school = "مدارس الاختبار"; Plus.schoolUntil = System.currentTimeMillis() + 86_400_000L }
+        waitTag("schoolActive"); waitText("مدارس الاختبار")
+        assert(Plus.active)
+        rule.runOnIdle { Plus.school = ""; Plus.schoolUntil = 0 }
+    }
 }

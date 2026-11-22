@@ -376,6 +376,7 @@ fun PlusCard() {
             Text(if (P.active) "أنت مشترك في مُيسّر بلس" else "مُيسّر بلس", style = MaterialTheme.typography.titleSmall, color = Color.White)
             Text(
                 when {
+                    P.active && P.school.isNotEmpty() -> "مفعّل ضمن باقة ${P.school}."
                     P.active -> "كل الميزات مفتوحة. اضغط لإدارة اشتراكك."
                     !P.live -> "قريبًا: بلا حدود يومية وقوالب احترافية وOCR لملفات كاملة"
                     else -> "استخدمت اليوم ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية. افتحها بلا حدود."

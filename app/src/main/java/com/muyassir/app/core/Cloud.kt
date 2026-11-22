@@ -123,9 +123,32 @@ object Cloud {
         Store.saveList("published", Store.list("published").filter { it.optString("code") != code })
     }
 
+    /** School licence: binds an activation code to this device and turns Plus on until the licence ends. */
+    suspend fun redeem(code: String): JSONObject = withContext(Dispatchers.IO) {
+        val r = call("POST", "/api/v1/redeem", JSONObject().put("code", code.trim())); applyLicence(r); r
+    }
+
+    /** Re-checks the licence once a day (revoked or expired licences switch Plus off). Offline keeps the last answer. */
+    suspend fun refreshLicence() = withContext(Dispatchers.IO) {
+        val l = Store.obj("license")
+        if (l.optString("school").isEmpty() || System.currentTimeMillis() - l.optLong("checked") < 24 * 3600_000L) return@withContext
+        runCatching { call("GET", "/api/v1/entitlement") }.onSuccess { applyLicence(it) }
+    }
+
+    private fun applyLicence(r: JSONObject) {
+        if (r.optString("plan") == "school") {
+            val until = (r.optDouble("expires") * 1000).toLong()
+            Store.saveObj("license", JSONObject().put("school", r.optString("school")).put("until", until).put("code", r.optString("code")).put("checked", System.currentTimeMillis()))
+            Plus.school = r.optString("school"); Plus.schoolUntil = until
+        } else {
+            Store.saveObj("license", JSONObject()); Plus.school = ""; Plus.schoolUntil = 0
+        }
+    }
+
     /** Deletes the device and everything it published from the server, then forgets the token. */
     suspend fun forgetMe() = withContext(Dispatchers.IO) {
         if (Store.obj("cloud").optString("token").isNotEmpty()) call("DELETE", "/api/v1/devices/me")
         Store.saveObj("cloud", JSONObject()); Store.saveList("published", emptyList())
+        Store.saveObj("license", JSONObject()); Plus.school = ""; Plus.schoolUntil = 0
     }
 }

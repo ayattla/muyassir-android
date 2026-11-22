@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -127,6 +128,10 @@ fun Paywall(reason: Plus.Reason, close: () -> Unit) {
             }
 
             when {
+                Plus.school.isNotEmpty() && Plus.schoolUntil > System.currentTimeMillis() -> {
+                    Text("بلس مفعّل ضمن باقة ${Plus.school} حتى ${java.text.SimpleDateFormat("d/M/yyyy", java.util.Locale.US).format(java.util.Date(Plus.schoolUntil))}",
+                        style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.testTag("schoolActive"))
+                }
                 Plus.active -> {
                     Text(
                         if (Plus.subscribed) "${Plus.planName}${if (Plus.renews) " • يتجدد تلقائيًا" else " • لن يتجدد"}" else "مرور اليوم مفعّل حتى ${java.text.SimpleDateFormat("h:mm a", java.util.Locale("ar")).format(java.util.Date(Plus.dayPassUntil))}",
@@ -166,6 +171,7 @@ fun Paywall(reason: Plus.Reason, close: () -> Unit) {
                     }
                 }
             }
+            if (!Plus.active) SchoolCodeButton()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Lock, null, tint = tokens.textTertiary, modifier = Modifier.size(14.dp)); Spacer(Modifier.width(4.dp))
                 Text("ملفاتك تبقى على جهازك. ألغِ في أي وقت من المتجر.", style = MaterialTheme.typography.labelMedium, color = tokens.textTertiary)
@@ -201,4 +207,40 @@ private fun PlanCard(p: Billing.Plan, selected: Boolean, save: Int, onClick: () 
         }
         Text("${p.price}\n/ ${p.period}", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.End)
     }
+}
+
+
+/** «لديك كود مدرسة؟»: a teacher enters the code the school gave them, and Plus opens until the school licence ends. */
+@Composable
+fun SchoolCodeButton() {
+    val scope = rememberCoroutineScope()
+    var open by remember { mutableStateOf(false) }
+    var code by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    TextButton(onClick = { open = true; error = null }, modifier = Modifier.testTag("schoolCode")) { Text("لديك كود من مدرستك؟", style = MaterialTheme.typography.labelLarge) }
+    if (open) AlertDialog(
+        onDismissRequest = { if (!busy) open = false },
+        title = { Text("تفعيل باقة المدرسة") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                Text("اكتب الكود الذي وصلك من إدارة مدرستك. يُرسل الكود فقط إلى خادم مُيسّر للتحقق منه، ويُربط بهذا الجهاز.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+                OutlinedTextField(code, { code = it.uppercase().take(20); error = null }, singleLine = true, placeholder = { Text("MSR-XXXX-XXXX") },
+                    modifier = Modifier.fillMaxWidth().testTag("schoolCodeField"))
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("schoolCodeError")) }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = code.count { it.isLetterOrDigit() } >= 8 && !busy, modifier = Modifier.testTag("redeemCode"), onClick = {
+                busy = true
+                scope.launch {
+                    runCatching { com.muyassir.app.core.Cloud.redeem(code) }
+                        .onSuccess { if (Plus.schoolUntil > System.currentTimeMillis()) open = false else error = "تعذّر تفعيل الكود" }
+                        .onFailure { error = it.message }
+                    busy = false
+                }
+            }) { Text(if (busy) "جارٍ التحقق…" else "تفعيل") }
+        },
+        dismissButton = { TextButton(onClick = { open = false }, enabled = !busy) { Text("إلغاء") } },
+    )
 }

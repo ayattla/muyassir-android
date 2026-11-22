@@ -58,6 +58,9 @@ object Plus {
     /** Subscription or day pass is valid now. */
     var subscribed by mutableStateOf(false); internal set
     var dayPassUntil by mutableStateOf(0L); private set
+    /** A school licence redeemed with an activation code (checked against the server). */
+    var school by mutableStateOf(""); internal set
+    var schoolUntil by mutableStateOf(0L); internal set
     /** What the subscription is (monthly / yearly / day), for the settings row. */
     var planName by mutableStateOf(""); internal set
     var renews by mutableStateOf(true); internal set
@@ -67,7 +70,7 @@ object Plus {
     /** The paywall currently requested (null = hidden). */
     var paywall by mutableStateOf<Reason?>(null)
 
-    val active: Boolean get() = subscribed || dayPassUntil > System.currentTimeMillis()
+    val active: Boolean get() = subscribed || dayPassUntil > System.currentTimeMillis() || schoolUntil > System.currentTimeMillis()
     /** True when a feature is open to this user: Plus, or Plus not launched yet. */
     val unlocked: Boolean get() = active || !live
     val opsLeft: Int get() = if (unlocked) Int.MAX_VALUE else (FREE_OPS_PER_DAY - usedToday).coerceAtLeast(0)
@@ -81,6 +84,7 @@ object Plus {
         val o = Store.obj("plus")
         day = o.optString("day"); usedToday = o.optInt("used"); dayPassUntil = o.optLong("dayPassUntil")
         notifyWhenLive = o.optBoolean("notify"); rollDay()
+        Store.obj("license").let { l -> school = l.optString("school"); schoolUntil = l.optLong("until") }
     }
 
     private fun save() = runCatching { saveNow() }
@@ -138,5 +142,5 @@ object Plus {
             "off" -> { live = false; subscribed = false; dayPassUntil = 0; usedToday = 0; save() }
         }
     }
-    fun resetForTest() { loaded = false; live = false; subscribed = false; dayPassUntil = 0; usedToday = 0; day = ""; paywall = null }
+    fun resetForTest() { loaded = false; live = false; subscribed = false; dayPassUntil = 0; school = ""; schoolUntil = 0; usedToday = 0; day = ""; paywall = null }
 }

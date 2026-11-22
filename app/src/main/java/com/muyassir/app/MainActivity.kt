@@ -25,6 +25,7 @@ class MainActivity : FragmentActivity() {
         if (BuildConfig.DEBUG) intent?.getStringExtra("paywall")?.let { n -> com.muyassir.app.core.Plus.paywall = com.muyassir.app.core.Plus.Reason.entries.firstOrNull { it.name == n } }
         intent?.getStringExtra("theme")?.let { if (it in setOf("light", "dark", "system")) com.muyassir.app.core.Prefs.chooseTheme(it) }
         receiveShared(intent)
+        lifecycleScope.launch { com.muyassir.app.core.Cloud.refreshLicence() }
         setContent {
             MuyassirTheme {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) { AppNav(intent?.getStringExtra("tool"), intent?.getStringExtra("cat"), intent?.getStringExtra("tab"), intent?.getStringExtra("screen")); com.muyassir.app.ui.PaywallHost() }
