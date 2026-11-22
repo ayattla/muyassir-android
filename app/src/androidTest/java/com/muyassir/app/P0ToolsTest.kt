@@ -259,4 +259,30 @@ class P0ToolsTest {
         rule.onNodeWithTag("newProject").performTextReplacement("مشروع الاختبار"); clickTag("createProject")
         click("مشاريعي"); waitText("مشروع الاختبار"); click("فتح"); waitText(".pdf")
     }
+
+    // ---------- P4: online quiz on the live server (published, answered, results read, then deleted) ----------
+    @Test fun onlineQuizEndToEnd() {
+        Store.saveObj("cloud", JSONObject()); Store.saveList("published", emptyList())
+        launch("quiz_maker"); input("عنوان الاختبار", "اختبار آلي من CI")
+        click("إضافة سؤال"); input("نص السؤال", "كم عدد أيام الأسبوع؟"); input("الخيار أ", "سبعة"); input("الخيار ب", "خمسة")
+        clickTag("publishOnline"); clickTag("consentOk")
+        try { rule.waitUntil(30_000) { rule.onAllNodesWithTag("onlineUrl").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("onlineError").fetchSemanticsNodes().isNotEmpty() } }
+        catch (e: Throwable) { fail("publish did not finish") }
+        rule.onAllNodesWithTag("onlineError").fetchSemanticsNodes().firstOrNull()?.let { fail("publish failed: " + it.config.getOrNull(SemanticsProperties.Text)?.joinToString()) }
+        waitText("ayattla.com/muyassir/q/")
+        val code = Store.list("published").first().optString("code")
+        try {
+            // A student answers from the web page (same form a browser sends).
+            val c = java.net.URL("https://ayattla.com/muyassir/q/$code").openConnection() as java.net.HttpURLConnection
+            c.requestMethod = "POST"; c.doOutput = true; c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            c.outputStream.use { it.write(("name=" + java.net.URLEncoder.encode("طالب الاختبار", "UTF-8") + "&q0=" + java.net.URLEncoder.encode("سبعة", "UTF-8")).toByteArray()) }
+            val page = c.inputStream.bufferedReader().readText(); c.disconnect()
+            if (!page.contains("1 من 1")) fail("student page did not grade the answer")
+            clickTag("results-$code"); waitText("طالب الاختبار", 20_000); waitText("عدد المتقدمين")
+        } finally {
+            kotlinx.coroutines.runBlocking { com.muyassir.app.core.Cloud.forgetMe() }
+        }
+        val gone = java.net.URL("https://ayattla.com/muyassir/q/$code").openConnection() as java.net.HttpURLConnection
+        if (gone.responseCode != 404) fail("quiz still on the server after deletion: ${gone.responseCode}")
+    }
 }

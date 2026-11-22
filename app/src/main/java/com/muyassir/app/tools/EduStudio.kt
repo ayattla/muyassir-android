@@ -180,6 +180,7 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
             result = listOfNotNull(build(false), if (withKey) build(true) else null, if (word) docx() else null); Store.used(t.id, title)
         }
         if (result.isNotEmpty()) ResultFiles(result)
+        OnlineQuizPanel(title, qs, minutes)
     }
 }
 
