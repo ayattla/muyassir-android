@@ -65,7 +65,14 @@ object Cloud {
         return Mapped(a, skipped)
     }
 
-    private fun call(method: String, path: String, body: JSONObject? = null, auth: Boolean = true): JSONObject {
+    /** One quiet retry: mobile networks often drop the first connection. */
+    private fun call(method: String, path: String, body: JSONObject? = null, auth: Boolean = true): JSONObject =
+        try { callOnce(method, path, body, auth) } catch (e: Failure) {
+            if (e.message?.startsWith("لا يوجد اتصال") != true) throw e
+            Thread.sleep(1500); callOnce(method, path, body, auth)
+        }
+
+    private fun callOnce(method: String, path: String, body: JSONObject? = null, auth: Boolean = true): JSONObject {
         val c = URL(BASE + path).openConnection() as HttpURLConnection
         try {
             c.requestMethod = method; c.connectTimeout = 12000; c.readTimeout = 20000
