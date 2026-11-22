@@ -10,3 +10,9 @@
 6. النسخ الاحتياطي: أضف `/var/lib/muyassir/muyassir.db` إلى `ayattla-backup.sh` (نسخة sqlite backup).
 7. التنظيف اليومي: `curl -X POST -H "Authorization: Bearer $PW" http://127.0.0.1:8094/api/v1/admin/cleanup` في cron.
 8. الفحص: `curl https://ayattla.com/muyassir/health` يعيد `{"ok":true}`.
+
+## حالة النشر
+- نُشر في 22 نوفمبر 2026 (05:16 UTC) بموافقة صاحب الخادم، عبر `server/deploy.sh` (نسخة احتياطية `20261122-051652` في `/root/dep`).
+- فحص حي عبر Cloudflare: `/muyassir/health` يعيد `{"ok":true}`؛ تسجيل جهاز ← نشر نشاط ← صفحة الطالب ← إرسال (1 من 1) ← النتائج ← حذف النشاط والجهاز، كلها 200؛ لوحة الإدارة دون كلمة مرور 401؛ الرئيسية و`/tools/` و`/blog/` بقيت 200.
+- كلمة مرور الإدارة في `/etc/muyassir.env` على الخادم فقط (صلاحية root).
+- نسخة يومية من القاعدة في `/root/backups/muyassir` (آخر 14) وتنظيف يومي، عبر `/etc/cron.d/muyassir`.
