@@ -21,7 +21,7 @@ object Assistant {
         Rule("word_pdf", "حوّل ملف Word إلى PDF", listOf(listOf("ورد", "word", "docx"), listOf("pdf")), none = listOf("pdf الى ورد", "pdf الى word")),
         Rule("pdf_excel", "استخرج الجداول من PDF إلى Excel", listOf(listOf("pdf"), listOf("اكسل", "excel"))),
         Rule("ocr", "استخرج النص من الصورة أو الملف الممسوح", listOf(listOf("نص", "كلام", "كتابه", "ocr", "text", "انسخ"), listOf("صور", "صوره", "ممسوح", "مصور", "image", "pdf", "استخراج", "استخرج"))),
-        Rule("scan", "صوّر الأوراق بالكاميرا مع قص وتحسين تلقائي", listOf(listOf("مسح", "اسكان", "scan", "صور ورق", "اصور", "كاميرا", "ورقه", "اوراق"))),
+        Rule("scan", "صوّر الأوراق بالكاميرا مع قص وتحسين تلقائي", listOf(listOf("مسح", "اسكان", "scan", "صور ورق", "اصور", "كاميرا", "ورقه", "اوراق")), none = listOf("ورقه عمل", "اوراق عمل")),
         Rule("img_bg", "أزل خلفية الصورة", listOf(listOf("خلفيه", "background"))),
         Rule("id_photo", "جهّز صورة بمقاس الجواز أو الهوية", listOf(listOf("جواز", "هويه", "شخصيه", "passport", "تاشيره"))),
         Rule("img_resize", "غيّر أبعاد الصورة", listOf(listOf("ابعاد", "مقاس", "resize", "تكبير", "عرض وارتفاع"))),
