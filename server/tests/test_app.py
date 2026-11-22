@@ -83,3 +83,23 @@ def test_admin_and_rate_limit(client):
     assert "devices" in s and "recent_audit" in s
     codes = [client.post("/api/v1/devices", json={"platform": "ios"}).status_code for _ in range(40)]
     assert 429 in codes
+
+
+def test_classify_activity(client):
+    h = token(client)
+    bad = {"title": "تصنيف", "questions": [{"text": "صنّف", "type": "classify", "items": ["أسد"], "options": ["ثدييات", "طيور"], "answer": ["ثدييات"]}]}
+    assert client.post("/api/v1/activities", json=bad, headers=h).status_code == 422
+    q = {"title": "تصنيف الحيوانات", "questions": [{"text": "صنّف الحيوانات", "type": "classify", "items": ["أسد", "صقر", "حوت"],
+         "options": ["ثدييات", "طيور"], "answer": ["ثدييات", "طيور", "ثدييات"]}]}
+    code = client.post("/api/v1/activities", json=q, headers=h).json()["code"]
+    page = client.get("/q/" + code).text; assert "اختر الفئة المناسبة" in page and "صقر" in page
+    done = client.post("/q/" + code, data={"name": "ليان", "q0_0": "ثدييات", "q0_1": "طيور", "q0_2": "ثدييات"}); assert "درجتك 1 من 1" in done.text
+    wrong = client.post("/q/" + code, data={"name": "سعد", "q0_0": "ثدييات", "q0_1": "ثدييات", "q0_2": "ثدييات"}); assert "درجتك 0 من 1" in wrong.text
+
+
+def test_public_tool_pages(client):
+    home = client.get("/"); assert home.status_code == 200 and "أداة عربية في تطبيق واحد" in home.text and 'rel="canonical"' in home.text
+    assert "/t/salary" in home.text and "SoftwareApplication" in home.text
+    t = client.get("/t/settlement"); assert t.status_code == 200 and "التسوية" in t.text and "المصدر الرسمي" in t.text and "BreadcrumbList" in t.text
+    assert client.get("/t/nothing").status_code == 404
+    sm = client.get("/sitemap.xml"); assert sm.status_code == 200 and sm.text.count("<url>") == 93

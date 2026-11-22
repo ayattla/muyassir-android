@@ -26,13 +26,14 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 DB = os.environ.get("MUYASSIR_DB", "/var/lib/muyassir/muyassir.db")
 BASE_URL = os.environ.get("MUYASSIR_BASE", "https://ayattla.com/muyassir")
 ADMIN_PASSWORD = os.environ.get("MUYASSIR_ADMIN_PASSWORD", "")
 MAX_BLOB = 8 * 1024 * 1024
 app = FastAPI(title="Muyassir", docs_url=None, redoc_url=None, openapi_url=None)
+from pages import router as site_router  # noqa: E402  public tool pages and sitemap
 _lock = threading.Lock()
 
 SCHEMA = """
@@ -154,14 +155,27 @@ def delete_me(dev: int = Depends(device)):
 # ---------- activities ----------
 class Question(BaseModel):
     text: str = Field(min_length=1, max_length=600)
-    type: Literal["choice", "truefalse", "blank", "order", "sort"]
+    type: Literal["choice", "truefalse", "blank", "order", "sort", "classify"]
     options: list[str] = Field(default_factory=list, max_length=8)
+    items: list[str] = Field(default_factory=list, max_length=20)  # classify: the things to put into the categories in `options`
     answer: str | list[str] = ""
     mark: float = Field(default=1, ge=0, le=100)
 
     @field_validator("options")
     @classmethod
     def short(cls, v): return [o[:200] for o in v]
+
+    @field_validator("items")
+    @classmethod
+    def short_items(cls, v): return [o[:200] for o in v]
+
+    @model_validator(mode="after")
+    def classify_shape(self):
+        if self.type == "classify":
+            ans = self.answer if isinstance(self.answer, list) else []
+            if len(self.items) < 2 or len(self.options) < 2 or len(ans) != len(self.items) or any(x not in self.options for x in ans):
+                raise ValueError("التصنيف يحتاج عنصرين وفئتين على الأقل، وفئة صحيحة لكل عنصر")
+        return self
 
 
 class Activity(BaseModel):
@@ -229,7 +243,7 @@ def remove(code: str, dev: int = Depends(device)):
 def grade(q: dict, given) -> bool:
     ans = q.get("answer")
     norm = lambda s: " ".join(str(s).strip().lower().replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").replace("ة", "ه").replace("ى", "ي").split())
-    if q["type"] in ("order", "sort"):
+    if q["type"] in ("order", "sort", "classify"):
         return isinstance(given, list) and [norm(x) for x in given] == [norm(x) for x in (ans if isinstance(ans, list) else [])]
     return norm(given) == norm(ans) and norm(ans) != ""
 
@@ -263,6 +277,10 @@ def take(code: str):
             inner = "".join(f'<label><input type="radio" name="q{i}" value="{v}"> {v}</label>' for v in ("صح", "خطأ"))
         elif q["type"] == "blank":
             inner = f'<input type="text" name="q{i}" maxlength="200" placeholder="إجابتك">'
+        elif q["type"] == "classify":
+            opts = "".join(f'<option value="{e(o)}">{e(o)}</option>' for o in q["options"])
+            inner = '<p class="muted">اختر الفئة المناسبة لكل عنصر</p>' + "".join(
+                f'<label>{e(it)} <select name="q{i}_{k}"><option value=""></option>{opts}</select></label>' for k, it in enumerate(q.get("items", [])))
         else:
             opts = "".join(f'<option value="{e(o)}">{e(o)}</option>' for o in q["options"])
             inner = "".join(f'<label>{k + 1}) <select name="q{i}_{k}"><option value=""></option>{opts}</select></label>' for k in range(len(q["options"])))
@@ -288,8 +306,9 @@ async def submit(code: str, req: Request):
             return PAGE.format(title="الاسم مطلوب", body='<div class="card"><h1>اكتب اسمك ثم أعد الإرسال</h1></div>')
         body = json.loads(a["body"]); score = 0.0; total = 0.0; correct = []; given_all = []
         for i, q in enumerate(body["questions"]):
-            if q["type"] in ("order", "sort"):
-                given = [str(form.get(f"q{i}_{k}", "")) for k in range(len(q["options"]))]
+            if q["type"] in ("order", "sort", "classify"):
+                n = len(q.get("items", [])) if q["type"] == "classify" else len(q["options"])
+                given = [str(form.get(f"q{i}_{k}", "")) for k in range(n)]
             else:
                 given = str(form.get(f"q{i}", ""))
             ok = grade(q, given); correct.append(ok); given_all.append(given)
@@ -366,3 +385,6 @@ def cleanup():
 
 @app.get("/health")
 def health(): return {"ok": True}
+
+
+app.include_router(site_router)

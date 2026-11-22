@@ -11,7 +11,8 @@ TS=$(date +%Y%m%d-%H%M%S); mkdir -p /root/dep
 id muyassir >/dev/null 2>&1 || useradd -r -s /usr/sbin/nologin -d /var/lib/muyassir muyassir
 mkdir -p /opt/muyassir /var/lib/muyassir /root/backups/muyassir
 [ -f /opt/muyassir/app.py ] && cp /opt/muyassir/app.py /root/dep/muyassir-app.$TS.py
-curl -fsSL "$REPO/app.py" -o /opt/muyassir/app.py.new && mv /opt/muyassir/app.py.new /opt/muyassir/app.py
+for f in app.py pages.py site_tools.json; do curl -fsSL "$REPO/$f" -o "/opt/muyassir/$f.new"; done
+for f in app.py pages.py site_tools.json; do mv "/opt/muyassir/$f.new" "/opt/muyassir/$f"; done
 [ -x /opt/muyassir/venv/bin/python ] || python3 -m venv /opt/muyassir/venv
 /opt/muyassir/venv/bin/pip install -q --upgrade pip >/dev/null
 /opt/muyassir/venv/bin/pip install -q "fastapi>=0.110" "uvicorn>=0.29" python-multipart
