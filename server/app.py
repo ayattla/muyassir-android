@@ -37,6 +37,11 @@ from pages import router as site_router  # noqa: E402  public tool pages and sit
 _lock = threading.Lock()
 
 SCHEMA = """
+create table if not exists licenses(id integer primary key, school text not null, seats integer not null, expires real not null,
+  created real not null, revoked integer not null default 0, note text not null default '');
+create table if not exists codes(code text primary key, license_id integer not null, device_id integer, redeemed real);
+create index if not exists codes_license on codes(license_id);
+create index if not exists codes_device on codes(device_id);
 create table if not exists devices(id integer primary key, token_hash text unique not null, created real not null, last_seen real not null, platform text);
 create table if not exists activities(id integer primary key, code text unique not null, device_id integer not null, title text not null,
   body text not null, minutes integer not null default 0, opens real, closes real, created real not null, closed integer not null default 0);
@@ -76,7 +81,7 @@ def audit(c, device_id, action, detail=""):
 # ---------- rate limiting: token bucket per client IP and route group ----------
 _buckets: dict[tuple[str, str], tuple[float, float]] = {}
 # A whole class can share one school IP, so student-facing limits are generous.
-LIMITS = {"register": (30, 3600), "write": (120, 3600), "submit": (300, 600), "read": (1200, 600)}
+LIMITS = {"redeem": (10, 3600), "register": (30, 3600), "write": (120, 3600), "submit": (300, 600), "read": (1200, 600)}
 
 
 def client_ip(req: Request) -> str:
@@ -147,6 +152,7 @@ def delete_me(dev: int = Depends(device)):
             c.execute("delete from attempts where activity_id=?", (i,))
         c.execute("delete from activities where device_id=?", (dev,))
         c.execute("delete from sync where device_id=?", (dev,))
+        c.execute("update codes set device_id=null, redeemed=null where device_id=?", (dev,))  # the school's seat is freed
         c.execute("delete from devices where id=?", (dev,))
         audit(c, dev, "delete_account", f"activities={len(ids)}")
     return {"deleted": True}
@@ -375,12 +381,117 @@ def cleanup():
     """Retention: closed activities older than 90 days and their attempts; sync blobs untouched for 180 days."""
     cut_a, cut_s = time.time() - 90 * 86400, time.time() - 180 * 86400
     with db() as c:
-        ids = [r["id"] for r in c.execute("select id from activities where closes<?", (cut_a,))]
+        # A device with a valid school licence keeps its results for a school year.
+        licensed = "select c.device_id from codes c join licenses l on l.id=c.license_id where c.device_id is not null and l.revoked=0 and l.expires>?"
+        ids = [r["id"] for r in c.execute(f"select id from activities where (closes<? and device_id not in ({licensed})) or closes<?", (cut_a, time.time(), time.time() - 365 * 86400))]
         for i in ids: c.execute("delete from attempts where activity_id=?", (i,))
-        c.execute("delete from activities where closes<?", (cut_a,))
+        for i in ids: c.execute("delete from activities where id=?", (i,))
         n = c.execute("delete from sync where updated<?", (cut_s,)).rowcount
         audit(c, None, "cleanup", f"activities={len(ids)} sync={n}")
     return {"activities": len(ids), "sync": n}
+
+
+# ---------- school licences: activation codes sold outside the stores ----------
+CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O, 1/I
+
+
+def licence_code() -> str:
+    raw = "".join(secrets.choice(CODE_CHARS) for _ in range(8))
+    return f"MSR-{raw[:4]}-{raw[4:]}"
+
+
+def norm_code(s: str) -> str:
+    raw = "".join(ch for ch in s.upper() if ch in CODE_CHARS)
+    raw = raw[3:] if raw.startswith("MSR") and len(raw) == 11 else raw
+    return f"MSR-{raw[:4]}-{raw[4:]}" if len(raw) == 8 else ""
+
+
+def entitlement_of(c, dev: int) -> dict:
+    r = c.execute("select l.school, l.expires, l.revoked, c.code from codes c join licenses l on l.id=c.license_id where c.device_id=? order by l.expires desc limit 1", (dev,)).fetchone()
+    if not r or r["revoked"] or r["expires"] < time.time():
+        return {"plan": "none"}
+    return {"plan": "school", "school": r["school"], "expires": r["expires"], "code": r["code"]}
+
+
+class Redeem(BaseModel):
+    code: str = Field(max_length=40)
+
+
+@app.post("/api/v1/redeem", dependencies=[Depends(limit("redeem"))])
+def redeem(b: Redeem, dev: int = Depends(device)):
+    code = norm_code(b.code)
+    with db() as c:
+        r = c.execute("select c.code, c.device_id, l.revoked, l.expires from codes c join licenses l on l.id=c.license_id where c.code=?", (code,)).fetchone() if code else None
+        if not r:
+            audit(c, dev, "redeem_bad", b.code[:20]); raise HTTPException(404, "الكود غير صحيح. تأكد من كتابته كما وصلك")
+        if r["revoked"]:
+            raise HTTPException(410, "أُلغي هذا الكود. تواصل مع إدارة مدرستك")
+        if r["expires"] < time.time():
+            raise HTTPException(410, "انتهت صلاحية باقة المدرسة")
+        if r["device_id"] not in (None, dev):
+            raise HTTPException(409, "الكود مفعّل على جهاز آخر. اطلب من إدارة مدرستك تحريره ثم أعد المحاولة")
+        c.execute("update codes set device_id=?, redeemed=coalesce(redeemed, ?) where code=?", (dev, time.time(), code))
+        audit(c, dev, "redeem", code)
+        return entitlement_of(c, dev)
+
+
+@app.get("/api/v1/entitlement", dependencies=[Depends(limit("read"))])
+def entitlement(dev: int = Depends(device)):
+    with db() as c:
+        return entitlement_of(c, dev)
+
+
+class LicenseIn(BaseModel):
+    school: str = Field(min_length=2, max_length=120)
+    seats: int = Field(ge=1, le=500)
+    months: int = Field(default=12, ge=1, le=36)
+    note: str = Field(default="", max_length=300)
+
+
+@app.post("/api/v1/admin/licenses", dependencies=[Depends(admin)])
+def create_license(b: LicenseIn):
+    now = time.time()
+    with db() as c:
+        lid = c.execute("insert into licenses(school, seats, expires, created, note) values(?,?,?,?,?)",
+                        (b.school.strip(), b.seats, now + b.months * 30.44 * 86400, now, b.note.strip())).lastrowid
+        codes = []
+        while len(codes) < b.seats:
+            k = licence_code()
+            if c.execute("select 1 from codes where code=?", (k,)).fetchone(): continue
+            c.execute("insert into codes(code, license_id) values(?,?)", (k, lid)); codes.append(k)
+        audit(c, None, "license_create", f"{lid} {b.school} seats={b.seats}")
+    return {"id": lid, "codes": codes}
+
+
+@app.get("/api/v1/admin/licenses", dependencies=[Depends(admin)])
+def list_licenses():
+    with db() as c:
+        rows = c.execute("""select l.*, (select count(*) from codes where license_id=l.id and device_id is not null) used
+                            from licenses l order by l.created desc""").fetchall()
+        return [dict(r) for r in rows]
+
+
+@app.get("/api/v1/admin/licenses/{lid}/codes", dependencies=[Depends(admin)])
+def license_codes(lid: int):
+    with db() as c:
+        return [dict(r) for r in c.execute("select code, device_id is not null used, redeemed from codes where license_id=? order by code", (lid,))]
+
+
+@app.post("/api/v1/admin/licenses/{lid}/revoke", dependencies=[Depends(admin)])
+def revoke_license(lid: int):
+    with db() as c:
+        if not c.execute("update licenses set revoked=1 where id=?", (lid,)).rowcount: raise HTTPException(404, "غير موجود")
+        audit(c, None, "license_revoke", str(lid))
+    return {"ok": True}
+
+
+@app.post("/api/v1/admin/codes/{code}/release", dependencies=[Depends(admin)])
+def release_code(code: str):
+    k = norm_code(code)
+    with db() as c:
+        if not k or not c.execute("update codes set device_id=null where code=?", (k,)).rowcount: raise HTTPException(404, "غير موجود")
+        audit(c, None, "code_release", k)
+    return {"ok": True}
 
 
 @app.get("/health")

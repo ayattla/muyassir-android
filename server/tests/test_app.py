@@ -103,3 +103,33 @@ def test_public_tool_pages(client):
     t = client.get("/t/settlement"); assert t.status_code == 200 and "التسوية" in t.text and "المصدر الرسمي" in t.text and "BreadcrumbList" in t.text
     assert client.get("/t/nothing").status_code == 404
     sm = client.get("/sitemap.xml"); assert sm.status_code == 200 and sm.text.count("<url>") == 93
+
+
+def test_school_licence_codes(client):
+    adm = {"Authorization": "Bearer " + os.environ["MUYASSIR_ADMIN_PASSWORD"]}
+    assert client.post("/api/v1/admin/licenses", json={"school": "مدرسة", "seats": 2}).status_code == 401
+    r = client.post("/api/v1/admin/licenses", json={"school": "مدارس الرواد", "seats": 2, "note": "فاتورة 1"}, headers=adm).json()
+    a, b = r["codes"]; assert a.startswith("MSR-") and len(a) == 13
+    t1, t2 = token(client), token(client)
+    assert client.get("/api/v1/entitlement", headers=t1).json()["plan"] == "none"
+    assert client.post("/api/v1/redeem", json={"code": "MSR-AAAA-AAAA"}, headers=t1).status_code == 404
+    e = client.post("/api/v1/redeem", json={"code": a.lower().replace("-", " ")}, headers=t1).json()
+    assert e["plan"] == "school" and e["school"] == "مدارس الرواد"
+    assert client.post("/api/v1/redeem", json={"code": a}, headers=t1).status_code == 200      # same device again is fine
+    assert client.post("/api/v1/redeem", json={"code": a}, headers=t2).status_code == 409      # another device is not
+    assert client.post(f"/api/v1/admin/codes/{a}/release", headers=adm).status_code == 200
+    assert client.post("/api/v1/redeem", json={"code": a}, headers=t2).json()["plan"] == "school"
+    ls = client.get("/api/v1/admin/licenses", headers=adm).json(); assert ls[0]["used"] == 1 and ls[0]["seats"] == 2
+    assert client.post(f"/api/v1/admin/licenses/{r['id']}/revoke", headers=adm).status_code == 200
+    assert client.get("/api/v1/entitlement", headers=t2).json()["plan"] == "none"
+    assert client.post("/api/v1/redeem", json={"code": b}, headers=t1).status_code == 410
+    page = client.get("/admin"); assert page.status_code == 200 and "noindex" in page.text
+
+
+def test_deleting_device_frees_the_seat(client):
+    adm = {"Authorization": "Bearer " + os.environ["MUYASSIR_ADMIN_PASSWORD"]}
+    code = client.post("/api/v1/admin/licenses", json={"school": "مدرسة س", "seats": 1}, headers=adm).json()["codes"][0]
+    t1, t2 = token(client), token(client)
+    client.post("/api/v1/redeem", json={"code": code}, headers=t1)
+    assert client.delete("/api/v1/devices/me", headers=t1).status_code == 200
+    assert client.post("/api/v1/redeem", json={"code": code}, headers=t2).json()["plan"] == "school"

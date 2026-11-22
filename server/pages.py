@@ -113,3 +113,57 @@ def sitemap():
     urls = [BASE + "/"] + [f"{BASE}/t/{t['id']}" for t in DATA["tools"]]
     xml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + "".join(f"<url><loc>{u}</loc></url>" for u in urls) + "</urlset>"
     return Response(xml, media_type="application/xml")
+
+
+ADMIN = """<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>إدارة مُيسّر: باقات المدارس</title><style>""" + CSS + """
+label{display:block;margin:10px 0 4px;font-weight:600}input,textarea{width:100%;padding:12px;border:1px solid #CBD0DE;border-radius:12px;font:inherit;background:#fff}
+button{font:inherit;border:0;border-radius:12px;padding:12px 18px;background:#3346D3;color:#fff;cursor:pointer;min-height:44px}button.ghost{background:#EEF0FD;color:#2836A8}
+button.danger{background:#FDECEC;color:#B42318}table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:8px;border-bottom:1px solid #E3E6EF;text-align:start}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.err{color:#B42318}.ok{color:#23814A}pre{white-space:pre-wrap;direction:ltr;text-align:left;background:#F6F7FB;padding:12px;border-radius:12px}
+@media (prefers-color-scheme:dark){input,textarea{background:#171C2C;color:#E8EBF5;border-color:#2A3147}pre{background:#0F1320}td,th{border-color:#2A3147}}
+</style></head><body><main><div class="top"><a class="brand" href="./">مُيسّر</a><span style="color:#5B6178;font-size:14px">باقات المدارس</span></div>
+<div class="card" id="login"><h2 style="text-align:start">الدخول</h2><label for="pw">كلمة مرور الإدارة</label><input id="pw" type="password" autocomplete="current-password">
+<p class="row" style="margin-top:12px"><button onclick="enter()">دخول</button><span id="lerr" class="err"></span></p></div>
+<div id="app" hidden>
+<div class="card"><h2 style="text-align:start">باقة مدرسة جديدة</h2>
+<label for="school">اسم المدرسة</label><input id="school" placeholder="مثل: مدارس الرواد الأهلية">
+<div class="row"><div style="flex:1;min-width:140px"><label for="seats">عدد المعلمين</label><input id="seats" type="number" min="1" max="500" value="10"></div>
+<div style="flex:1;min-width:140px"><label for="months">المدة بالأشهر</label><input id="months" type="number" min="1" max="36" value="12"></div></div>
+<label for="note">ملاحظة (رقم الفاتورة مثلًا)</label><input id="note">
+<p class="row" style="margin-top:12px"><button onclick="create()">أنشئ الأكواد</button><span id="cmsg"></span></p><div id="newcodes"></div></div>
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="text-align:start;margin:0">الباقات</h2><button class="ghost" onclick="load()">تحديث</button></div>
+<div id="list" style="margin-top:10px"></div></div>
+<div class="card"><h2 style="text-align:start">تحرير كود</h2><p class="blurb" style="text-align:start">إذا غيّر المعلم جواله، حرّر كوده ليفعّله على الجهاز الجديد.</p>
+<div class="row"><input id="rel" placeholder="MSR-XXXX-XXXX" style="flex:1;direction:ltr"><button class="ghost" onclick="release()">تحرير</button></div><p id="rmsg"></p></div>
+</div></main>
+<script>
+var PW=sessionStorage.getItem('mpw')||'';
+function api(p,o){o=o||{};o.headers=Object.assign({'authorization':'Bearer '+PW,'content-type':'application/json'},o.headers||{});
+ return fetch('api/v1/admin/'+p,o).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.detail||('خطأ '+r.status));return j})})}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
+function day(t){return new Date(t*1000).toLocaleDateString('en-GB')}
+function enter(){PW=document.getElementById('pw').value;api('licenses').then(function(){sessionStorage.setItem('mpw',PW);show()}).catch(function(e){document.getElementById('lerr').textContent=e.message})}
+function show(){document.getElementById('login').hidden=true;document.getElementById('app').hidden=false;load()}
+function csv(name,codes){var b=new Blob(['\\ufeffالمدرسة,الكود\\n'+codes.map(function(c){return '"'+name.replace(/"/g,'""')+'",'+c}).join('\\n')],{type:'text/csv'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='أكواد-'+name+'.csv';a.click()}
+function create(){var s=document.getElementById('school').value.trim(),m=document.getElementById('cmsg');m.className='';m.textContent='...';
+ api('licenses',{method:'POST',body:JSON.stringify({school:s,seats:+document.getElementById('seats').value,months:+document.getElementById('months').value,note:document.getElementById('note').value})})
+ .then(function(j){m.className='ok';m.textContent='أُنشئت '+j.codes.length+' أكواد';
+  document.getElementById('newcodes').innerHTML='<pre>'+j.codes.map(esc).join('\\n')+'</pre><button class="ghost" id="dl">تنزيل الأكواد CSV</button>';
+  document.getElementById('dl').onclick=function(){csv(s,j.codes)};load()}).catch(function(e){m.className='err';m.textContent=e.message})}
+function load(){api('licenses').then(function(ls){var h='<table><tr><th>المدرسة</th><th>المستخدم</th><th>تنتهي</th><th></th></tr>';
+ ls.forEach(function(l){h+='<tr><td>'+esc(l.school)+(l.note?'<br><small>'+esc(l.note)+'</small>':'')+'</td><td>'+l.used+' من '+l.seats+'</td><td>'+(l.revoked?'ملغاة':day(l.expires))+'</td><td class="row">'+
+  '<button class="ghost" onclick="codes('+l.id+',\\''+esc(l.school).replace(/'/g,'')+'\\')">الأكواد</button>'+(l.revoked?'':'<button class="danger" onclick="revoke('+l.id+')">إلغاء</button>')+'</td></tr>'});
+ document.getElementById('list').innerHTML=ls.length?h+'</table>':'<p class="blurb">لا توجد باقات بعد.</p>'}).catch(function(e){document.getElementById('list').textContent=e.message})}
+function codes(id,name){api('licenses/'+id+'/codes').then(function(cs){csv(name,cs.map(function(c){return c.code+(c.used?' (مفعّل)':'')}))})}
+function revoke(id){if(prompt('اكتب «إلغاء» لتأكيد إلغاء الباقة وكل أكوادها')!=='إلغاء')return;api('licenses/'+id+'/revoke',{method:'POST'}).then(load)}
+function release(){var m=document.getElementById('rmsg');api('codes/'+encodeURIComponent(document.getElementById('rel').value)+'/release',{method:'POST'})
+ .then(function(){m.className='ok';m.textContent='حُرّر الكود، ويمكن تفعيله على جهاز جديد'}).catch(function(e){m.className='err';m.textContent=e.message})}
+if(PW)api('licenses').then(show).catch(function(){sessionStorage.removeItem('mpw')});
+</script></body></html>"""
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def admin_page():
+    return HTMLResponse(ADMIN, headers={"X-Robots-Tag": "noindex", "Cache-Control": "no-store"})
