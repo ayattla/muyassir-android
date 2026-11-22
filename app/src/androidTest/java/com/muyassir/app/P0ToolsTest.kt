@@ -55,7 +55,7 @@ class P0ToolsTest {
         rule.onNode(hasContentDescription(label) and hasClickAction()).scrolled().performClick(); rule.waitForIdle()
         rule.onAllNodes(hasText(option) and hasClickAction()).onLast().performClick(); rule.waitForIdle()
     }
-    private fun clickTag(tag: String) { rule.onNodeWithTag(tag).performScrollTo().performClick(); rule.waitForIdle() }
+    private fun clickTag(tag: String) { rule.onNodeWithTag(tag).scrolled().performClick(); rule.waitForIdle() }
     private fun waitResults(ms: Long = 60_000) {
         try { rule.waitUntil(ms) { rule.onAllNodesWithTag("results").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty() } }
         catch (e: Throwable) { fail("no result within ${ms / 1000}s") }
@@ -196,7 +196,7 @@ class P0ToolsTest {
         val f = File(dir, name); FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }; return f
     }
     @Test fun imagesToWordWithReview() {
-        TestHooks.inputs = listOf(Uri.fromFile(textImage("doc.png", listOf("تقرير المبيعات", "هذا نص عربي واضح للاختبار"))))
+        TestHooks.inputs = listOf(Uri.fromFile(textImage("doc.png", listOf("تقرير المبيعات 2026", "الفرع الأول: الرياض", "Muyassir sales report", "هذا نص عربي واضح للاختبار"))))
         launch("img_word"); clickTag("action"); waitResults(180_000); rule.onNodeWithTag("reviewText").assertExists()
         clickTag("saveReviewed"); waitText("مراجع.docx")
     }
