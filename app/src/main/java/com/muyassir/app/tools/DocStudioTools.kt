@@ -125,7 +125,7 @@ fun ExamToDoc(t: Tool, back: () -> Unit, open: (String) -> Unit) {
         val (pages, _) = ocrPages(ctx, ins, p, com.muyassir.app.core.Plus.ocrPages.coerceAtMost(30))
         val text = pages.joinToString("\n") { r -> r.blocks.joinToString("\n") { b -> when (b) { is Layout.Block.Heading -> b.text; is Layout.Block.Para -> b.text; is Layout.Block.Table -> b.rows.joinToString("\n") { it.joinToString(" ") } } } }
         val found = ExamParser.parse(text)
-        if (found.isEmpty()) error("لم أجد أسئلة مرقمة. تأكد أن الصورة واضحة وأن الأسئلة تبدأ بأرقام.")
+        if (found.isEmpty()) error("لم أجد أسئلة مرقمة. تأكد أن الصورة واضحة وأن الأسئلة تبدأ بأرقام." + if (text.isNotBlank()) " النص المقروء: «${text.take(80)}»" else "")
         withContext(Dispatchers.Main) { qs = found; msg = null }
         val paras = ArrayList<Office.Para>()
         found.forEachIndexed { i, q ->

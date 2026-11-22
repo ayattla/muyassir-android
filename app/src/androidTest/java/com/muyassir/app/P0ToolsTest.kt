@@ -189,9 +189,10 @@ class P0ToolsTest {
 
     // ---------- P1: document studio and education studio ----------
     private fun textImage(name: String, lines: List<String>): File {
-        val bmp = Bitmap.createBitmap(1400, 120 + lines.size * 90, Bitmap.Config.ARGB_8888); val c = android.graphics.Canvas(bmp); c.drawColor(Color.WHITE)
-        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK; textSize = 56f; textAlign = android.graphics.Paint.Align.RIGHT }
-        lines.forEachIndexed { i, l -> c.drawText(l, 1340f, 110f + i * 90, p) }
+        // Bold 80 px text, like a clear phone photo of a printed page.
+        val bmp = Bitmap.createBitmap(1600, 160 + lines.size * 130, Bitmap.Config.ARGB_8888); val c = android.graphics.Canvas(bmp); c.drawColor(Color.WHITE)
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK; textSize = 80f; typeface = android.graphics.Typeface.DEFAULT_BOLD; textAlign = android.graphics.Paint.Align.RIGHT }
+        lines.forEachIndexed { i, l -> c.drawText(l, 1520f, 140f + i * 130, p) }
         val f = File(dir, name); FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }; return f
     }
     @Test fun imagesToWordWithReview() {

@@ -111,8 +111,8 @@ object ExamParser {
 
     private val digits = "٠١٢٣٤٥٦٧٨٩"
     private fun latin(s: String) = s.map { c -> digits.indexOf(c).takeIf { it >= 0 }?.let { '0' + it } ?: c }.joinToString("")
-    private val qStart = Regex("^\\s*(?:س\\s*)?\\(?([0-9]{1,3})\\s*[).:\\-ـ/]\\s*(.+)$")
-    private val choice = Regex("^\\s*\\(?([أابجدهـabcdABCD])\\s*[).:\\-ـ]\\s*(.+)$")
+    private val qStart = Regex("^\\s*(?:س\\s*)?[(\\[]?([0-9]{1,3})\\s*[)(.:\\-ـ/\\]]\\s*(.+)$")
+    private val choice = Regex("^\\s*[(\\[]?([أابجدهـabcdABCD])\\s*[)(.:\\-ـ\\]]\\s*(.+)$")
     private val inlineChoices = Regex("\\(?([أبجد])\\s*[).\\-]\\s*([^()]+?)(?=\\s*\\(?[أبجد]\\s*[).\\-]|$)")
 
     fun parse(text: String): List<Q> {
