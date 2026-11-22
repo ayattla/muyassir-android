@@ -23,7 +23,7 @@ class SaudiRulesTest {
 
     @Test fun serviceSpan() {
         val s = SaudiRules.service(d(2020, 1, 15), d(2026, 3, 10))
-        assertEquals(6, s.years); assertEquals(1, s.months); assertEquals(24, s.days)
+        assertEquals(6, s.years); assertEquals(1, s.months); assertEquals(23, s.days)
     }
 
     @Test fun noticeArticles75and76() {

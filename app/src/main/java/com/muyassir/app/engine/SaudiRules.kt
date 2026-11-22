@@ -44,7 +44,8 @@ object SaudiRules {
     fun service(start: Long, end: Long): Span {
         val a = Calendar.getInstance().apply { timeInMillis = minOf(start, end) }; val b = Calendar.getInstance().apply { timeInMillis = maxOf(start, end) }
         var y = b.get(Calendar.YEAR) - a.get(Calendar.YEAR); var m = b.get(Calendar.MONTH) - a.get(Calendar.MONTH); var d = b.get(Calendar.DAY_OF_MONTH) - a.get(Calendar.DAY_OF_MONTH)
-        if (d < 0) { m -= 1; d += a.getActualMaximum(Calendar.DAY_OF_MONTH) }
+        // Borrow the length of the month before the end date (as calendars count it: 15 Jan → 10 Mar = 1 month 23 days in 2026).
+        if (d < 0) { m -= 1; d += (b.clone() as Calendar).apply { add(Calendar.MONTH, -1) }.getActualMaximum(Calendar.DAY_OF_MONTH) }
         if (m < 0) { y -= 1; m += 12 }
         return Span(y, m, d, (b.timeInMillis - a.timeInMillis) / 86_400_000L)
     }
