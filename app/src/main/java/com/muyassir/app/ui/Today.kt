@@ -275,7 +275,7 @@ private fun AdhkarCard(now: Calendar) {
     val green = if (tokens.dark) Color(0xFF5FD3AE) else Color(0xFF0E7A57)
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(toneSoft(Color(0xFF14936B))).border(1.dp, Color(0xFF14936B).copy(alpha = .25f), RoundedCornerShape(Radius.l))
-            .clickable { openUrl(ctx, "https://ayattla.com/tools/$path") }.padding(Space.l).testTag("adhkarCard"),
+            .clickable { openUrl(ctx, "https://ayattla.com/$path") }.padding(Space.l).testTag("adhkarCard"),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelLarge, color = green, fontWeight = FontWeight.SemiBold)
