@@ -6,4 +6,6 @@
     <string name="sc_recipes">الوصفات</string>
     <string name="sc_compress">ضغط PDF</string>
     <string name="sc_img_pdf">صور إلى PDF</string>
+    <string name="today_widget_name">يومي من مُيسّر</string>
+    <string name="today_widget_desc">الصلاة القادمة وموعد الراتب وأقرب وثيقة</string>
 </resources>
