@@ -43,9 +43,10 @@ class UiFlowTest {
     @Before fun setup() { PDFBoxResourceLoader.init(ctx); dir = File(ctx.cacheDir, "ui-${System.nanoTime()}").apply { mkdirs() } }
     @After fun done() { TestHooks.inputs = null; scenario?.close() }
 
-    private fun launch(tool: String? = null) {
+    private fun launch(tool: String? = null, tab: String? = null) {
         val i = Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         if (tool != null) i.putExtra("tool", tool)
+        if (tab != null) i.putExtra("tab", tab)
         scenario = ActivityScenario.launch(i); rule.waitForIdle()
     }
     private fun text(s: String) = rule.onNode(hasText(s, substring = true) and !hasSetTextAction(), useUnmergedTree = true)
@@ -54,7 +55,7 @@ class UiFlowTest {
 
     // ---------- navigation: every category and every tool ----------
     @Test fun everyCategoryShowsItsToolsAndEveryToolOpens() {
-        launch()
+        launch(tab = "home")
         val problems = mutableListOf<String>()
         for (c in Tools.categories) {
             rule.onNodeWithTag("homeGrid").performScrollToNode(hasText(c.title) and hasClickAction())
@@ -80,7 +81,7 @@ class UiFlowTest {
     }
 
     @Test fun searchFindsToolsByPurpose() {
-        launch()
+        launch(tab = "home")
         rule.onNodeWithContentDescription("بحث").performClick(); rule.waitForIdle()
         rule.waitUntil(5_000) { rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
         rule.onNode(hasSetTextAction()).performTextInput("تصغير ملف")
@@ -99,12 +100,35 @@ class UiFlowTest {
 
     @Test fun tabsSettingsAndDarkMode() {
         launch()
-        rule.onNode(hasText("نشاطي") and hasClickAction()).performClick(); waitText("عملياتك وملفاتك")
-        rule.onNode(hasText("الإعدادات") and hasClickAction()).performClick(); waitText("مظهر التطبيق")
+        rule.onNode(hasText("ملفاتي") and hasClickAction()).performClick(); waitText("عملياتك وملفاتك")
+        rule.onNode(hasText("أنا") and hasClickAction()).performClick(); waitText("وثائقك وتفضيلاتك")
         rule.onNode(hasText("داكن") and hasClickAction()).performClick(); rule.waitForIdle()
         rule.onNode(hasText("فاتح") and hasClickAction()).performClick(); rule.waitForIdle()
-        rule.onNode(hasText("الرئيسية") and hasClickAction()).performClick()
+        rule.onNode(hasText("الأدوات") and hasClickAction()).performClick()
         rule.onNodeWithTag("homeGrid").assertExists()
+        rule.onNode(hasText("اليوم") and hasClickAction()).performClick()
+        rule.onNodeWithTag("today").assertExists()
+    }
+
+    // ---------- «يومي» ----------
+    @Test fun todaySetupPrayerDatesAndTasks() {
+        com.muyassir.app.core.Store.init(ctx); com.muyassir.app.core.Daily.resetForTest()
+        val now = System.currentTimeMillis()
+        com.muyassir.app.core.Store.saveList("tasks", listOf(org.json.JSONObject().put("id", 1L).put("title", "مهمة من الاختبار").put("due", now)))
+        com.muyassir.app.core.Store.saveList("documents", listOf(org.json.JSONObject().put("id", 2L).put("name", "رخصة القيادة").put("kind", "رخصة قيادة").put("expiry", now + 20L * 86_400_000L)))
+        launch()
+        rule.onNodeWithTag("todaySetup").assertExists()
+        rule.onNodeWithTag("role-teacher").performScrollTo().performClick()
+        rule.onNodeWithTag("todayStart").performScrollTo().performClick(); rule.waitForIdle()
+        rule.onAllNodesWithTag("todaySetup").assertCountEquals(0)
+        rule.onNodeWithTag("prayerCard").assertExists(); waitText("بعد")
+        rule.onNodeWithTag("dates").assertExists(); waitText("راتب الدولة"); waitText("رخصة القيادة")
+        waitText("مهمة من الاختبار")
+        rule.onNode(hasText("مهمة من الاختبار") and hasClickAction()).performScrollTo().performClick(); rule.waitForIdle()
+        assert(com.muyassir.app.core.Store.list("tasks").first().optBoolean("done"))
+        rule.onNodeWithTag("roleCard-teacher").performScrollTo().assertExists(); waitText("اختبار جديد")
+        rule.onNodeWithTag("adhkarCard").performScrollTo().assertExists()
+        com.muyassir.app.core.Store.saveList("tasks", emptyList()); com.muyassir.app.core.Store.saveList("documents", emptyList())
     }
 
     // ---------- calculators ----------

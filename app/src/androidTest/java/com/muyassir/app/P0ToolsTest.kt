@@ -254,7 +254,7 @@ class P0ToolsTest {
         launch("text_pdf"); input("النص", "مستند المشروع"); click("إنشاء PDF"); waitResults(); scenario?.close()
         val i = Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         scenario = ActivityScenario.launch(i); rule.waitForIdle()
-        rule.onAllNodes(hasText("نشاطي") and hasClickAction()).onFirst().performClick(); click("الملفات")
+        rule.onAllNodes(hasText("ملفاتي") and hasClickAction()).onFirst().performClick(); click("الملفات")
         rule.onAllNodesWithContentDescription("إلى مشروع").onFirst().performClick(); rule.waitForIdle()
         rule.onNodeWithTag("newProject").performTextReplacement("مشروع الاختبار"); clickTag("createProject")
         click("مشاريعي"); waitText("مشروع الاختبار"); click("فتح"); waitText(".pdf")

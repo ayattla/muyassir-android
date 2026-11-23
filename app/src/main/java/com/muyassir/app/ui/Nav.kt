@@ -27,11 +27,11 @@ val LocalWide = staticCompositionLocalOf { false }
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector, val selected: ImageVector)
 private val tabs = listOf(
-    Tab("home", "الرئيسية", Icons.Outlined.Home, Icons.Rounded.Home),
-    Tab("search", "البحث", Icons.Outlined.Search, Icons.Rounded.Search),
+    Tab("today", "اليوم", Icons.Outlined.WbSunny, Icons.Rounded.WbSunny),
+    Tab("home", "الأدوات", Icons.Outlined.GridView, Icons.Rounded.GridView),
     Tab("assistant", "المساعد", Icons.Outlined.AutoAwesome, Icons.Rounded.AutoAwesome),
-    Tab("activity", "نشاطي", Icons.Outlined.History, Icons.Rounded.History),
-    Tab("settings", "الإعدادات", Icons.Outlined.Settings, Icons.Rounded.Settings),
+    Tab("activity", "ملفاتي", Icons.Outlined.Folder, Icons.Rounded.Folder),
+    Tab("settings", "أنا", Icons.Outlined.Person, Icons.Rounded.Person),
 )
 
 @Composable
@@ -48,12 +48,12 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
         if (!pendingStart) return; pendingStart = false
         if (!startTool.isNullOrBlank() && Tools.byId.containsKey(startTool)) nav.navigate("tool/$startTool")
         else if (!startCat.isNullOrBlank() && Tools.categories.any { it.id == startCat }) nav.navigate("cat/$startCat")
-        else if (startTab in setOf("search", "assistant", "activity", "settings")) nav.navigate(startTab!!)
+        else if (startTab in setOf("home", "search", "assistant", "activity", "settings")) nav.navigate(startTab!!)
         else if (startScreen == "recipes") nav.navigate("recipes")
         else if (startScreen?.startsWith("recipe:") == true) nav.navigate("recipe/${startScreen.removePrefix("recipe:")}")
     }
     val entry by nav.currentBackStackEntryAsState()
-    val route = entry?.destination?.route ?: "home"
+    val route = entry?.destination?.route ?: "today"
     val top = tabs.any { it.route == route }
     fun go(r: String) = nav.navigate(r) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
     val openTool: (String) -> Unit = { nav.navigate("tool/$it") }
@@ -85,16 +85,19 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
                 },
             ) { pad ->
                 NavHost(
-                    nav, startDestination = "home", modifier = Modifier.padding(pad),
+                    nav, startDestination = "today", modifier = Modifier.padding(pad),
                     enterTransition = { fadeIn(androidx.compose.animation.core.tween(180)) + slideInHorizontally(androidx.compose.animation.core.tween(220)) { -it / 12 } },
                     exitTransition = { fadeOut(androidx.compose.animation.core.tween(120)) },
                     popEnterTransition = { fadeIn(androidx.compose.animation.core.tween(180)) },
                     popExitTransition = { fadeOut(androidx.compose.animation.core.tween(120)) + slideOutHorizontally(androidx.compose.animation.core.tween(200)) { -it / 12 } },
                 ) {
-                    composable("home") {
+                    composable("today") {
                         LaunchedEffect(Unit) { applyStart() }
                         // Files shared from another app («فتح في مُيسّر») open the choice screen.
                         LaunchedEffect(com.muyassir.app.core.Incoming.version) { if (com.muyassir.app.core.Incoming.version > seenIncoming) { seenIncoming = com.muyassir.app.core.Incoming.version; nav.navigate("incoming") } }
+                        TodayScreen(open = openTool, openAssistant = { go("assistant") }, openTools = { go("home") })
+                    }
+                    composable("home") {
                         Home(open = openTool, openCat = { nav.navigate("cat/$it") }, openSearch = { go("search") }, openAssistant = { go("assistant") }, openActivity = { go("activity") },
                             openRecipes = { nav.navigate("recipes") }, openRecipe = { nav.navigate("recipe/$it") })
                     }
@@ -104,7 +107,7 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
                     composable("search") { SearchScreen(open = openTool, openAssistant = { go("assistant") }) }
                     composable("assistant") { AssistantScreen(open = openTool, openRecipe = { nav.navigate("recipe/$it") }) }
                     composable("activity") { ActivityScreen(open = openTool) }
-                    composable("settings") { SettingsScreen() }
+                    composable("settings") { SettingsScreen(open = openTool) }
                     composable("cat/{id}") { e -> CategoryScreen(e.arguments?.getString("id") ?: "files", open = openTool, back = { nav.popBackStack() }) }
                     composable("tool/{id}") { e -> ToolHost(e.arguments?.getString("id") ?: "", back = { nav.popBackStack() }, open = openTool) }
                 }

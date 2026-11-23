@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -257,12 +258,22 @@ fun ActivityScreen(open: (String) -> Unit) {
 }
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(open: (String) -> Unit = {}) {
     val ctx = LocalContext.current
     var name by remember { mutableStateOf(Prefs.name) }
     var cleared by remember { mutableStateOf<String?>(null) }
-    TabPage("الإعدادات", "مظهر التطبيق والصفحة الرئيسية والخصوصية") {
+    TabPage("أنا", "وثائقك وتفضيلاتك والإعدادات") {
         LazyColumn(Modifier.fillMaxSize().testTag("settings"), verticalArrangement = Arrangement.spacedBy(Space.m), contentPadding = PaddingValues(bottom = Space.xxxl)) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    listOf(Triple("documents", "وثائقي ومواعيدي", androidx.compose.material.icons.Icons.Rounded.FolderShared),
+                        Triple("budget", "ميزانيتي", androidx.compose.material.icons.Icons.Rounded.AccountBalanceWallet)).forEach { (id, label, icon) ->
+                        Column(Modifier.weight(1f).cardSurface().clickable { open(id) }.padding(Space.l).testTag("me-$id"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(icon, null, tint = tokens.accent); Text(label, style = MaterialTheme.typography.titleSmall)
+                        }
+                    }
+                }
+            }
             item { PlusCard() }
             item {
                 Panel("المظهر") {
