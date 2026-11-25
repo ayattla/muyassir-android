@@ -22,7 +22,7 @@ home() { # name: cold start on the home screen, fail if its content is missing
   adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1; sleep 1
   adb exec-out screencap -p > "shots/$1.png"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb exec-out cat /sdcard/ui.xml > "shots/$1.xml"
-  grep -qE "الأقسام|ابحث بالاسم أو الوظيفة|نرتّب لك يومك|مهامك اليوم" "shots/$1.xml" || { echo "::error::Home screen content missing ($1)"; FAIL=1; }
+  grep -qE "الأقسام|ابحث بالاسم أو الوظيفة|نرتّب لك يومك|مهامك اليوم|وش تبي تسوي اليوم|اختصاراتك" "shots/$1.xml" || { echo "::error::Home screen content missing ($1)"; FAIL=1; }
 }
 home 00-home
 echo "== every category screen"
