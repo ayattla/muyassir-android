@@ -55,7 +55,7 @@ fun TodayScreen(open: (String) -> Unit, openAssistant: () -> Unit, openTools: ()
     var editing by remember { mutableStateOf(false) }
     var tick by remember { mutableIntStateOf(0) }   // bumps after a task is ticked off or added
 
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier.widthIn(max = 720.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.l).padding(bottom = Space.xxxl).testTag("today"),
             verticalArrangement = Arrangement.spacedBy(Space.l),
@@ -329,7 +329,7 @@ private fun Section(tag: String? = null, content: @Composable ColumnScope.() -> 
 @Composable
 private fun TopBar(now: Calendar, openMe: () -> Unit, customise: () -> Unit) {
     val h = Hijri.toHijri(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1, now.get(Calendar.DAY_OF_MONTH))
-    Row(Modifier.fillMaxWidth().padding(top = Space.l), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+    Row(Modifier.fillMaxWidth().padding(top = Space.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
         Box(
             Modifier.size(48.dp).clip(CircleShape).background(tokens.accentSoft).clickable(onClick = openMe).testTag("todayMe").semantics { contentDescription = "حسابي" },
             contentAlignment = Alignment.Center,
@@ -343,9 +343,11 @@ private fun TopBar(now: Calendar, openMe: () -> Unit, customise: () -> Unit) {
             Text("${Hijri.days[now.get(Calendar.DAY_OF_WEEK) - 1]} ${h.d} ${Hijri.months[h.m - 1]}، ${now.get(Calendar.DAY_OF_MONTH)} ${Hijri.gMonths[now.get(Calendar.MONTH)]}",
                 style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, maxLines = 1)
         }
-        IconButton(onClick = customise, modifier = Modifier.size(48.dp).clip(CircleShape).border(1.dp, tokens.border, CircleShape).testTag("todaySettings").semantics { contentDescription = "تخصيص يومي" }) {
-            Icon(Icons.Rounded.Tune, null, tint = tokens.textPrimary)
-        }
+        Box(
+            Modifier.size(48.dp).clip(CircleShape).background(tokens.surface).border(1.dp, tokens.border, CircleShape).clickable(onClick = customise)
+                .testTag("todaySettings").semantics { contentDescription = "تخصيص يومي" },
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.Tune, null, tint = tokens.accent, modifier = Modifier.size(22.dp)) }
     }
 }
 
