@@ -503,7 +503,7 @@ private fun WeekStrip(now: Calendar, open: (String) -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             (0..6).forEach { i ->
                 val d = dayStart(i); val end = d.timeInMillis + 86_400_000L
-                val busy = tasks.any { it in d.timeInMillis until end } || exams.any { it in d.timeInMillis until end } || i.toLong() in pays || i.toLong() in occ
+                val busy = tasks.any { it in d.timeInMillis until end } || exams.any { it in d.timeInMillis until end } || i in pays || i.toLong() in occ
                 val on = i == sel
                 Column(
                     Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) tokens.accent else Color.Transparent).clickable { sel = i }.padding(vertical = 8.dp).testTag("day-$i"),
@@ -519,7 +519,7 @@ private fun WeekStrip(now: Calendar, open: (String) -> Unit) {
         val lines = buildList {
             Store.list("tasks").filter { !it.optBoolean("done") && it.optLong("due") in d.timeInMillis until end }.forEach { add("مهمة: " + it.optString("title")) }
             Store.list("exams").filter { it.optLong("at") in d.timeInMillis until end }.forEach { add("اختبار " + it.optString("subject")) }
-            Daily.payRules().filter { PayDays.next(it, now).first == sel.toLong() }.forEach { add(it.title) }
+            Daily.payRules().filter { PayDays.next(it, now).first == sel }.forEach { add(it.title) }
             Occasions.upcoming(now, 7).filter { it.days == sel.toLong() }.forEach { add(it.title) }
         }
         Text(if (lines.isEmpty()) "يوم فاضي، ما فيه مواعيد" else lines.take(4).joinToString("\n"), style = MaterialTheme.typography.bodyMedium,
@@ -539,7 +539,7 @@ private fun BudgetCard(now: Calendar, open: (String) -> Unit) {
             OutlinedButton(onClick = { open("budget") }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("حدد دخلك") }
         } else {
             val left = income - spent
-            val days = Daily.payRules().firstOrNull()?.let { PayDays.next(it, now).first.coerceAtLeast(1) } ?: 30L
+            val days = Daily.payRules().firstOrNull()?.let { PayDays.next(it, now).first.coerceAtLeast(1) } ?: 30
             LinearProgressIndicator(progress = { (spent / income).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(50)),
                 color = if (left < 0) Color(0xFFC0392B) else Color(0xFFB45309), trackColor = toneSoft(Color(0xFFB45309)))
             Row(Modifier.fillMaxWidth()) {
