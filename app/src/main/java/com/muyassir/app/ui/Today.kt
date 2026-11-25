@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -29,6 +31,8 @@ import com.muyassir.app.core.Prefs
 import com.muyassir.app.core.Store
 import com.muyassir.app.engine.Cities
 import com.muyassir.app.engine.Hijri
+import com.muyassir.app.engine.Occasions
+import com.muyassir.app.core.Tools
 import com.muyassir.app.engine.PayDays
 import com.muyassir.app.engine.PrayerTimes
 import kotlinx.coroutines.delay
@@ -39,42 +43,31 @@ import java.util.TimeZone
 
 /** «يومي»: what matters today at a glance. Every card shows only when it has something to say. */
 @Composable
-fun TodayScreen(open: (String) -> Unit, openAssistant: () -> Unit, openTools: () -> Unit) {
+fun TodayScreen(open: (String) -> Unit, openAssistant: () -> Unit, openTools: () -> Unit, openCat: (String) -> Unit = {}, openMe: () -> Unit = {}) {
     Daily.load()
     var now by remember { mutableStateOf(GregorianCalendar(TimeZone.getTimeZone("Asia/Riyadh"))) }
     LaunchedEffect(Unit) { while (true) { delay(30_000); now = GregorianCalendar(TimeZone.getTimeZone("Asia/Riyadh")) } }
     var editing by remember { mutableStateOf(false) }
-    var tick by remember { mutableIntStateOf(0) }   // bumps after a task is ticked off
+    var tick by remember { mutableIntStateOf(0) }   // bumps after a task is ticked off or added
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier.widthIn(max = 720.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.l).padding(bottom = Space.xxxl).testTag("today"),
-            verticalArrangement = Arrangement.spacedBy(Space.m),
+            verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            Row(Modifier.fillMaxWidth().padding(top = Space.l), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(greeting(now), style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary)
-                    Text("يومي", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                }
-                IconButton(onClick = { editing = !editing }, modifier = Modifier.testTag("todaySettings").semantics { contentDescription = "تخصيص يومي" }) {
-                    Icon(Icons.Rounded.Tune, null, tint = tokens.textPrimary)
-                }
-            }
-            if (!Daily.setupDone || editing) SetupCard(first = !Daily.setupDone) { editing = false }
+            TopBar(now, openMe) { editing = !editing }
+            CommandBar(now, openAssistant, open)
             if (Daily.showPrayer) PrayerCard(now)
+            QuickGrid(open, openTools)
+            if (!Daily.setupDone || editing) SetupCard(first = !Daily.setupDone) { editing = false }
             DatesRow(now, open)
             key(tick) { TasksCard(now, open) { tick++ } }
+            if (Daily.setupDone && Daily.roles.isEmpty()) RolePrompt()
             Daily.roles.forEach { RoleCard(it, now, open) }
+            ContinueCard(open)
             if (Daily.showAdhkar && Daily.showPrayer) AdhkarCard(now)
-            Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(tokens.surface).border(1.dp, tokens.borderStrong, RoundedCornerShape(Radius.m))
-                    .clickable(onClick = openAssistant).heightIn(min = 52.dp).padding(horizontal = Space.l).testTag("todayAssistant"),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s),
-            ) {
-                Icon(Icons.Rounded.AutoAwesome, null, tint = tokens.accent, modifier = Modifier.size(20.dp))
-                Text("اكتب ما تريد… مثل: حوّل هذه الصور إلى PDF", style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary)
-            }
-            TextButton(onClick = openTools, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("كل الأدوات") }
+            SpacesGrid(openCat)
+            ToolOfDay(now, open)
         }
     }
 }
@@ -178,21 +171,22 @@ private fun DatesRow(now: Calendar, open: (String) -> Unit) {
         Store.list("exams").filter { it.optLong("at") > System.currentTimeMillis() }.minByOrNull { it.optLong("at") }?.let {
             val d = com.muyassir.app.tools.daysUntil(it.optLong("at")); if (d <= 14) add(Due(d, "اختبار ${it.optString("subject")}", 1, "exams"))
         }
-    }.sortedBy { it.days }.take(3)
+        Occasions.upcoming(now).forEach { add(Due(it.days, it.title, 3, "hijri")) }
+    }.sortedBy { it.days }.take(8)
     if (dues.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        Text("مواعيد قريبة", style = MaterialTheme.typography.titleSmall, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s), modifier = Modifier.testTag("dates")) {
+        SectionTitle("مواعيدك القادمة", "رواتب ومناسبات ووثائق")
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("dates")) {
             dues.forEach { d ->
                 val warn = d.tone == 2
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (warn) toneSoft(Color(0xFFB0600A)) else tokens.surface)
+                    Modifier.width(112.dp).clip(RoundedCornerShape(18.dp)).background(if (warn) toneSoft(Color(0xFFB0600A)) else tokens.surface)
                         .border(1.dp, if (warn) Color(0xFFB0600A).copy(alpha = .35f) else tokens.border, RoundedCornerShape(18.dp))
                         .clickable(enabled = d.tool != null) { d.tool?.let(open) }.padding(vertical = Space.m, horizontal = Space.s),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(if (d.days == 0L) "اليوم" else "${d.days}", fontSize = if (d.days == 0L) 18.sp else 24.sp, fontWeight = FontWeight.Bold,
-                        color = if (warn) Color(0xFFB0600A).let { c -> if (tokens.dark) Color(0xFFF2B01E) else c } else tokens.accent)
+                        color = when { warn -> if (tokens.dark) Color(0xFFF2B01E) else Color(0xFFB0600A); d.tone == 3 -> if (tokens.dark) Color(0xFF5FD3AE) else Color(0xFF0E7A57); else -> tokens.accent })
                     if (d.days > 0) Text(if (d.days in 3..10) "أيام" else "يومًا", style = MaterialTheme.typography.labelSmall, color = tokens.textSecondary)
                     Text(d.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, maxLines = 2)
                 }
@@ -214,7 +208,17 @@ private fun TasksCard(now: Calendar, open: (String) -> Unit, changed: () -> Unit
             if (tasks.isNotEmpty()) Text("$doneCount من ${tasks.size}", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
         }
         if (tasks.isEmpty() && homework.isEmpty()) {
-            Text("لا مهام لليوم. أضف ما تريد إنجازه، ونعرضه هنا ونذكّرك به.", style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary)
+            Text("ما عندك مهام اليوم. اكتب أول مهمة واضغط إضافة.", style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary)
+        }
+        var draft by remember { mutableStateOf("") }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            OutlinedTextField(draft, { draft = it }, placeholder = { Text("أضف مهمة لليوم") }, singleLine = true, shape = RoundedCornerShape(Radius.m),
+                modifier = Modifier.weight(1f).testTag("quickTask"))
+            FilledIconButton(onClick = {
+                val title = draft.trim(); if (title.isEmpty()) return@FilledIconButton
+                Store.saveList("tasks", listOf(JSONObject().put("id", System.currentTimeMillis()).put("title", title).put("due", endOfDay).put("done", false)) + Store.list("tasks"))
+                draft = ""; changed()
+            }, modifier = Modifier.size(52.dp).testTag("quickTaskAdd").semantics { contentDescription = "إضافة المهمة" }) { Icon(Icons.Rounded.Add, null) }
         }
         tasks.forEach { t -> TaskLine(t.optString("title"), t.optBoolean("done")) { toggle("tasks", t); changed() } }
         homework.forEach { t -> TaskLine("${t.optString("subject")}: ${t.optString("title")}", false) { toggle("homework", t); changed() } }
@@ -281,5 +285,178 @@ private fun AdhkarCard(now: Calendar) {
         Text(label, style = MaterialTheme.typography.labelLarge, color = green, fontWeight = FontWeight.SemiBold)
         Text("حان وقت $label", style = MaterialTheme.typography.bodyMedium)
         Text("افتحها في آيات تتلى", style = MaterialTheme.typography.labelLarge, color = green)
+    }
+}
+
+// ---- Home layout pieces -------------------------------------------------------------------------
+
+@Composable
+private fun SectionTitle(title: String, sub: String? = null, action: Pair<String, () -> Unit>? = null) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (sub != null) Text(sub, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+        }
+        if (action != null) TextButton(onClick = action.second) { Text(action.first) }
+    }
+}
+
+@Composable
+private fun TopBar(now: Calendar, openMe: () -> Unit, customise: () -> Unit) {
+    val h = Hijri.toHijri(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1, now.get(Calendar.DAY_OF_MONTH))
+    Row(Modifier.fillMaxWidth().padding(top = Space.l), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+        Box(
+            Modifier.size(48.dp).clip(CircleShape).background(tokens.accentSoft).clickable(onClick = openMe).testTag("todayMe").semantics { contentDescription = "حسابي" },
+            contentAlignment = Alignment.Center,
+        ) {
+            val n = Prefs.name.trim()
+            if (n.isNotEmpty()) Text(n.take(1), color = tokens.accent, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            else Icon(Icons.Rounded.Person, null, tint = tokens.accent)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(greeting(now), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text("${Hijri.days[now.get(Calendar.DAY_OF_WEEK) - 1]} ${h.d} ${Hijri.months[h.m - 1]}، ${now.get(Calendar.DAY_OF_MONTH)} ${Hijri.gMonths[now.get(Calendar.MONTH)]}",
+                style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, maxLines = 1)
+        }
+        IconButton(onClick = customise, modifier = Modifier.size(48.dp).clip(CircleShape).border(1.dp, tokens.border, CircleShape).testTag("todaySettings").semantics { contentDescription = "تخصيص يومي" }) {
+            Icon(Icons.Rounded.Tune, null, tint = tokens.textPrimary)
+        }
+    }
+}
+
+/** One place to ask for anything, with three suggestions that change with the time of day. */
+@Composable
+private fun CommandBar(now: Calendar, openAssistant: () -> Unit, open: (String) -> Unit) {
+    val hour = now.get(Calendar.HOUR_OF_DAY)
+    val ideas = when {
+        hour in 5..11 -> listOf("scan", "img_pdf", "translate")
+        hour in 12..17 -> listOf("pdf_merge", "pdf_compress", "invoice")
+        else -> listOf("tasks", "budget", "notes")
+    }.mapNotNull { Tools.byId[it] }
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(tokens.surface).border(1.5.dp, tokens.accent.copy(alpha = .35f), RoundedCornerShape(Radius.l))
+                .clickable(onClick = openAssistant).heightIn(min = 58.dp).padding(horizontal = Space.l).testTag("todayAssistant"),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(tokens.accent), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.AutoAwesome, null, tint = tokens.onAccent, modifier = Modifier.size(18.dp))
+            }
+            Text("وش تبي تسوي اليوم؟", style = MaterialTheme.typography.bodyLarge, color = tokens.textSecondary, modifier = Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            ideas.forEach { t ->
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).background(toneSoft(Tools.colorOf(t))).clickable { open(t.id) }.heightIn(min = 40.dp).padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(t.icon, null, tint = tone(Tools.colorOf(t)), modifier = Modifier.size(16.dp))
+                    Text(t.title, style = MaterialTheme.typography.labelLarge, color = tokens.textPrimary)
+                }
+            }
+        }
+    }
+}
+
+/** Eight shortcuts: favourites first, then what fits the person's role. */
+@Composable
+private fun QuickGrid(open: (String) -> Unit, openTools: () -> Unit) {
+    val base = Daily.roles.flatMap { Tools.byRole[it].orEmpty() }
+    val ids = (Store.favorites.toList() + base + listOf("scan", "img_pdf", "pdf_merge", "pdf_compress", "translate", "salary", "invoice", "qr_make")).distinct()
+    val tools = ids.mapNotNull { Tools.byId[it] }.take(8)
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        SectionTitle("اختصاراتك", if (Store.favorites.isEmpty()) "ثبّت أدواتك بالنجمة لتظهر هنا" else null, "كل الأدوات" to openTools)
+        Column(Modifier.fillMaxWidth().cardSurface().padding(vertical = Space.m, horizontal = Space.s).testTag("quickGrid"), verticalArrangement = Arrangement.spacedBy(Space.m)) {
+            tools.chunked(4).forEach { row ->
+                Row(Modifier.fillMaxWidth()) {
+                    row.forEach { t ->
+                        val c = Tools.colorOf(t)
+                        Column(
+                            Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { open(t.id) }.padding(vertical = 6.dp).testTag("quick-${t.id}"),
+                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Box(Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(toneSoft(c)), contentAlignment = Alignment.Center) {
+                                Icon(t.icon, null, tint = tone(c), modifier = Modifier.size(26.dp))
+                            }
+                            Text(t.title, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center, maxLines = 2, minLines = 2, color = tokens.textPrimary)
+                        }
+                    }
+                    repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RolePrompt() {
+    Column(Modifier.fillMaxWidth().cardSurface().padding(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("وش يصفك؟", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        Text("نعرض لك أدوات دورك ومواعيده هنا", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            listOf("student" to "طالب", "teacher" to "معلم", "employee" to "موظف", "business" to "صاحب منشأة").forEach { (id, label) ->
+                Text(label, style = MaterialTheme.typography.labelLarge, color = tokens.accent,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, tokens.accent.copy(alpha = .4f), RoundedCornerShape(50)).clickable { Daily.toggleRole(id) }
+                        .heightIn(min = 40.dp).padding(horizontal = 16.dp, vertical = 10.dp).testTag("pick-$id"))
+            }
+        }
+    }
+}
+
+/** Pick up where you left off: the last three things done in the app. */
+@Composable
+private fun ContinueCard(open: (String) -> Unit) {
+    val items = Store.recents.take(3).mapNotNull { r -> Tools.byId[r.tool]?.let { it to r } }
+    if (items.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s), modifier = Modifier.testTag("continue")) {
+        SectionTitle("أكمل من حيث توقفت")
+        items.forEach { (t, r) -> ActivityRow(t.icon, Tools.colorOf(t), t.title, r.detail, ago(r.time), "فتح") { open(t.id) } }
+    }
+}
+
+/** Every space of the app, one tap away: the categories as coloured tiles. */
+@Composable
+private fun SpacesGrid(openCat: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        SectionTitle("مساحاتك", "${Tools.all.size} أداة في ${Tools.categories.size} مساحات")
+        Tools.categories.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                row.forEach { c ->
+                    Row(
+                        Modifier.weight(1f).clip(RoundedCornerShape(Radius.m)).background(toneSoft(c.color)).clickable { openCat(c.id) }
+                            .heightIn(min = 64.dp).padding(horizontal = Space.m, vertical = Space.s).testTag("space-${c.id}"),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(tokens.surface), contentAlignment = Alignment.Center) {
+                            Icon(c.icon, null, tint = tone(c.color), modifier = Modifier.size(20.dp))
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(c.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, color = tokens.textPrimary)
+                            Text("${Tools.inCat(c.id).size} أداة", style = MaterialTheme.typography.labelSmall, color = tokens.textSecondary)
+                        }
+                    }
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** One tool you haven't tried, a different one each day. */
+@Composable
+private fun ToolOfDay(now: Calendar, open: (String) -> Unit) {
+    val pool = Tools.all.filter { it.id !in Store.favorites && (Store.usage[it.id] ?: 0) == 0 }.ifEmpty { Tools.all }
+    val t = pool[now.get(Calendar.DAY_OF_YEAR) % pool.size]
+    val c = Tools.colorOf(t)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).border(1.dp, tokens.border, RoundedCornerShape(Radius.l)).clickable { open(t.id) }.padding(Space.l).testTag("toolOfDay"),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(toneSoft(c)), contentAlignment = Alignment.Center) { Icon(t.icon, null, tint = tone(c)) }
+        Column(Modifier.weight(1f)) {
+            Text("جرّب اليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
+            Text(t.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(t.sub, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, maxLines = 2)
+        }
     }
 }

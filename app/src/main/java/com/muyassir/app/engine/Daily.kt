@@ -114,3 +114,24 @@ object PayDays {
         clear(); set(c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH))
     }.timeInMillis
 }
+
+/** Islamic occasions on the Umm al-Qura calendar: days from today to the next one (0 = today). */
+object Occasions {
+    data class O(val title: String, val days: Long)
+    private val fixed = listOf(Triple(9, 1, "رمضان"), Triple(10, 1, "عيد الفطر"), Triple(12, 9, "يوم عرفة"), Triple(12, 10, "عيد الأضحى"), Triple(1, 1, "السنة الهجرية"), Triple(1, 10, "عاشوراء"))
+
+    private fun dayIndex(y: Int, m: Int, d: Int): Long {
+        val c = java.util.GregorianCalendar(java.util.TimeZone.getTimeZone("UTC")); c.clear(); c.set(y, m - 1, d); return c.timeInMillis / 86_400_000L
+    }
+
+    fun upcoming(today: java.util.Calendar, within: Long = 90): List<O> {
+        val gy = today.get(java.util.Calendar.YEAR); val gm = today.get(java.util.Calendar.MONTH) + 1; val gd = today.get(java.util.Calendar.DAY_OF_MONTH)
+        val t0 = dayIndex(gy, gm, gd); val h = Hijri.toHijri(gy, gm, gd)
+        fun to(y: Int, m: Int, d: Int): Long { val g = Hijri.toGregorian(y, m, d); return dayIndex(g.y, g.m, g.d) - t0 }
+        val out = fixed.map { (m, d, title) -> var n = to(h.y, m, d); if (n < 0) n = to(h.y + 1, m, d); O(title, n) }.toMutableList()
+        // The white days (13 to 15 of every month), worth a reminder to fast.
+        val white = when { h.d in 13..15 -> 0L; h.d < 13 -> to(h.y, h.m, 13); else -> if (h.m == 12) to(h.y + 1, 1, 13) else to(h.y, h.m + 1, 13) }
+        out += O("الأيام البيض", white)
+        return out.filter { it.days in 0..within }.sortedBy { it.days }
+    }
+}

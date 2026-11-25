@@ -128,6 +128,12 @@ class UiFlowTest {
         assert(com.muyassir.app.core.Store.list("tasks").first().optBoolean("done"))
         rule.onNodeWithTag("roleCard-teacher").performScrollTo().assertExists(); waitText("اختبار جديد")
         rule.onNodeWithTag("adhkarCard").performScrollTo().assertExists()
+        // The redesigned home: shortcuts, a task typed straight into «اليوم», the spaces and the daily tool.
+        rule.onNodeWithTag("quickGrid").performScrollTo().assertExists(); rule.onNodeWithTag("quick-scan").assertExists()
+        rule.onNodeWithTag("quickTask").performScrollTo().performTextInput("مهمة سريعة")
+        rule.onNodeWithTag("quickTaskAdd").performClick(); rule.waitForIdle()
+        assert(com.muyassir.app.core.Store.list("tasks").any { it.optString("title") == "مهمة سريعة" }); waitText("مهمة سريعة")
+        rule.onNodeWithTag("space-files").performScrollTo().assertExists(); rule.onNodeWithTag("toolOfDay").performScrollTo().assertExists()
         com.muyassir.app.core.Store.saveList("tasks", emptyList()); com.muyassir.app.core.Store.saveList("documents", emptyList())
     }
 
