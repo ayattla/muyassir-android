@@ -1,7 +1,7 @@
 #!/bin/bash
 # 1) instrumented engine tests, 2) open every tool screen, photograph it and fail on any crash.
 set -u
-PKG=com.muyassir.app
+PKG=com.muyassir.tools
 mkdir -p shots
 adb install -r -g out/apk/debug/*universal*debug.apk || exit 1
 adb install -r -g out/apk/androidTest/debug/*.apk || exit 1
@@ -18,7 +18,7 @@ adb shell settings put system font_scale 1.0
 adb shell settings put global hide_error_dialogs 1
 home() { # name: cold start on the home screen, fail if its content is missing
   adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1
-  adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 8
+  adb shell am force-stop $PKG; adb shell am start -W -n $PKG/com.muyassir.app.MainActivity >/dev/null; sleep 8
   adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1; sleep 1
   adb exec-out screencap -p > "shots/$1.png"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb exec-out cat /sdcard/ui.xml > "shots/$1.xml"
@@ -27,7 +27,7 @@ home() { # name: cold start on the home screen, fail if its content is missing
 home 00-home
 echo "== every category screen"
 for c in $(grep -o 'Category("[a-z]*"' app/src/main/java/com/muyassir/app/core/Tools.kt | cut -d'"' -f2); do
-  adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity --es cat "$c" >/dev/null; sleep 3
+  adb shell am force-stop $PKG; adb shell am start -W -n $PKG/com.muyassir.app.MainActivity --es cat "$c" >/dev/null; sleep 3
   adb exec-out screencap -p > "shots/cat-$c.png"
 done
 IDS=$(grep -o 'Tool("[a-z_]*"' app/src/main/java/com/muyassir/app/core/Tools.kt | cut -d'"' -f2)
@@ -35,13 +35,13 @@ n=0
 for id in $IDS; do
   n=$((n+1))
   adb shell am force-stop $PKG
-  adb shell am start -W -n $PKG/.MainActivity --es tool "$id" >/dev/null
+  adb shell am start -W -n $PKG/com.muyassir.app.MainActivity --es tool "$id" >/dev/null
   sleep 3
   adb exec-out screencap -p > "shots/$(printf %02d $n)-$id.png"
 done
 home 99-home-after
 echo "== tabs, dark mode and tablet layout"
-shot() { adb shell am force-stop $PKG; adb shell am start -W -n $PKG/.MainActivity "$@" >/dev/null; sleep 4; }
+shot() { adb shell am force-stop $PKG; adb shell am start -W -n $PKG/com.muyassir.app.MainActivity "$@" >/dev/null; sleep 4; }
 for t in search assistant activity settings; do shot --es tab $t; adb exec-out screencap -p > "shots/tab-$t.png"; done
 shot --es theme dark; adb exec-out screencap -p > shots/dark-home.png
 adb shell input swipe 500 1700 500 500 400; sleep 1; adb exec-out screencap -p > shots/dark-home-scrolled.png

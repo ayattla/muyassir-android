@@ -8,7 +8,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.muyassir.app"
+        applicationId = "com.muyassir.tools"  // com.muyassir.app is taken on Google Play
         minSdk = 26
         targetSdk = 36
         versionCode = (System.getenv("MYS_VERSION_CODE") ?: "1").toInt()
