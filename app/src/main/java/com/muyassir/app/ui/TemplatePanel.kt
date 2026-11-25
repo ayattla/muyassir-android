@@ -35,7 +35,7 @@ fun TemplatePanel(useLogo: Boolean = true, styles: Boolean = true) {
     val sel = Templates.all[Templates.selected]
     val shown = Templates.current
     val pickLogo = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u ->
-        u?.let { runCatching { Templates.setLogo(ctx, ImageEngine.load(ctx, it, 600)) }.onFailure { toast(ctx, "تعذّر فتح الصورة") } }
+        u?.let { runCatching { Templates.setLogo(ctx, ImageEngine.load(ctx, it, 600)) }.onFailure { toast(ctx, "تعذر فتح الصورة") } }
     }
     fun choose(layout: Int, palette: Int) {
         val i = layout * Templates.palettes.size + palette
@@ -71,7 +71,7 @@ fun TemplatePanel(useLogo: Boolean = true, styles: Boolean = true) {
         }
         Text(
             if (!styles) (if (Plus.unlocked) "يظهر شعارك أعلى المستند" else "مع بلس: شعارك دون سطر «${Plus.FOOTER}».")
-            else if (Plus.unlocked) "${Templates.all.size} قالبًا: ${shown.name}" else "المجاني: القالب الكلاسيكي مع سطر «${Plus.FOOTER}». بلس: ${Templates.all.size} قالبًا وشعارك دون السطر.",
+            else if (Plus.unlocked) "${Templates.all.size} قالبا: ${shown.name}" else "المجاني: القالب الكلاسيكي مع سطر «${Plus.FOOTER}». بلس: ${Templates.all.size} قالبا وشعارك دون السطر.",
             style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary, modifier = Modifier.fillMaxWidth(),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )

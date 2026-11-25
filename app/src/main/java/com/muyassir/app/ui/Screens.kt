@@ -96,11 +96,11 @@ fun SearchScreen(open: (String) -> Unit, openAssistant: () -> Unit) {
                     item { Row(verticalAlignment = Alignment.CenterVertically) { Text("عمليات بحث سابقة", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, modifier = Modifier.weight(1f)); TextButton(onClick = { Prefs.clearSearches() }) { Text("مسح") } } }
                     item { FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalArrangement = Arrangement.spacedBy(Space.s)) { Prefs.searches.forEach { s -> Chip(s) { q = s } } } }
                 }
-                item { Text("جرّب", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, modifier = Modifier.padding(top = Space.s)) }
+                item { Text("جرب", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, modifier = Modifier.padding(top = Space.s)) }
                 item { FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalArrangement = Arrangement.spacedBy(Space.s)) { listOf("تصغير ملف", "صور إلى PDF", "دمج", "إزالة الخلفية", "استخراج نص", "راتب", "ضريبة", "QR", "compress", "merge").forEach { s -> Chip(s) { q = s } } } }
                 item { AssistantPromo(openAssistant) }
             } else if (results.isEmpty()) {
-                item { EmptyState(Icons.Rounded.SearchOff, "لا توجد أداة بهذا الوصف", "جرّب كلمة أخرى، أو صف ما تريد للمساعد ليقترح عليك.") }
+                item { EmptyState(Icons.Rounded.SearchOff, "لا توجد أداة بهذا الوصف", "جرب كلمة أخرى، أو صف ما تريد للمساعد ليقترح عليك.") }
                 item { AssistantPromo(openAssistant) }
             } else {
                 item { Text("${results.size} نتيجة", style = MaterialTheme.typography.labelLarge, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
@@ -151,17 +151,17 @@ fun AssistantScreen(open: (String) -> Unit, openRecipe: (String) -> Unit = {}) {
                 item { Text("أمثلة", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
                 item {
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                        listOf("حوّل صوري إلى PDF وصغّر حجمه", "أريد تحويل عشر صور إلى Word", "أنشئ ورقة عمل للصف السادس", "أريد حساب مستحقات نهاية الخدمة", "اجمع هذه المستندات في PDF", "استخرج الجداول من هذا التقرير")
+                        listOf("حول صوري إلى PDF وصغر حجمه", "أريد تحويل عشر صور إلى Word", "أنشئ ورقة عمل للصف السادس", "أريد حساب مستحقات نهاية الخدمة", "اجمع هذه المستندات في PDF", "استخرج الجداول من هذا التقرير")
                             .forEach { s -> Chip(s) { q = s; asked = s } }
                     }
                 }
-                item { Hint("المساعد يعمل على جهازك دون إنترنت: يفهم طلبك، ويفتح الأداة الحقيقية بملفاتك وبما ذكرته (الصف، المادة)، ثم تضغط تنفيذ وترى النتيجة. لا يرسل شيئًا خارج جهازك.") }
+                item { Hint("المساعد يعمل على جهازك دون إنترنت: يفهم طلبك، ويفتح الأداة الحقيقية بملفاتك وبما ذكرته (الصف، المادة)، ثم تضغط تنفيذ وترى النتيجة. لا يرسل شيئا خارج جهازك.") }
             } else {
                 plan.note?.let { item { Text(it, style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) } }
                 Assistant.recipeFor(plan.steps.map { it.tool.id })?.let { rid -> com.muyassir.app.core.Recipes.byId(rid)?.let { r ->
                     item(key = "recipe") {
                         Column(Modifier.fillMaxWidth().testTag("assistantRecipe"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("أو نفّذها كلها بلمسة واحدة:", style = MaterialTheme.typography.labelLarge, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            Text("أو نفذها كلها بلمسة واحدة:", style = MaterialTheme.typography.labelLarge, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                             RecipeCard(r) { openRecipe(r.id) }
                         }
                     }
@@ -214,7 +214,7 @@ fun ActivityScreen(open: (String) -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.WorkspacePremium, null, tint = Brand.Saffron, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp))
             TextButton(onClick = { P.paywall = com.muyassir.app.core.Plus.Reason.Menu }) {
-                Text(when { P.active -> "مُيسّر بلس مفعّل"; P.live -> "اليوم: ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية • مُيسّر بلس"; else -> "مُيسّر بلس قريبًا" }, style = MaterialTheme.typography.labelMedium)
+                Text(when { P.active -> "ميسر بلس مفعل"; P.live -> "اليوم: ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية • ميسر بلس"; else -> "ميسر بلس قريبا" }, style = MaterialTheme.typography.labelMedium)
             }
         }
         LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Space.s), contentPadding = PaddingValues(bottom = Space.xxxl)) {
@@ -227,7 +227,7 @@ fun ActivityScreen(open: (String) -> Unit) {
                     }
                     item { TextButton(onClick = { Store.clearRecents() }, modifier = Modifier.fillMaxWidth()) { Text("مسح السجل") } }
                 }
-                1 -> if (files.isEmpty()) item { EmptyState(Icons.Rounded.FolderOpen, "لا توجد ملفات ناتجة", "نتائج التحويل والضغط تبقى هنا 24 ساعة ثم تُحذف تلقائيًا، إلا ما تختار إبقاءه.") }
+                1 -> if (files.isEmpty()) item { EmptyState(Icons.Rounded.FolderOpen, "لا توجد ملفات ناتجة", "نتائج التحويل والضغط تبقى هنا 24 ساعة ثم تحذف تلقائيا، إلا ما تختار إبقاءه.") }
                 else {
                     item(key = "fileSearch") { TextField2("ابحث في ملفاتك", fileQuery, { fileQuery = it }, Modifier.fillMaxWidth()) }
                     items(files.filter { fileQuery.isBlank() || Tools.norm(it.name).contains(Tools.norm(fileQuery)) }, key = { it.path }) { f ->
@@ -236,7 +236,7 @@ fun ActivityScreen(open: (String) -> Unit) {
                             Spacer(Modifier.width(Space.m))
                             Column(Modifier.weight(1f)) {
                                 Text(f.name, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, maxLines = 1)
-                                Text("${Files.human(f.length())} • ${ago(f.lastModified())}${if (Files.isKept(ctx, f)) " • محفوظ" else " • يُحذف بعد 24 ساعة"}", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
+                                Text("${Files.human(f.length())} • ${ago(f.lastModified())}${if (Files.isKept(ctx, f)) " • محفوظ" else " • يحذف بعد 24 ساعة"}", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
                             }
                             if (!Files.isKept(ctx, f)) IconButton(onClick = { Files.keep(ctx, f); refresh++ }) { Icon(Icons.Rounded.PushPin, "إبقاء الملف", tint = tokens.textSecondary) }
                             IconButton(onClick = { addTo = f }) { Icon(Icons.Rounded.CreateNewFolder, "إلى مشروع", tint = tokens.textSecondary) }
@@ -296,7 +296,7 @@ fun SettingsScreen(open: (String) -> Unit = {}) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                         Prefs.icons.forEach { (id, label) ->
                             Box(Modifier.padding(horizontal = 3.dp)) {
-                                Chip(label, Prefs.icon == id) { if (id == "Default" || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Look)) { Prefs.chooseIcon(ctx, id); toast(ctx, "تغيّرت الأيقونة. قد يستغرق ظهورها لحظات على الشاشة الرئيسية.") } }
+                                Chip(label, Prefs.icon == id) { if (id == "Default" || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Look)) { Prefs.chooseIcon(ctx, id); toast(ctx, "تغيرت الأيقونة. قد يستغرق ظهورها لحظات على الشاشة الرئيسية.") } }
                             }
                         }
                     }
@@ -305,7 +305,7 @@ fun SettingsScreen(open: (String) -> Unit = {}) {
             item {
                 Panel("الترحيب") {
                     TextField2("اسمك (اختياري) يظهر في التحية", name, { name = it; Prefs.changeName(it) })
-                    Text("ما يصفك (يرتّب الأدوات المقترحة)", style = MaterialTheme.typography.labelLarge, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text("ما يصفك (يرتب الأدوات المقترحة)", style = MaterialTheme.typography.labelLarge, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     ChipRow { (Prefs.roles + ("none" to "بلا تخصيص")).forEach { (id, label) -> Chip(label, Prefs.role == id) { Prefs.chooseRole(id) } } }
                 }
             }
@@ -316,9 +316,9 @@ fun SettingsScreen(open: (String) -> Unit = {}) {
             }
             item {
                 Panel("الخصوصية والتخزين") {
-                    Text("كل المعالجة على جهازك، ولا تُرفع ملفاتك إلى أي خادم. النتائج تُحذف تلقائيًا بعد 24 ساعة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    SecondaryButton("حذف الملفات المؤقتة والنتائج الآن", Icons.Rounded.DeleteSweep, Modifier.fillMaxWidth()) { Files.clearAll(ctx); cleared = "حُذفت الملفات المؤقتة والنتائج" }
-                    SecondaryButton("مسح سجل العمليات والبحث", Icons.Rounded.History, Modifier.fillMaxWidth()) { Store.clearRecents(); Prefs.clearSearches(); cleared = "مُسح السجل" }
+                    Text("كل المعالجة على جهازك، ولا ترفع ملفاتك إلى أي خادم. النتائج تحذف تلقائيا بعد 24 ساعة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    SecondaryButton("حذف الملفات المؤقتة والنتائج الآن", Icons.Rounded.DeleteSweep, Modifier.fillMaxWidth()) { Files.clearAll(ctx); cleared = "حذفت الملفات المؤقتة والنتائج" }
+                    SecondaryButton("مسح سجل العمليات والبحث", Icons.Rounded.History, Modifier.fillMaxWidth()) { Store.clearRecents(); Prefs.clearSearches(); cleared = "مسح السجل" }
                     LaunchedEffect(Unit) { AppLock.load() }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.weight(1f)) {
@@ -327,7 +327,7 @@ fun SettingsScreen(open: (String) -> Unit = {}) {
                                 when {
                                     !on -> if (a != null) AppLock.prompt(a, "إيقاف القفل", { AppLock.set(false) }) else AppLock.set(false)
                                     !com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Lock) -> {}
-                                    a == null || !AppLock.available(a) -> cleared = "فعّل البصمة أو قفل الشاشة في إعدادات جهازك أولًا"
+                                    a == null || !AppLock.available(a) -> cleared = "فعل البصمة أو قفل الشاشة في إعدادات جهازك أولا"
                                     else -> AppLock.prompt(a, "تفعيل القفل", { AppLock.set(true) })
                                 }
                             }
@@ -340,14 +340,14 @@ fun SettingsScreen(open: (String) -> Unit = {}) {
             item { BackupPanel() }
             item {
                 Panel("الدعم والملاحظات") {
-                    Text(if (com.muyassir.app.core.Plus.active) "مشتركو بلس تصل رسائلهم بعلامة «بلس» ويُرد عليها أولًا." else "أرسل اقتراحك أو بلّغ عن مشكلة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(if (com.muyassir.app.core.Plus.active) "مشتركو بلس تصل رسائلهم بعلامة «بلس» ويرد عليها أولا." else "أرسل اقتراحك أو بلغ عن مشكلة.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     SecondaryButton("تواصل مع الدعم", Icons.Rounded.SupportAgent, Modifier.fillMaxWidth()) { contactSupport(ctx) }
                 }
             }
             item {
                 Column(Modifier.fillMaxWidth().padding(top = Space.m), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     LogoMark(44.dp)
-                    Text("مُيسّر", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
+                    Text("ميسر", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
                     val v = runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: ""
                     Text("الإصدار $v • ${Tools.all.size} أداة", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
                 }
@@ -361,7 +361,7 @@ const val SUPPORT_EMAIL = ""
 
 fun contactSupport(ctx: android.content.Context) {
     val plus = com.muyassir.app.core.Plus.active
-    val subject = (if (plus) "[بلس] " else "") + "ملاحظة على تطبيق مُيسّر"
+    val subject = (if (plus) "[بلس] " else "") + "ملاحظة على تطبيق ميسر"
     val v = runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: ""
     val body = "\n\n—\nالإصدار $v • Android ${android.os.Build.VERSION.RELEASE}${if (plus) " • مشترك بلس" else ""}"
     if (SUPPORT_EMAIL.isNotBlank()) runCatching {
@@ -384,12 +384,12 @@ fun PlusCard() {
         }
         Spacer(Modifier.width(Space.m))
         Column(Modifier.weight(1f)) {
-            Text(if (P.active) "أنت مشترك في مُيسّر بلس" else "مُيسّر بلس", style = MaterialTheme.typography.titleSmall, color = Color.White)
+            Text(if (P.active) "أنت مشترك في ميسر بلس" else "ميسر بلس", style = MaterialTheme.typography.titleSmall, color = Color.White)
             Text(
                 when {
-                    P.active && P.school.isNotEmpty() -> "مفعّل ضمن باقة ${P.school}."
+                    P.active && P.school.isNotEmpty() -> "مفعل ضمن باقة ${P.school}."
                     P.active -> "كل الميزات مفتوحة. اضغط لإدارة اشتراكك."
-                    !P.live -> "قريبًا: بلا حدود يومية وقوالب احترافية وOCR لملفات كاملة"
+                    !P.live -> "قريبا: بلا حدود يومية وقوالب احترافية وOCR لملفات كاملة"
                     else -> "استخدمت اليوم ${P.usedToday} من ${P.FREE_OPS_PER_DAY} عمليات مجانية. افتحها بلا حدود."
                 },
                 style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.78f),

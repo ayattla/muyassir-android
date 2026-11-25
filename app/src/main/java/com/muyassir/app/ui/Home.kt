@@ -55,7 +55,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
             if (Prefs.role.isEmpty()) item(span = full) { RoleCard() }
 
             if (Prefs.shows("quick")) {
-                item(span = full) { SectionHead("أدوات سريعة", "أكثر ما يحتاجه الناس يوميًا") }
+                item(span = full) { SectionHead("أدوات سريعة", "أكثر ما يحتاجه الناس يوميا") }
                 items(featuredFor(Prefs.role), key = { "q$it" }, span = { half(this) }) { id -> FeaturedCard(id) { open(id) } }
             }
             if (Prefs.shows("recipes")) {
@@ -68,11 +68,11 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
             }
             val most = Store.usage.entries.sortedByDescending { it.value }.mapNotNull { Tools.byId[it.key] }.take(4)
             if (Prefs.shows("most") && most.isNotEmpty()) {
-                item(span = full) { SectionHead("الأكثر استخدامًا") }
+                item(span = full) { SectionHead("الأكثر استخداما") }
                 items(most, key = { "m" + it.id }, span = { half(this) }) { t -> ToolTile(t, compact = true) { open(t.id) } }
             }
             if (Prefs.shows("rec")) {
-                item(span = full) { SectionHead("مقترحة لك", "بناءً على آخر ما استخدمته") }
+                item(span = full) { SectionHead("مقترحة لك", "بناء على آخر ما استخدمته") }
                 items(Tools.suggestions().take(4), key = { "g" + it.id }, span = { half(this) }) { t -> ToolTile(t) { open(t.id) } }
             }
             val favs = Store.favorites.mapNotNull { Tools.byId[it] }
@@ -89,7 +89,7 @@ fun Home(open: (String) -> Unit, openCat: (String) -> Unit, openSearch: () -> Un
                 }
             }
             if (Prefs.shows("files") && outputs.isNotEmpty()) {
-                item(span = full) { SectionHead("ملفاتك الناتجة", "تُحذف تلقائيًا بعد 24 ساعة", "الكل" to openActivity) }
+                item(span = full) { SectionHead("ملفاتك الناتجة", "تحذف تلقائيا بعد 24 ساعة", "الكل" to openActivity) }
                 items(outputs, key = { "o" + it.path }, span = { if (maxLineSpan >= 8) GridItemSpan(4) else full(this) }) { f ->
                     ActivityRow(fileIcon(f), Brand.Indigo, f.name, Files.human(f.length()), ago(f.lastModified()), "فتح") { Files.open(ctx, f) }
                 }
@@ -108,10 +108,10 @@ private fun featuredFor(role: String) = ((Tools.byRole[role] ?: emptyList()).tak
 @Composable
 private fun RoleCard() {
     Column(Modifier.fillMaxWidth().cardSurface(Radius.l).padding(Space.l).testTag("roleCard"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        Text("لنرتّب مُيسّر لك", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
-        Text("اختر ما يصفك لنقدّم الأدوات التي تحتاجها أولًا. يمكنك تغييره من الإعدادات.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("لنرتب ميسر لك", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
+        Text("اختر ما يصفك لنقدم الأدوات التي تحتاجها أولا. يمكنك تغييره من الإعدادات.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         ChipRow { Prefs.roles.forEach { (id, label) -> Chip(label) { Prefs.chooseRole(id) } } }
-        TextButton(onClick = { Prefs.chooseRole("none") }) { Text("تخطٍّ") }
+        TextButton(onClick = { Prefs.chooseRole("none") }) { Text("تخط") }
     }
 }
 
@@ -125,7 +125,7 @@ private fun Header() {
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             LogoMark(34.dp)
             Spacer(Modifier.width(Space.s))
-            Text("مُيسّر", style = MaterialTheme.typography.headlineSmall, color = tokens.textPrimary)
+            Text("ميسر", style = MaterialTheme.typography.headlineSmall, color = tokens.textPrimary)
         }
         Spacer(Modifier.size(48.dp))
     }
@@ -246,7 +246,7 @@ fun InlineEmpty(icon: ImageVector, text: String) {
 private fun Footer() {
     Column(Modifier.fillMaxWidth().padding(vertical = Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Rounded.Lock, null, tint = tokens.textTertiary, modifier = Modifier.size(16.dp))
-        Text("ملفاتك تُعالَج على جهازك. لا حسابات ولا إعلانات، والملفات المؤقتة تُحذف تلقائيًا بعد 24 ساعة.",
+        Text("ملفاتك تعالج على جهازك. لا حسابات ولا إعلانات، والملفات المؤقتة تحذف تلقائيا بعد 24 ساعة.",
             style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary, textAlign = TextAlign.Center)
     }
 }
@@ -293,7 +293,7 @@ fun CategoryScreen(id: String, open: (String) -> Unit, back: () -> Unit) {
                             modifier = Modifier.clip(CircleShape).background(toneSoft(c.color)).padding(horizontal = 12.dp, vertical = 4.dp))
                     }
                 }
-                if (tools.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(Icons.Rounded.Category, "لا توجد أدوات هنا", "ارجع إلى الرئيسية واختر قسمًا آخر.") }
+                if (tools.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(Icons.Rounded.Category, "لا توجد أدوات هنا", "ارجع إلى الرئيسية واختر قسما آخر.") }
                 items(tools, key = { it.id }) { t -> ToolTile(t) { open(t.id) } }
             }
         }

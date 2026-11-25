@@ -133,6 +133,10 @@ class UiFlowTest {
         rule.onNodeWithTag("quickTask").performScrollTo().performTextInput("مهمة سريعة")
         rule.onNodeWithTag("quickTaskAdd").performClick(); rule.waitForIdle()
         assert(com.muyassir.app.core.Store.list("tasks").any { it.optString("title") == "مهمة سريعة" }); waitText("مهمة سريعة")
+        rule.onNodeWithTag("week").performScrollTo().assertExists(); rule.onNodeWithTag("budgetCard").performScrollTo().assertExists()
+        rule.onNodeWithTag("vatAmount").performScrollTo().performTextInput("100"); waitText("115")
+        rule.onNodeWithTag("quickNote").performScrollTo().performTextInput("فكرة"); rule.onNodeWithTag("quickNoteAdd").performClick(); rule.waitForIdle()
+        assert(com.muyassir.app.core.Store.list("notes").any { it.optString("body") == "فكرة" })
         rule.onNodeWithTag("space-files").performScrollTo().assertExists(); rule.onNodeWithTag("toolOfDay").performScrollTo().assertExists()
         com.muyassir.app.core.Store.saveList("tasks", emptyList()); com.muyassir.app.core.Store.saveList("documents", emptyList())
     }

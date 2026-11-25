@@ -40,7 +40,7 @@ object Backup {
 
     /** Throws if the password is wrong or the file is not a Muyassir backup. */
     fun decrypt(data: ByteArray, password: String): ByteArray {
-        require(data.size > 33 && data.copyOfRange(0, 5).contentEquals(MAGIC)) { "هذا الملف ليس نسخة احتياطية من مُيسّر" }
+        require(data.size > 33 && data.copyOfRange(0, 5).contentEquals(MAGIC)) { "هذا الملف ليس نسخة احتياطية من ميسر" }
         val salt = data.copyOfRange(5, 21); val iv = data.copyOfRange(21, 33)
         val c = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE, key(password, salt), GCMParameterSpec(128, iv)) }
         return runCatching { c.doFinal(data, 33, data.size - 33) }.getOrElse { throw IllegalArgumentException("كلمة المرور غير صحيحة") }

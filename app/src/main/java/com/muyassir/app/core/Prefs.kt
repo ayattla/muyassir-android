@@ -27,7 +27,7 @@ object Prefs {
     val searches = mutableStateListOf<String>()    // recent search terms
     private var loaded = false
 
-    val sections = listOf("quick" to "الأدوات السريعة", "recipes" to "الوصفات", "cats" to "التصنيفات", "favs" to "المفضلة", "most" to "الأكثر استخدامًا",
+    val sections = listOf("quick" to "الأدوات السريعة", "recipes" to "الوصفات", "cats" to "التصنيفات", "favs" to "المفضلة", "most" to "الأكثر استخداما",
         "rec" to "مقترحة لك", "recent" to "آخر العمليات", "files" to "الملفات الناتجة")
 
     fun load(ctx: Context) {

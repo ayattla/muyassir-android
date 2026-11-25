@@ -39,21 +39,21 @@ fun OnlineQuizPanel(title: String, qs: List<JSONObject>, minutes: String) {
 
     fun publish() {
         val m = Cloud.toActivity(title, qs, minutes.num().toInt(), dayOptions[days])
-        if ((m.activity.optJSONArray("questions")?.length() ?: 0) == 0) { error = "لا توجد أسئلة تُصحح آليًا. أضف سؤال اختيار أو صح وخطأ أو إكمال أو توصيل مكتملًا."; return }
+        if ((m.activity.optJSONArray("questions")?.length() ?: 0) == 0) { error = "لا توجد أسئلة تصحح آليا. أضف سؤال اختيار أو صح وخطأ أو إكمال أو توصيل مكتملا."; return }
         busy = true; error = null
         scope.launch {
             runCatching { Cloud.publish(m.activity) }
-                .onSuccess { last = it; published = Store.list("published"); note = if (m.skipped > 0) "لم يُنشر ${m.skipped} سؤال: الأسئلة المقالية أو غير المكتملة لا تُصحح آليًا." else null }
+                .onSuccess { last = it; published = Store.list("published"); note = if (m.skipped > 0) "لم ينشر ${m.skipped} سؤال: الأسئلة المقالية أو غير المكتملة لا تصحح آليا." else null }
                 .onFailure { error = it.message }
             busy = false
         }
     }
 
     Panel("اختبار إلكتروني برابط ورمز QR") {
-        Hint("يفتحه الطلاب من الجوال أو الحاسب دون حساب، ويُصحح تلقائيًا وتصلك النتائج هنا. تُرسل الأسئلة وإجاباتها فقط إلى خادم مُيسّر، ولا يُطلب من الطالب إلا اسمه.")
-        Text("يبقى مفتوحًا", style = MaterialTheme.typography.labelLarge)
+        Hint("يفتحه الطلاب من الجوال أو الحاسب دون حساب، ويصحح تلقائيا وتصلك النتائج هنا. ترسل الأسئلة وإجاباتها فقط إلى خادم ميسر، ولا يطلب من الطالب إلا اسمه.")
+        Text("يبقى مفتوحا", style = MaterialTheme.typography.labelLarge)
         Segmented(listOf("يوم", "3 أيام", "أسبوع", "أسبوعان"), days) { days = it }
-        PrimaryButton(if (busy) "جارٍ النشر…" else "انشر برابط ورمز QR", Icons.Rounded.Public, enabled = qs.isNotEmpty() && !busy, modifier = Modifier.fillMaxWidth().testTag("publishOnline")) {
+        PrimaryButton(if (busy) "جار النشر…" else "انشر برابط ورمز QR", Icons.Rounded.Public, enabled = qs.isNotEmpty() && !busy, modifier = Modifier.fillMaxWidth().testTag("publishOnline")) {
             if (Cloud.consented) publish() else ask = true
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("onlineError")) }
@@ -85,7 +85,7 @@ fun OnlineQuizPanel(title: String, qs: List<JSONObject>, minutes: String) {
     if (ask) AlertDialog(
         onDismissRequest = { ask = false },
         title = { Text("نشر الاختبار على الإنترنت") },
-        text = { Text("سيُرسل عنوان الاختبار وأسئلته وإجاباتها الصحيحة ومدته إلى خادم مُيسّر (ayattla.com) لإنشاء صفحة للطلاب. لا تُرسل ملفاتك ولا أي بيانات شخصية عنك. يُغلق الاختبار في الموعد الذي اخترته، وتُحذف نتائجه بعد 90 يومًا من إغلاقه، ويمكنك حذفه متى شئت.") },
+        text = { Text("سيرسل عنوان الاختبار وأسئلته وإجاباتها الصحيحة ومدته إلى خادم ميسر (ayattla.com) لإنشاء صفحة للطلاب. لا ترسل ملفاتك ولا أي بيانات شخصية عنك. يغلق الاختبار في الموعد الذي اخترته، وتحذف نتائجه بعد 90 يوما من إغلاقه، ويمكنك حذفه متى شئت.") },
         confirmButton = { TextButton(onClick = { ask = false; Cloud.consent(); publish() }, modifier = Modifier.testTag("consentOk")) { Text("موافق، انشر") } },
         dismissButton = { TextButton(onClick = { ask = false }) { Text("إلغاء") } },
     )
@@ -127,7 +127,7 @@ private fun PublishedList(items: List<JSONObject>, changed: () -> Unit) {
                             "متوسط الدرجة" to (if (n > 0) "${fmt(r.optDouble("average"))} من ${fmt(total)}" else "—"),
                             "الحالة" to (if (r.optBoolean("closed")) "مغلق" else "مفتوح"),
                         ))
-                        if (n == 0) Text("لم يُرسل أي طالب إجابته بعد.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, modifier = Modifier.testTag("noAttempts"))
+                        if (n == 0) Text("لم يرسل أي طالب إجابته بعد.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, modifier = Modifier.testTag("noAttempts"))
                         for (k in 0 until n) { val a = att!!.getJSONObject(k); LabelValue(a.optString("name"), "${fmt(a.optDouble("score"))} / ${fmt(a.optDouble("total"))}") }
                         val pq = r.optJSONArray("per_question")
                         if (n > 0 && pq != null) {
@@ -152,11 +152,11 @@ private fun PublishedList(items: List<JSONObject>, changed: () -> Unit) {
     }
 
     confirm?.let { code -> AlertDialog(onDismissRequest = { confirm = null }, title = { Text("حذف الاختبار $code؟") },
-        text = { Text("سيُحذف الاختبار ونتائج الطلاب من الخادم نهائيًا، ولن يفتح رابطه بعد الآن.") },
+        text = { Text("سيحذف الاختبار ونتائج الطلاب من الخادم نهائيا، ولن يفتح رابطه بعد الآن.") },
         confirmButton = { TextButton(onClick = { confirm = null; scope.launch { runCatching { Cloud.delete(code) }.onSuccess { if (open == code) open = null; changed() }.onFailure { error = it.message; open = code } } }) { Text("حذف نهائي", color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { confirm = null }) { Text("إلغاء") } }) }
     if (forget) AlertDialog(onDismissRequest = { forget = false }, title = { Text("حذف بياناتك من الخادم؟") },
-        text = { Text("ستُحذف كل اختباراتك المنشورة ونتائج طلابها ومعرّف جهازك من خادم مُيسّر نهائيًا. ملفاتك على الجهاز لا تتأثر.") },
-        confirmButton = { TextButton(onClick = { forget = false; scope.launch { runCatching { Cloud.forgetMe() }.onSuccess { open = null; changed(); toast(ctx, "حُذفت بياناتك من الخادم") }.onFailure { toast(ctx, it.message ?: "تعذر الحذف") } } }) { Text("حذف نهائي", color = MaterialTheme.colorScheme.error) } },
+        text = { Text("ستحذف كل اختباراتك المنشورة ونتائج طلابها ومعرف جهازك من خادم ميسر نهائيا. ملفاتك على الجهاز لا تتأثر.") },
+        confirmButton = { TextButton(onClick = { forget = false; scope.launch { runCatching { Cloud.forgetMe() }.onSuccess { open = null; changed(); toast(ctx, "حذفت بياناتك من الخادم") }.onFailure { toast(ctx, it.message ?: "تعذر الحذف") } } }) { Text("حذف نهائي", color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { forget = false }) { Text("إلغاء") } })
 }

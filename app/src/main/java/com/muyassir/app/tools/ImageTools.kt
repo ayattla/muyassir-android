@@ -90,7 +90,7 @@ fun ImgCompress(t: Tool, back: () -> Unit) {
             Segmented(listOf("حسب الجودة", "حجم مستهدف"), mode) { mode = it }
             if (mode == 0) { Text("الجودة ${q.toInt()}%"); Slider(q, { q = it }, valueRange = 20f..95f) }
             else NumField("الحجم الأقصى لكل صورة", kb, { kb = it }, suffix = "ك.ب")
-            Hint("مفيد لرفع الصور على المنصات التي تحدد حجمًا أقصى للمرفقات.")
+            Hint("مفيد لرفع الصور على المنصات التي تحدد حجما أقصى للمرفقات.")
         }
     }) { ins, out, p ->
         ins.mapIndexed { i, u ->
@@ -187,7 +187,7 @@ fun ImgEnhance(t: Tool, back: () -> Unit) {
                 Text("السطوع ${br.toInt()}"); Slider(br, { br = it }, valueRange = -80f..80f)
                 Text("التباين ${fmt(ct.toDouble())}"); Slider(ct, { ct = it }, valueRange = 0.5f..2f)
                 Text("التشبع ${fmt(sat.toDouble())}"); Slider(sat, { sat = it }, valueRange = 0f..2f)
-                SwitchRow("زيادة الحدّة", sharp) { sharp = it }; SwitchRow("أبيض وأسود", gray) { gray = it }
+                SwitchRow("زيادة الحدة", sharp) { sharp = it }; SwitchRow("أبيض وأسود", gray) { gray = it }
             }
         }
     }) { ins, out, p ->
@@ -221,7 +221,7 @@ fun ImgBackground(t: Tool, back: () -> Unit) {
                 Box(Modifier.weight(1f)) { SwitchRow("دقة عالية (حتى 4096 بكسل)", hq) { if (!it || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Quality)) hq = it } }
                 com.muyassir.app.ui.PlusBadge()
             }
-            Hint("يعمل على جهازك دون رفع الصورة. يدعم الأشخاص فورًا، ويدعم أي عنصر بعد أن تنزّل خدمات Google Play نموذجها الإضافي تلقائيًا.")
+            Hint("يعمل على جهازك دون رفع الصورة. يدعم الأشخاص فورا، ويدعم أي عنصر بعد أن تنزل خدمات Google Play نموذجها الإضافي تلقائيا.")
         }
     }) { ins, out, p ->
         val side = if (hq && com.muyassir.app.core.Plus.unlocked) 4096 else 2048
@@ -296,7 +296,7 @@ fun IdPhoto(t: Tool, back: () -> Unit) {
         if (removeBg) {
             val cut = runCatching { ImageEngine.removeBackground(ctx, b) { p.label = it } }
             if (cut.isSuccess) b = ImageEngine.flatten(cut.getOrThrow(), bgs[bg].second)
-            else p.label = "تعذّر استبدال الخلفية (${cut.exceptionOrNull()?.message ?: "لا يوجد شخص واضح"})، فحُفظت بخلفيتها الأصلية"
+            else p.label = "تعذر استبدال الخلفية (${cut.exceptionOrNull()?.message ?: "لا يوجد شخص واضح"})، فحفظت بخلفيتها الأصلية"
         }
         val pick = if (size >= 2 && !com.muyassir.app.core.Plus.unlocked) 0 else size
         val (w, h) = sizes[pick].second
@@ -314,20 +314,20 @@ fun OcrTool(t: Tool, back: () -> Unit) {
     var text by remember { mutableStateOf("") }
     var limited by remember { mutableStateOf(0) }
     var searchable by remember { mutableStateOf(true) }
-    FileTool(t, back, arrayOf("image/*", "application/pdf"), true, "اختر صورًا أو ملف PDF", "استخراج النص", options = {
+    FileTool(t, back, arrayOf("image/*", "application/pdf"), true, "اختر صورا أو ملف PDF", "استخراج النص", options = {
         Panel {
             Segmented(Ocr.Lang.entries.map { it.label }, lang) { lang = it }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { SwitchRow("إنشاء PDF قابل للبحث أيضًا", searchable && com.muyassir.app.core.Plus.unlocked) { if (com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Ocr)) searchable = it } }
+                Box(Modifier.weight(1f)) { SwitchRow("إنشاء PDF قابل للبحث أيضا", searchable && com.muyassir.app.core.Plus.unlocked) { if (com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Ocr)) searchable = it } }
                 com.muyassir.app.ui.PlusBadge()
             }
             Hint(if (com.muyassir.app.core.Plus.unlocked) "يعمل دون إنترنت. للحصول على أفضل نتيجة استخدم صورة واضحة ومستقيمة."
-                 else "يعمل دون إنترنت. المجاني يستخرج النص من ${com.muyassir.app.core.Plus.FREE_OCR_PAGES} صفحات في العملية، ومع بلس من الملف كاملًا.")
+                 else "يعمل دون إنترنت. المجاني يستخرج النص من ${com.muyassir.app.core.Plus.FREE_OCR_PAGES} صفحات في العملية، ومع بلس من الملف كاملا.")
         }
     }, after = {
         if (limited > 0) Panel {
-            Text("استُخرج النص من أول ${com.muyassir.app.core.Plus.FREE_OCR_PAGES} صفحات، وبقيت $limited ${if (limited == 1) "صفحة" else "صفحات"}.", style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("ocrLimited"))
-            SecondaryButton("استخرج الملف كاملًا مع بلس", Icons.Rounded.WorkspacePremium, Modifier.fillMaxWidth()) { com.muyassir.app.core.Plus.paywall = com.muyassir.app.core.Plus.Reason.Ocr }
+            Text("استخرج النص من أول ${com.muyassir.app.core.Plus.FREE_OCR_PAGES} صفحات، وبقيت $limited ${if (limited == 1) "صفحة" else "صفحات"}.", style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("ocrLimited"))
+            SecondaryButton("استخرج الملف كاملا مع بلس", Icons.Rounded.WorkspacePremium, Modifier.fillMaxWidth()) { com.muyassir.app.core.Plus.paywall = com.muyassir.app.core.Plus.Reason.Ocr }
         }
         if (text.isNotBlank()) TextResult(text, "النص المستخرج")
     }) { ins, out, p ->
@@ -403,7 +403,7 @@ fun ScanTool(t: Tool, back: () -> Unit) {
     }
     ToolScreen(t, back) {
         Panel {
-            Text("صوّر المستند وسيُقص ويُحسَّن تلقائيًا، ويمكنك إضافة عدة صفحات.", style = MaterialTheme.typography.bodyMedium)
+            Text("صور المستند وسيقص ويحسن تلقائيا، ويمكنك إضافة عدة صفحات.", style = MaterialTheme.typography.bodyMedium)
             PrimaryButton("بدء المسح", Icons.Rounded.DocumentScanner) {
                 val opts = GmsDocumentScannerOptions.Builder().setGalleryImportAllowed(true).setPageLimit(50)
                     .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF, GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
@@ -412,11 +412,11 @@ fun ScanTool(t: Tool, back: () -> Unit) {
                     .addOnSuccessListener { launcher.launch(IntentSenderRequest.Builder(it).build()) }
                     .addOnFailureListener { error = "الماسح غير متاح على هذا الجهاز. تأكد من تحديث خدمات Google Play." }
             }
-            SwitchRow("استخراج النص وتسمية الملف تلقائيًا", autoText) { autoText = it }
+            SwitchRow("استخراج النص وتسمية الملف تلقائيا", autoText) { autoText = it }
             Hint("الماسح من خدمات Google Play ويعمل على الجهاز دون رفع الصور.")
         }
         if (working) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text("جارٍ قراءة النص على جهازك…")
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text("جار قراءة النص على جهازك…")
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (results.isNotEmpty()) ResultFiles(results)

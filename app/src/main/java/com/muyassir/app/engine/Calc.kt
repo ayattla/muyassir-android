@@ -131,7 +131,7 @@ object Calc {
     }
 
     fun gradeWord(pct: Double): String = when {
-        pct >= 90 -> "ممتاز"; pct >= 80 -> "جيد جدًا"; pct >= 70 -> "جيد"; pct >= 60 -> "مقبول"; else -> "راسب"
+        pct >= 90 -> "ممتاز"; pct >= 80 -> "جيد جدا"; pct >= 70 -> "جيد"; pct >= 60 -> "مقبول"; else -> "راسب"
     }
 
     // ---- Zakat: 2.5% of zakatable wealth held a full lunar year, when it reaches the nisab ----

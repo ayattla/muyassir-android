@@ -22,7 +22,7 @@ import com.muyassir.app.core.Incoming
 import com.muyassir.app.core.Recipes
 import com.muyassir.app.core.Tools
 
-/** «فتح في مُيسّر»: what to do with files shared from another app. */
+/** «فتح في ميسر»: what to do with files shared from another app. */
 @Composable
 fun IncomingScreen(openTool: (String) -> Unit, openRecipe: (String) -> Unit, back: () -> Unit) {
     val ctx = LocalContext.current
@@ -46,7 +46,7 @@ fun IncomingScreen(openTool: (String) -> Unit, openRecipe: (String) -> Unit, bac
             Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.l).widthIn(max = 720.dp).testTag("incoming"),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Panel("${files.size} ${if (files.size == 1) "ملف" else "ملفات"} وصلت إلى مُيسّر") {
+            Panel("${files.size} ${if (files.size == 1) "ملف" else "ملفات"} وصلت إلى ميسر") {
                 files.take(8).forEach { u ->
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)), verticalAlignment = Alignment.CenterVertically) {
                         Thumb(u); Spacer(Modifier.width(Space.m))
@@ -57,7 +57,7 @@ fun IncomingScreen(openTool: (String) -> Unit, openRecipe: (String) -> Unit, bac
                     }
                 }
                 if (files.size > 8) Text("و${files.size - 8} ملفات أخرى", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
-                Text("نُسخت إلى جهازك فقط ولم تُرفع إلى أي مكان.", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text("نسخت إلى جهازك فقط ولم ترفع إلى أي مكان.", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
             if (recipes.isNotEmpty()) {
                 Text("وصفات بلمسة واحدة", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())

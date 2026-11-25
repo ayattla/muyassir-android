@@ -99,7 +99,7 @@ fun QrRead(t: Tool, back: () -> Unit) {
             val bmp = ImageEngine.load(ctx, u, 2000)
             val px = IntArray(bmp.width * bmp.height); bmp.getPixels(px, 0, bmp.width, 0, 0, bmp.width, bmp.height)
             MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bmp.width, bmp.height, px))), mapOf(DecodeHintType.TRY_HARDER to true)).text
-        }.onSuccess { value = it; error = null; Store.used(t.id, it.take(40)) }.onFailure { error = "لم يُعثر على رمز في الصورة" }
+        }.onSuccess { value = it; error = null; Store.used(t.id, it.take(40)) }.onFailure { error = "لم يعثر على رمز في الصورة" }
     }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { u -> u?.let { read(it) } }
     LaunchedEffect(Unit) { (com.muyassir.app.core.TestHooks.inputs ?: com.muyassir.app.core.Incoming.take())?.firstOrNull()?.let { read(it) } }
@@ -114,7 +114,7 @@ fun QrRead(t: Tool, back: () -> Unit) {
         if (value.isNotBlank()) {
             TextResult(value, "المحتوى")
             if (value.startsWith("http")) SecondaryButton("فتح الرابط", Icons.Rounded.OpenInNew, Modifier.fillMaxWidth()) { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(value))) }
-            Hint("تأكد من الرابط قبل فتحه؛ رموز QR قد تُستخدم للاحتيال.")
+            Hint("تأكد من الرابط قبل فتحه؛ رموز QR قد تستخدم للاحتيال.")
         }
     }
 }
@@ -123,7 +123,7 @@ fun QrRead(t: Tool, back: () -> Unit) {
 fun TextCompare(t: Tool, back: () -> Unit) {
     var a by remember { mutableStateOf("") }; var b by remember { mutableStateOf("") }; var byWord by remember { mutableIntStateOf(0) }
     ToolScreen(t, back) {
-        Panel { TextField2("النص الأول (الأصلي)", a, { a = it }, lines = 5); TextField2("النص الثاني (المعدّل)", b, { b = it }, lines = 5); Segmented(listOf("بالأسطر", "بالكلمات"), byWord) { byWord = it } }
+        Panel { TextField2("النص الأول (الأصلي)", a, { a = it }, lines = 5); TextField2("النص الثاني (المعدل)", b, { b = it }, lines = 5); Segmented(listOf("بالأسطر", "بالكلمات"), byWord) { byWord = it } }
         if (a.isNotBlank() && b.isNotBlank()) {
             val d = remember(a, b, byWord) { TextTools.diff(a, b, byWord == 1) }
             ResultCard("نسبة التطابق" to "${fmt(TextTools.similarity(d), 1)}%", listOf("إضافات" to "${d.count { it.op == TextTools.Op.ADDED }}", "حذف" to "${d.count { it.op == TextTools.Op.REMOVED }}"))
@@ -155,7 +155,7 @@ fun Dedupe(t: Tool, back: () -> Unit) {
         Panel { SwitchRow("تجاهل حالة الأحرف", ic) { ic = it }; SwitchRow("تجاهل المسافات الزائدة", tr) { tr = it }; SwitchRow("الإبقاء على الأسطر الفارغة", kb) { kb = it } }
         if (s.isNotBlank()) {
             val (out, removed) = TextTools.dedupe(s, ic, tr, kb)
-            ResultCard("حُذف" to "$removed سطر مكرر", listOf("المتبقي" to "${out.lines().count { it.isNotBlank() }} سطر"))
+            ResultCard("حذف" to "$removed سطر مكرر", listOf("المتبقي" to "${out.lines().count { it.isNotBlank() }} سطر"))
             TextResult(out)
         }
     }
@@ -190,7 +190,7 @@ fun TtsTool(t: Tool, back: () -> Unit) {
             })
             tts[0]?.synthesizeToFile(text, null, f, "file")
         }
-        if (!ready) Hint("إن لم يعمل الصوت العربي، ثبّت حزمة اللغة العربية من إعدادات «تحويل النص إلى كلام» في جهازك.")
+        if (!ready) Hint("إن لم يعمل الصوت العربي، ثبت حزمة اللغة العربية من إعدادات «تحويل النص إلى كلام» في جهازك.")
         if (result.isNotEmpty()) ResultFiles(result)
     }
 }
@@ -214,7 +214,7 @@ fun SttTool(t: Tool, back: () -> Unit) {
             runCatching { launcher.launch(i) }.onFailure { toast(ctx, "خدمة التعرف على الكلام غير متاحة في جهازك") }
         }
         if (text.isNotBlank()) { TextResult(text); TextButton(onClick = { text = "" }) { Text("مسح") } }
-        Hint("يستخدم خدمة التعرف على الكلام المثبتة في جهازك (مثل Google). يعمل على الجهاز إذا كانت حزمة اللغة منزّلة، وإلا فقد ترسل الخدمة الصوت إلى خوادمها حسب سياستها. التطبيق نفسه لا يرسل أي شيء.")
+        Hint("يستخدم خدمة التعرف على الكلام المثبتة في جهازك (مثل Google). يعمل على الجهاز إذا كانت حزمة اللغة منزلة، وإلا فقد ترسل الخدمة الصوت إلى خوادمها حسب سياستها. التطبيق نفسه لا يرسل أي شيء.")
     }
 }
 
@@ -327,7 +327,7 @@ fun CurrencyTool(t: Tool, back: () -> Unit) {
         }
         val r = v.num() / rates.optDouble(from, 1.0) * rates.optDouble(to, 1.0)
         ResultCard("${fmt(v.num())} $from =" to "${fmt(r, 4)} $to", listOf("آخر تحديث" to updated))
-        PrimaryButton(if (busy) "جارٍ التحديث…" else "تحديث الأسعار من الإنترنت", Icons.Rounded.Refresh, enabled = !busy) {
+        PrimaryButton(if (busy) "جار التحديث…" else "تحديث الأسعار من الإنترنت", Icons.Rounded.Refresh, enabled = !busy) {
             busy = true
             scope.launch {
                 runCatching {
@@ -337,7 +337,7 @@ fun CurrencyTool(t: Tool, back: () -> Unit) {
                         rates = j.getJSONObject("rates"); updated = j.optString("time_last_update_utc").take(16)
                         Store.saveObj("fx", JSONObject().put("rates", rates).put("date", updated)); Store.used(t.id)
                     }
-                }.onFailure { toast(ctx, "تعذّر الاتصال. تُستخدم آخر أسعار محفوظة.") }
+                }.onFailure { toast(ctx, "تعذر الاتصال. تستخدم آخر أسعار محفوظة.") }
                 busy = false
             }
         }

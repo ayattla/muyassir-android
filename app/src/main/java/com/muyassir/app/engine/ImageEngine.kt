@@ -35,7 +35,7 @@ object ImageEngine {
         while (o.outWidth / sample > maxSide || o.outHeight / sample > maxSide) sample *= 2
         val bmp = ctx.contentResolver.openInputStream(uri)!!.use {
             BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-        } ?: error("تعذّر فتح الصورة")
+        } ?: error("تعذر فتح الصورة")
         val rot = runCatching {
             ctx.contentResolver.openInputStream(uri)!!.use { ExifInterface(it).rotationDegrees }
         }.getOrDefault(0)
@@ -151,7 +151,7 @@ object ImageEngine {
             val mask = Tasks.await(client.process(InputImage.fromBitmap(b, 0)), 60, TimeUnit.SECONDS)
             val mw = mask.width; val mh = mask.height; val buf = mask.buffer.apply { rewind() }.asFloatBuffer()
             val conf = FloatArray(mw * mh).also { buf.get(it) }
-            if (conf.count { it > 0.5f } < conf.size / 200) throw IllegalStateException("لم يُعثر على شخص أو عنصر واضح في الصورة")
+            if (conf.count { it > 0.5f } < conf.size / 200) throw IllegalStateException("لم يعثر على شخص أو عنصر واضح في الصورة")
             val small = IntArray(mw * mh) { i -> (conf[i].coerceIn(0f, 1f) * 255).toInt() shl 24 }
             val alpha = Bitmap.createScaledBitmap(Bitmap.createBitmap(small, mw, mh, Bitmap.Config.ARGB_8888), b.width, b.height, true)
             val px = IntArray(b.width * b.height); b.getPixels(px, 0, b.width, 0, 0, b.width, b.height)

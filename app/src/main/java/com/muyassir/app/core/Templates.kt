@@ -13,12 +13,12 @@ import java.io.File
 
 /**
  * Document templates for the document tools: 4 layouts × 6 colours = 24 templates.
- * Free: the classic template (index 0) with the small «أُنشئ بمُيسّر» line. Plus: all templates, the business logo, no line.
+ * Free: the classic template (index 0) with the small «أنشئ بميسر» line. Plus: all templates, the business logo, no line.
  */
 object Templates {
     data class Style(val index: Int, val name: String, val layout: Int, val accent: Int)
 
-    val layouts = listOf("كلاسيكي", "ترويسة ملوّنة", "شريط جانبي", "رسمي متوسط")
+    val layouts = listOf("كلاسيكي", "ترويسة ملونة", "شريط جانبي", "رسمي متوسط")
     val palettes = listOf(
         "نيلي" to 0xFF2F4BFF.toInt(), "زمردي" to 0xFF0B7F7A.toInt(), "عنابي" to 0xFF8E1F3C.toInt(),
         "فحمي" to 0xFF2A2F3A.toInt(), "ذهبي" to 0xFFA86A06.toInt(), "بنفسجي" to 0xFF6A3FC4.toInt(),

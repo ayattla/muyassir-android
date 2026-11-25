@@ -11,7 +11,7 @@ import androidx.core.content.IntentCompat
 import java.io.File
 
 /**
- * «فتح في مُيسّر»: files shared to the app from WhatsApp, mail, Files… are copied into the private cache
+ * «فتح في ميسر»: files shared to the app from WhatsApp, mail, Files… are copied into the private cache
  * (the sharing app's permission is temporary), then the user picks a tool or a recipe for them.
  * Nothing is uploaded; copies are removed at the next launch.
  */

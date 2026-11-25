@@ -80,7 +80,7 @@ object Billing {
                 Plus.live = plans.any { it.id == "yearly" } && plans.any { it.id == "monthly" }
                 if (Plus.live && !wasLive && Plus.notifyWhenLive) {
                     Plus.clearNotify()
-                    ReminderReceiver.schedule(app, 7_700_002, System.currentTimeMillis() + 2000, "مُيسّر بلس متاح الآن", "افتح العمليات بلا حدود والقوالب الاحترافية وOCR للملفات الكاملة.")
+                    ReminderReceiver.schedule(app, 7_700_002, System.currentTimeMillis() + 2000, "ميسر بلس متاح الآن", "افتح العمليات بلا حدود والقوالب الاحترافية وOCR للملفات الكاملة.")
                 }
             }
         }
@@ -100,11 +100,11 @@ object Billing {
             if (base == "yearly") {
                 val perMonth = recurring.priceAmountMicros / 12 / 10_000 / 100.0
                 val note = buildString {
-                    append("يعادل ${"%.2f".format(java.util.Locale.US, perMonth)} ${currency(recurring.priceCurrencyCode)} شهريًا")
+                    append("يعادل ${"%.2f".format(java.util.Locale.US, perMonth)} ${currency(recurring.priceCurrencyCode)} شهريا")
                     if (intro != null) append(" • أول سنة ${intro.formattedPrice}")
                 }
                 Plan("yearly", "سنوي", recurring.formattedPrice, "سنة", note, trial, recurring.priceAmountMicros, d, pick.offerToken)
-            } else Plan("monthly", "شهري", recurring.formattedPrice, "شهر", "يُلغى في أي وقت", trial, recurring.priceAmountMicros, d, pick.offerToken)
+            } else Plan("monthly", "شهري", recurring.formattedPrice, "شهر", "يلغى في أي وقت", trial, recurring.priceAmountMicros, d, pick.offerToken)
         }
     }
 
@@ -119,7 +119,7 @@ object Billing {
         val p = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d)
         plan.token?.let { p.setOfferToken(it) }
         val r = c.launchBillingFlow(activity, BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(p.build())).build())
-        if (r.responseCode != BillingClient.BillingResponseCode.OK) message = "تعذّر فتح صفحة الدفع في Google Play. حاول مرة أخرى."
+        if (r.responseCode != BillingClient.BillingResponseCode.OK) message = "تعذر فتح صفحة الدفع في Google Play. حاول مرة أخرى."
         else if (plan.trialDays > 0) pendingTrial = plan.trialDays
     }
     private var pendingTrial = 0
@@ -128,7 +128,7 @@ object Billing {
     fun restore(done: (Boolean) -> Unit = {}) {
         if (client == null) { done(false); return }
         busy = true
-        refresh { busy = false; message = if (Plus.active) "تمت استعادة اشتراكك" else "لم نجد اشتراكًا على حساب Google هذا"; done(Plus.active) }
+        refresh { busy = false; message = if (Plus.active) "تمت استعادة اشتراكك" else "لم نجد اشتراكا على حساب Google هذا"; done(Plus.active) }
     }
 
     fun refresh(done: () -> Unit = {}) {
@@ -152,24 +152,24 @@ object Billing {
         when (r.responseCode) {
             BillingClient.BillingResponseCode.OK -> list.orEmpty().forEach { p ->
                 when {
-                    p.purchaseState == Purchase.PurchaseState.PENDING -> message = "عملية الدفع قيد المعالجة. ستُفعَّل بلس فور اكتمالها."
+                    p.purchaseState == Purchase.PurchaseState.PENDING -> message = "عملية الدفع قيد المعالجة. ستفعل بلس فور اكتمالها."
                     p.purchaseState != Purchase.PurchaseState.PURCHASED -> {}
                     DAY in p.products -> { consumeDay(p); message = "تم تفعيل مرور اليوم لمدة 24 ساعة" }
                     else -> {
                         acknowledge(p); Plus.subscribed = true; Plus.planName = "اشتراك بلس"; Plus.paywall = null
-                        message = "مرحبًا بك في مُيسّر بلس"
+                        message = "مرحبا بك في ميسر بلس"
                         if (pendingTrial > 0) {
                             // Remind the user one day before the free trial turns into a paid subscription.
                             ReminderReceiver.schedule(app, TRIAL_REMINDER_ID, p.purchaseTime + (pendingTrial - 1) * 86_400_000L,
-                                "تجربة مُيسّر بلس تنتهي غدًا", "إن لم ترغب في الاستمرار ألغِ الاشتراك من Google Play قبل نهاية التجربة.")
+                                "تجربة ميسر بلس تنتهي غدا", "إن لم ترغب في الاستمرار ألغ الاشتراك من Google Play قبل نهاية التجربة.")
                             pendingTrial = 0
                         }
                     }
                 }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> {}
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> refresh { message = "اشتراكك مفعّل بالفعل" }
-            else -> message = "لم تكتمل عملية الشراء (${r.responseCode}). لم يُخصم أي مبلغ."
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> refresh { message = "اشتراكك مفعل بالفعل" }
+            else -> message = "لم تكتمل عملية الشراء (${r.responseCode}). لم يخصم أي مبلغ."
         }
     }
 
@@ -190,8 +190,8 @@ object Billing {
     /** Debug builds only: sample plans so the paywall can be tested and screenshotted without the store. */
     fun samplePlans() {
         plans.clear()
-        plans += Plan("yearly", "سنوي", "SAR 49.99", "سنة", "يعادل 4.17 ر.س شهريًا", 7, 49_990_000, null, null)
-        plans += Plan("monthly", "شهري", "SAR 7.99", "شهر", "يُلغى في أي وقت", 0, 7_990_000, null, null)
+        plans += Plan("yearly", "سنوي", "SAR 49.99", "سنة", "يعادل 4.17 ر.س شهريا", 7, 49_990_000, null, null)
+        plans += Plan("monthly", "شهري", "SAR 7.99", "شهر", "يلغى في أي وقت", 0, 7_990_000, null, null)
         plans += Plan("day", "مرور يوم", "SAR 2.99", "24 ساعة", "كل ميزات بلس ليوم واحد، بلا اشتراك", 0, 2_990_000, null, null)
     }
 

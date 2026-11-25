@@ -55,7 +55,7 @@ fun PdfToWord(t: Tool, back: () -> Unit) {
     FileTool(t, back, PDF, false, "اختر ملف PDF", "تحويل إلى Word", options = {
         Panel {
             SwitchRow("إعادة بناء العناوين والجداول بالتعرف الضوئي (للمسح الضوئي والجداول، أبطأ)", ocr.value) { ocr.value = it }
-            Hint("بدونه يُستخرج النص والفقرات من طبقة النص مع اتجاه عربي صحيح. معه تُقرأ كل صفحة كصورة ويُعاد بناء الجداول والعناوين، وتظهر الكلمات غير المؤكدة لمراجعتها قبل الحفظ.")
+            Hint("بدونه يستخرج النص والفقرات من طبقة النص مع اتجاه عربي صحيح. معه تقرأ كل صفحة كصورة ويعاد بناء الجداول والعناوين، وتظهر الكلمات غير المؤكدة لمراجعتها قبل الحفظ.")
         }
     }, after = { ReviewPanel(review, "مستند") }) { ins, out, p ->
         if (ocr.value) {
@@ -82,7 +82,7 @@ fun PdfToWord(t: Tool, back: () -> Unit) {
 fun WordToPdf(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     FileTool(t, back, DOCX, false, "اختر ملف Word (DOCX)", "تحويل إلى PDF", options = {
-        Hint("يدعم ملفات DOCX. ملفات DOC القديمة احفظها بصيغة DOCX أولًا من Word أو Google Docs.")
+        Hint("يدعم ملفات DOCX. ملفات DOC القديمة احفظها بصيغة DOCX أولا من Word أو Google Docs.")
     }) { ins, out, _ ->
         val paras = Office.readDocx(cache(ctx, ins[0]))
         val b = DocBuilder(ctx)
@@ -99,7 +99,7 @@ fun PdfToExcel(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     val ocr = remember { mutableStateOf(false) }
     FileTool(t, back, PDF, false, "اختر ملف PDF", "تحويل إلى Excel", options = {
-        Panel { OcrSwitch(ocr); Hint("كل صفحة ورقة عمل، وكل سطر صف. الأعمدة تُفصل حيث توجد مسافات واسعة أو علامات جدولة.") }
+        Panel { OcrSwitch(ocr); Hint("كل صفحة ورقة عمل، وكل سطر صف. الأعمدة تفصل حيث توجد مسافات واسعة أو علامات جدولة.") }
     }) { ins, out, p ->
         val pages = pdfLines(ctx, cache(ctx, ins[0]), ocr.value, p)
         val sheets = pages.mapIndexed { i, lines ->
@@ -118,7 +118,7 @@ fun ExcelToPdf(t: Tool, back: () -> Unit) {
         Panel { SwitchRow("صفحة أفقية", landscape) { landscape = it }; SwitchRow("الصف الأول عناوين", headerRow) { headerRow = it } }
     }) { ins, out, _ ->
         val sheets = Office.readXlsx(cache(ctx, ins[0]))
-        require(sheets.isNotEmpty()) { "لم يُعثر على أوراق عمل في الملف" }
+        require(sheets.isNotEmpty()) { "لم يعثر على أوراق عمل في الملف" }
         val b = DocBuilder(ctx, landscape)
         sheets.forEachIndexed { i, (name, rows) ->
             if (i > 0) b.add(DocBuilder.Block.PageBreak)
@@ -136,7 +136,7 @@ fun ExcelToPdf(t: Tool, back: () -> Unit) {
 fun PdfToPpt(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     FileTool(t, back, PDF, false, "اختر ملف PDF", "تحويل إلى PowerPoint", options = {
-        Hint("كل صفحة تصبح شريحة بشكلها الأصلي تمامًا (صورة عالية الدقة)، فتحافظ على الخطوط والتصميم.")
+        Hint("كل صفحة تصبح شريحة بشكلها الأصلي تماما (صورة عالية الدقة)، فتحافظ على الخطوط والتصميم.")
     }) { ins, out, p ->
         val f = cache(ctx, ins[0]); val n = PdfEngine.pageCount(f)
         val slides = (0 until n).map { i ->
@@ -153,7 +153,7 @@ fun PdfToPpt(t: Tool, back: () -> Unit) {
 fun PptToPdf(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     FileTool(t, back, PPTX, false, "اختر عرض PowerPoint (PPTX)", "تحويل إلى PDF", options = {
-        Hint("تُنقل نصوص كل شريحة إلى صفحة أفقية. الصور والأشكال لا تُنقل في هذا الإصدار.")
+        Hint("تنقل نصوص كل شريحة إلى صفحة أفقية. الصور والأشكال لا تنقل في هذا الإصدار.")
     }) { ins, out, _ ->
         val slides = Office.readPptx(cache(ctx, ins[0]))
         val b = DocBuilder(ctx, landscape = true)
@@ -178,7 +178,7 @@ fun PdfToImages(t: Tool, back: () -> Unit) {
             Segmented(listOf("JPG", "PNG"), png) { png = it }
             Text("الدقة", style = MaterialTheme.typography.labelLarge)
             Segmented(listOf("عادية 100", "عالية 150", "طباعة 300"), dpi) { dpi = it }
-            TextField2("الصفحات (اتركه فارغًا للكل) مثل 1-3, 7", range, { range = it })
+            TextField2("الصفحات (اتركه فارغا للكل) مثل 1-3, 7", range, { range = it })
         }
     }) { ins, out, p ->
         val f = cache(ctx, ins[0]); val n = PdfEngine.pageCount(f)
@@ -192,7 +192,7 @@ fun ImagesToPdf(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     var a4 by remember { mutableStateOf(true) }
     FileTool(t, back, IMAGES, true, "اختر الصور", "إنشاء PDF", reorderable = true, options = {
-        Panel { SwitchRow("ضبط على صفحات A4", a4) { a4 = it }; Text("رتّب الصور بالأسهم قبل الإنشاء.", style = MaterialTheme.typography.bodySmall) }
+        Panel { SwitchRow("ضبط على صفحات A4", a4) { a4 = it }; Text("رتب الصور بالأسهم قبل الإنشاء.", style = MaterialTheme.typography.bodySmall) }
     }) { ins, out, p ->
         val seq = ins.asSequence().mapIndexed { i, u -> p.value = i / ins.size.toFloat(); ImageEngine.load(ctx, u, 2400) }
         listOf(PdfEngine.fromImages(seq, a4, File(out, "صور-${ins.size}.pdf")))
@@ -204,7 +204,7 @@ fun PdfMerge(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     FileTool(t, back, PDF, true, "اختر ملفين أو أكثر", "دمج الملفات", reorderable = true,
         validate = { if (it.size < 2) "اختر ملفين على الأقل" else null }) { ins, out, p ->
-        p.label = "جارٍ الدمج…"
+        p.label = "جار الدمج…"
         listOf(PdfEngine.merge(ins.map { cache(ctx, it) }, File(out, "مدمج-${ins.size}.pdf")))
     }
 }
@@ -221,7 +221,7 @@ fun PdfSplit(t: Tool, back: () -> Unit) {
             Segmented(listOf("كل صفحة ملف", "حسب النطاقات"), mode) { mode = it }
             if (mode == 1) TextField2("النطاقات مفصولة بفاصلة، كل نطاق ملف: 1-3, 4-6, 7-", spec, { spec = it })
         }
-    }, validate = { if (it.isEmpty()) "اختر ملفًا" else if (mode == 1 && spec.isBlank()) "اكتب النطاقات" else null }) { ins, out, _ ->
+    }, validate = { if (it.isEmpty()) "اختر ملفا" else if (mode == 1 && spec.isBlank()) "اكتب النطاقات" else null }) { ins, out, _ ->
         PdfEngine.split(cache(ctx, ins[0]), spec, mode == 0, out, base(ctx, ins[0]))
     }
 }
@@ -233,7 +233,7 @@ fun PdfCompress(t: Tool, back: () -> Unit) {
     FileTool(t, back, PDF, false, "اختر ملف PDF", "ضغط الملف", options = {
         Panel {
             Segmented(listOf("خفيف", "متوازن", "قوي"), level) { level = it }
-            Hint("يُعاد رسم الصفحات كصور مضغوطة، فيصغر الحجم كثيرًا خاصة للملفات الممسوحة ضوئيًا. النص يصبح غير قابل للتحديد.")
+            Hint("يعاد رسم الصفحات كصور مضغوطة، فيصغر الحجم كثيرا خاصة للملفات الممسوحة ضوئيا. النص يصبح غير قابل للتحديد.")
         }
     }) { ins, out, p ->
         val f = cache(ctx, ins[0])
@@ -261,7 +261,7 @@ fun PdfReorder(t: Tool, back: () -> Unit) {
             Segmented(listOf("ترتيب مخصص", "عكس الترتيب"), mode) { mode = it }
             if (mode == 0) TextField2("الترتيب الجديد مثل: 3, 1, 2, 4-10", order, { order = it })
         }
-    }, validate = { if (it.isEmpty()) "اختر ملفًا" else if (mode == 0 && order.isBlank()) "اكتب الترتيب" else null }) { ins, out, _ ->
+    }, validate = { if (it.isEmpty()) "اختر ملفا" else if (mode == 0 && order.isBlank()) "اكتب الترتيب" else null }) { ins, out, _ ->
         val f = cache(ctx, ins[0]); val n = PdfEngine.pageCount(f)
         val pages = if (mode == 1) (n - 1 downTo 0).toList() else PdfEngine.parseRanges(order, n)
         listOf(PdfEngine.select(f, pages, File(out, base(ctx, ins[0]) + "-مرتب.pdf")))
@@ -274,7 +274,7 @@ fun PdfDelete(t: Tool, back: () -> Unit) {
     var spec by remember { mutableStateOf("") }
     FileTool(t, back, PDF, false, "اختر ملف PDF", "حذف الصفحات", options = { ins ->
         Panel { PageCount(ctx, ins); TextField2("الصفحات المطلوب حذفها مثل: 2, 5-7", spec, { spec = it }) }
-    }, validate = { if (it.isEmpty()) "اختر ملفًا" else if (spec.isBlank()) "حدد الصفحات" else null }) { ins, out, _ ->
+    }, validate = { if (it.isEmpty()) "اختر ملفا" else if (spec.isBlank()) "حدد الصفحات" else null }) { ins, out, _ ->
         val f = cache(ctx, ins[0])
         listOf(PdfEngine.delete(f, PdfEngine.parseRanges(spec, PdfEngine.pageCount(f)).toSet(), File(out, base(ctx, ins[0]) + "-معدل.pdf")))
     }
@@ -286,7 +286,7 @@ fun PdfExtract(t: Tool, back: () -> Unit) {
     var spec by remember { mutableStateOf("") }
     FileTool(t, back, PDF, false, "اختر ملف PDF", "استخراج", options = { ins ->
         Panel { PageCount(ctx, ins); TextField2("الصفحات المطلوبة مثل: 1, 4-6", spec, { spec = it }) }
-    }, validate = { if (it.isEmpty()) "اختر ملفًا" else if (spec.isBlank()) "حدد الصفحات" else null }) { ins, out, _ ->
+    }, validate = { if (it.isEmpty()) "اختر ملفا" else if (spec.isBlank()) "حدد الصفحات" else null }) { ins, out, _ ->
         val f = cache(ctx, ins[0])
         listOf(PdfEngine.select(f, PdfEngine.parseRanges(spec, PdfEngine.pageCount(f)), File(out, base(ctx, ins[0]) + "-مستخرج.pdf")))
     }
@@ -330,9 +330,9 @@ fun PdfProtect(t: Tool, back: () -> Unit) {
             TextField2("تأكيد كلمة المرور", pass2, { pass2 = it }, keyboard = androidx.compose.ui.text.input.KeyboardType.Password)
             SwitchRow("السماح بالطباعة", print) { print = it }
             SwitchRow("السماح بنسخ النص", copyOk) { copyOk = it }
-            Hint("احتفظ بكلمة المرور؛ لا يمكن استرجاعها إن نُسيت. التشفير AES بطول 128 بت.")
+            Hint("احتفظ بكلمة المرور؛ لا يمكن استرجاعها إن نسيت. التشفير AES بطول 128 بت.")
         }
-    }, validate = { when { it.isEmpty() -> "اختر ملفًا"; pass.length < 4 -> "كلمة المرور 4 أحرف على الأقل"; pass != pass2 -> "كلمتا المرور غير متطابقتين"; else -> null } }) { ins, out, _ ->
+    }, validate = { when { it.isEmpty() -> "اختر ملفا"; pass.length < 4 -> "كلمة المرور 4 أحرف على الأقل"; pass != pass2 -> "كلمتا المرور غير متطابقتين"; else -> null } }) { ins, out, _ ->
         var src = cache(ctx, ins[0])
         if (mark.isNotBlank() && com.muyassir.app.core.Plus.unlocked) src = PdfEngine.watermark(src, mark.trim(), File(ctx.cacheDir, "in/wm.pdf").apply { parentFile?.mkdirs() })
         listOf(PdfEngine.protect(src, pass, "", print, copyOk, File(out, base(ctx, ins[0]) + "-محمي.pdf")))

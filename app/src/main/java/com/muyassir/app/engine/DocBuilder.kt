@@ -52,7 +52,7 @@ class DocBuilder(ctx: Context, private val landscape: Boolean = false) {
     private var y = 0f
     private var pageNo = 0
     var border: Int? = null // certificate frame colour
-    /** Text before the page number in the footer (free document tools: «أُنشئ بمُيسّر»); null = page number only. */
+    /** Text before the page number in the footer (free document tools: «أنشئ بميسر»); null = page number only. */
     var footer: String? = null
     var pageNumbers = true
     /** Template: accent colour and layout (0 classic, 1 coloured header band, 2 side stripe, 3 formal centred). */

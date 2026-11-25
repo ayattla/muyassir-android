@@ -36,15 +36,15 @@ fun BackupPanel() {
         val p = pass; busy = true
         scope.launch {
             msg = withContext(Dispatchers.IO) {
-                runCatching { ctx.contentResolver.openOutputStream(u)!!.use { Backup.export(ctx, p, it) }; "حُفظت النسخة المشفّرة. احتفظ بكلمة المرور، لا يمكن استرجاعها." }.getOrElse { "تعذّر الحفظ: ${it.message}" }
+                runCatching { ctx.contentResolver.openOutputStream(u)!!.use { Backup.export(ctx, p, it) }; "حفظت النسخة المشفرة. احتفظ بكلمة المرور، لا يمكن استرجاعها." }.getOrElse { "تعذر الحفظ: ${it.message}" }
             }
             busy = false; pass = ""; pass2 = ""
         }
     }
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { u -> if (u != null) { pending = u; mode = "restore" } }
-    Panel("النسخ الاحتياطي المشفّر") {
+    Panel("النسخ الاحتياطي المشفر") {
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Text("احفظ ملاحظاتك ووثائقك ومصاريفك وجداولك في ملف مشفّر بكلمة مرور، وضعه حيث تريد: ذاكرة الجهاز أو Drive أو غيره. التطبيق لا يرفع شيئًا بنفسه.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            Text("احفظ ملاحظاتك ووثائقك ومصاريفك وجداولك في ملف مشفر بكلمة مرور، وضعه حيث تريد: ذاكرة الجهاز أو Drive أو غيره. التطبيق لا يرفع شيئا بنفسه.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             PlusBadge()
         }
         SecondaryButton("إنشاء نسخة احتياطية", Icons.Rounded.Backup, Modifier.fillMaxWidth().testTag("backupExport")) { if (Plus.allow(Plus.Reason.Backup)) { msg = null; mode = "export" } }
@@ -58,7 +58,7 @@ fun BackupPanel() {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (mode == "export") Text("8 أحرف على الأقل. لا نستطيع استعادتها إن نسيتها.", style = MaterialTheme.typography.bodySmall)
-                else Text("ستُستبدل بياناتك الحالية ببيانات النسخة، ثم يُعاد تشغيل التطبيق.", style = MaterialTheme.typography.bodySmall)
+                else Text("ستستبدل بياناتك الحالية ببيانات النسخة، ثم يعاد تشغيل التطبيق.", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(pass, { pass = it }, label = { Text("كلمة المرور") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().testTag("backupPass"))
                 if (mode == "export") OutlinedTextField(pass2, { pass2 = it }, label = { Text("تأكيد كلمة المرور") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().testTag("backupPass2"))
             }
@@ -66,13 +66,13 @@ fun BackupPanel() {
         confirmButton = {
             TextButton(enabled = if (mode == "export") pass.length >= 8 && pass == pass2 else pass.isNotEmpty(), onClick = {
                 if (mode == "export") {
-                    mode = null; create.launch("مُيسّر-نسخة-${SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())}.mysb")
+                    mode = null; create.launch("ميسر-نسخة-${SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())}.mysb")
                 } else {
                     val u = pending ?: return@TextButton; val p = pass; mode = null; busy = true
                     scope.launch {
                         val err = withContext(Dispatchers.IO) { runCatching { ctx.contentResolver.openInputStream(u)!!.use { Backup.restore(ctx, p, it) } }.exceptionOrNull() }
                         busy = false; pass = ""
-                        if (err != null) msg = err.message ?: "تعذّرت الاستعادة"
+                        if (err != null) msg = err.message ?: "تعذرت الاستعادة"
                         else {
                             val i = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             ctx.startActivity(i); Runtime.getRuntime().exit(0)

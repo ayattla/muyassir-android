@@ -35,7 +35,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent); setIntent(intent); receiveShared(intent) }
 
-    /** «فتح في مُيسّر»: copy shared files off the main thread, then show what can be done with them. */
+    /** «فتح في ميسر»: copy shared files off the main thread, then show what can be done with them. */
     private fun receiveShared(i: android.content.Intent?) {
         val uris = com.muyassir.app.core.Incoming.urisOf(i)
         if (uris.isEmpty()) return

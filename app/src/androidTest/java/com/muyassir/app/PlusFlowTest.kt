@@ -26,7 +26,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.io.FileOutputStream
 
-/** «مُيسّر بلس»: the paywall, the free limits and the Plus gates, driven through the real UI. */
+/** «ميسر بلس»: the paywall, the free limits and the Plus gates, driven through the real UI. */
 @RunWith(AndroidJUnit4::class)
 class PlusFlowTest {
     @get:Rule val rule = createEmptyComposeRule()
@@ -59,7 +59,7 @@ class PlusFlowTest {
         waitTag("paywall")
         rule.onNodeWithTag("plan-yearly", useUnmergedTree = true).assertExists()
         rule.onNodeWithTag("plan-monthly", useUnmergedTree = true).assertExists()
-        waitText("وفّر"); waitText("استعادة المشتريات"); waitText("شروط الاستخدام"); waitText("سياسة الخصوصية")
+        waitText("وفر"); waitText("استعادة المشتريات"); waitText("شروط الاستخدام"); waitText("سياسة الخصوصية")
         waitText("ابدأ تجربة مجانية 7 أيام")
         waitText("مرور يوم")
         rule.onNodeWithTag("plan-monthly", useUnmergedTree = true).performClick(); rule.waitForIdle()
@@ -70,7 +70,7 @@ class PlusFlowTest {
 
     @Test fun beforeLaunchEverythingIsFreeAndPaywallSaysSoon() {
         launch("off", paywall = "Menu")
-        waitTag("paywall"); waitText("قريبًا"); waitText("نبّهني عند إطلاق بلس")
+        waitTag("paywall"); waitText("قريبا"); waitText("نبهني عند إطلاق بلس")
         rule.onAllNodesWithTag("subscribe").assertCountEquals(0)
     }
 
@@ -85,7 +85,7 @@ class PlusFlowTest {
     @Test fun freeRunIsCountedThenWorks() {
         TestHooks.inputs = listOf(Uri.fromFile(pdf("a.pdf", 1)))
         launch("free", tool = "pdf_compress")
-        waitText("متبقٍ لك اليوم 5 من 5")
+        waitText("متبق لك اليوم 5 من 5")
         rule.onNodeWithTag("action").performScrollTo().performClick()
         rule.waitUntil(60_000) { rule.onAllNodesWithTag("results").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(1, Plus.usedToday)
@@ -118,12 +118,12 @@ class PlusFlowTest {
     @Test fun templatesLockedForFreeOpenForPlus() {
         launch("free", tool = "invoice")
         waitTag("templates")
-        rule.onNodeWithContentDescription("قالب ترويسة ملوّنة").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("قالب ترويسة ملونة").performScrollTo().performClick()
         waitTag("paywall"); waitText("القوالب الاحترافية")
         scenario?.close(); Plus.paywall = null
         launch("plus", tool = "invoice")
         waitTag("templates")
-        rule.onNodeWithContentDescription("قالب ترويسة ملوّنة").performScrollTo().performClick(); rule.waitForIdle()
+        rule.onNodeWithContentDescription("قالب ترويسة ملونة").performScrollTo().performClick(); rule.waitForIdle()
         rule.onAllNodesWithTag("paywall").assertCountEquals(0)
         assertEquals(1, Templates.all[Templates.selected].layout)
         Templates.choose(0)

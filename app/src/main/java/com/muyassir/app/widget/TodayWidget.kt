@@ -59,10 +59,10 @@ class TodayWidget : GlanceAppWidget() {
             "${PrayerTimes.names[i]} ${PrayerTimes.clock(at)}"
         } else null
         val rule = when (o.optString("salary", "gov")) { "gov" -> PayDays.gov; "custom" -> PayDays.custom(o.optInt("salaryDay", 27)); else -> null }
-        val pay = rule?.let { r -> val (d, _) = PayDays.next(r, now); if (d == 0) "${r.title} اليوم" else "${r.title} بعد $d ${if (d in 3..10) "أيام" else "يومًا"}" }
+        val pay = rule?.let { r -> val (d, _) = PayDays.next(r, now); if (d == 0) "${r.title} اليوم" else "${r.title} بعد $d ${if (d in 3..10) "أيام" else "يوما"}" }
         val doc = if (o.optBoolean("docs", true)) Store.list("documents").filter { it.optLong("expiry") > 0 }
             .map { it to com.muyassir.app.tools.daysUntil(it.optLong("expiry")) }.filter { it.second in 0..60 }.minByOrNull { it.second }
-            ?.let { (_, d) -> if (d == 0L) "وثيقة تنتهي اليوم" else "وثيقة تنتهي بعد $d يومًا" } else null
+            ?.let { (_, d) -> if (d == 0L) "وثيقة تنتهي اليوم" else "وثيقة تنتهي بعد $d يوما" } else null
         return Info(prayer, city.name, pay, doc)
     }
 
@@ -75,7 +75,7 @@ class TodayWidget : GlanceAppWidget() {
             horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(if (i.prayer != null) "الصلاة القادمة في ${i.city}" else "يومي", style = TextStyle(color = soft, fontSize = 12.sp, textAlign = TextAlign.Center))
-            Text(i.prayer ?: "مُيسّر", style = TextStyle(color = onAccent, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center))
+            Text(i.prayer ?: "ميسر", style = TextStyle(color = onAccent, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center))
             if (i.pay != null || i.doc != null) {
                 Spacer(GlanceModifier.height(8.dp))
                 listOfNotNull(i.pay, i.doc).forEach {

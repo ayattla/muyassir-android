@@ -75,7 +75,7 @@ class CalcTest {
     }
 
     @Test fun textTools() {
-        assertEquals(4, TextTools.count("مرحبا بك في مُيسّر").words)
+        assertEquals(4, TextTools.count("مرحبا بك في ميسر").words)
         assertEquals(1, TextTools.dedupe("أ\nب\nأ", true, true, false).second)
         val d = TextTools.diff("a b c", "a x c", true)
         assertEquals(listOf(TextTools.Op.SAME, TextTools.Op.REMOVED, TextTools.Op.ADDED, TextTools.Op.SAME), d.map { it.op })

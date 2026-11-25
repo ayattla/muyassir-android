@@ -70,9 +70,9 @@ fun GpaTool(t: Tool, back: () -> Unit) {
         }
         val (sem, cum) = Calc.gpa(rows.map { Calc.Course(Calc.points(it.second, scale5 == 0), it.third.num()) }, prevGpa.num(), prevHours.num())
         val max = if (scale5 == 0) 5.0 else 4.0
-        fun word(g: Double) = when { g >= max * 0.9 -> "ممتاز مرتفع"; g >= max * 0.75 -> "ممتاز"; g >= max * 0.7 -> "جيد جدًا مرتفع"; g >= max * 0.55 -> "جيد جدًا"; g >= max * 0.5 -> "جيد"; else -> "مقبول" }
+        fun word(g: Double) = when { g >= max * 0.9 -> "ممتاز مرتفع"; g >= max * 0.75 -> "ممتاز"; g >= max * 0.7 -> "جيد جدا مرتفع"; g >= max * 0.55 -> "جيد جدا"; g >= max * 0.5 -> "جيد"; else -> "مقبول" }
         ResultCard("المعدل الفصلي" to "${fmt(sem)} من ${fmt(max, 0)}", listOf("التقدير" to word(sem), "المعدل التراكمي" to fmt(cum), "ساعات الفصل" to fmt(rows.sumOf { it.third.num() })))
-        Hint("سُلّم النقاط المستخدم هو الشائع في الجامعات السعودية (A+ = 5، A = 4.75 …). راجع لائحة جامعتك فقد يختلف.")
+        Hint("سلم النقاط المستخدم هو الشائع في الجامعات السعودية (A+ = 5، A = 4.75 …). راجع لائحة جامعتك فقد يختلف.")
     }
 }
 
@@ -187,7 +187,7 @@ fun StudyTimer(t: Tool, back: () -> Unit) {
             }
             LabelValue("جلسات مكتملة", "$sessions", true)
         }
-        Hint("أبقِ التطبيق مفتوحًا أثناء الجلسة؛ يصدر تنبيه صوتي عند انتهاء كل فترة.")
+        Hint("أبق التطبيق مفتوحا أثناء الجلسة؛ يصدر تنبيه صوتي عند انتهاء كل فترة.")
     }
 }
 
@@ -272,9 +272,9 @@ fun CertificateTool(t: Tool, back: () -> Unit) {
     ToolScreen(t, back) {
         Panel {
             Picker("النوع", kinds.indices.toList(), kind, { kinds[it] }) { kind = it }
-            TextField2("اسم المكرَّم", name, { name = it })
+            TextField2("اسم المكرم", name, { name = it })
             TextField2("السبب أو الإنجاز", reason, { reason = it }, lines = 2)
-            TextField2("الجهة المانحة", org, { org = it }); TextField2("اسم الموقّع وصفته", signer, { signer = it })
+            TextField2("الجهة المانحة", org, { org = it }); TextField2("اسم الموقع وصفته", signer, { signer = it })
             DateField("التاريخ", date, false) { date = it }
             ChipRow { colors.forEachIndexed { i, (n, _) -> Chip(n, i == color) { color = i } } }
         }
@@ -287,7 +287,7 @@ fun CertificateTool(t: Tool, back: () -> Unit) {
                     importNames.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv", "text/comma-separated-values", "text/plain"))
                 }
                 val n = names.lines().count { it.isNotBlank() }
-                Text("$n اسمًا${if (!com.muyassir.app.core.Plus.unlocked) " • المجاني حتى 10 أسماء في المرة" else ""}", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
+                Text("$n اسما${if (!com.muyassir.app.core.Plus.unlocked) " • المجاني حتى 10 أسماء في المرة" else ""}", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
             }
         }
         TemplatePanel(styles = false)
@@ -301,7 +301,7 @@ fun CertificateTool(t: Tool, back: () -> Unit) {
                 b.add(Block.Para(org, 14f, center = true, color = DocBuilder.MUTED))
                 b.add(Block.Para(kinds[kind], 34f, bold = true, center = true, color = colors[color].second))
                 b.add(Block.Space(10f))
-                b.add(Block.Para("يسرّنا أن نقدّم هذه الشهادة إلى", 14f, center = true))
+                b.add(Block.Para("يسرنا أن نقدم هذه الشهادة إلى", 14f, center = true))
                 b.add(Block.Para(who, 28f, bold = true, center = true))
                 if (reason.isNotBlank()) b.add(Block.Para(reason, 14f, center = true))
                 b.add(Block.Space(30f))

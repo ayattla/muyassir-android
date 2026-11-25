@@ -69,7 +69,7 @@ private data class Benefit(val icon: ImageVector, val title: String, val text: S
 private val benefits = listOf(
     Benefit(Icons.Rounded.AllInclusive, "بلا حدود يومية", "كل أدوات الملفات والصور متى شئت"),
     Benefit(Icons.Rounded.BurstMode, "دفعة واحدة حتى ${Plus.PLUS_FILES} ملف", "وملفات حتى ${Plus.PLUS_MB} م.ب"),
-    Benefit(Icons.Rounded.Style, "قوالب احترافية", "أكثر من 20 قالبًا بشعار منشأتك"),
+    Benefit(Icons.Rounded.Style, "قوالب احترافية", "أكثر من 20 قالبا بشعار منشأتك"),
     Benefit(Icons.Rounded.TextFields, "OCR لملفات كاملة", "وملف PDF قابل للبحث"),
 )
 
@@ -99,7 +99,7 @@ fun Paywall(reason: Plus.Reason, close: () -> Unit) {
             Box(Modifier.size(64.dp).clip(RoundedCornerShape(20.dp)).background(Brand.Ink), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.WorkspacePremium, null, tint = Brand.Saffron, modifier = Modifier.size(34.dp))
             }
-            Text("مُيسّر بلس", style = MaterialTheme.typography.labelLarge, color = tokens.accent)
+            Text("ميسر بلس", style = MaterialTheme.typography.labelLarge, color = tokens.accent)
             Text(if (Plus.active) "أنت مشترك في بلس" else "أنجز أكثر بلا حدود", style = MaterialTheme.typography.headlineSmall, color = tokens.textPrimary, textAlign = TextAlign.Center)
             if (reason != Plus.Reason.Menu && !Plus.active) {
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(tokens.accentSoft).padding(Space.m), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -129,24 +129,24 @@ fun Paywall(reason: Plus.Reason, close: () -> Unit) {
 
             when {
                 Plus.school.isNotEmpty() && Plus.schoolUntil > System.currentTimeMillis() -> {
-                    Text("بلس مفعّل ضمن باقة ${Plus.school} حتى ${java.text.SimpleDateFormat("d/M/yyyy", java.util.Locale.US).format(java.util.Date(Plus.schoolUntil))}",
+                    Text("بلس مفعل ضمن باقة ${Plus.school} حتى ${java.text.SimpleDateFormat("d/M/yyyy", java.util.Locale.US).format(java.util.Date(Plus.schoolUntil))}",
                         style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.testTag("schoolActive"))
                 }
                 Plus.active -> {
                     Text(
-                        if (Plus.subscribed) "${Plus.planName}${if (Plus.renews) " • يتجدد تلقائيًا" else " • لن يتجدد"}" else "مرور اليوم مفعّل حتى ${java.text.SimpleDateFormat("h:mm a", java.util.Locale("ar")).format(java.util.Date(Plus.dayPassUntil))}",
+                        if (Plus.subscribed) "${Plus.planName}${if (Plus.renews) " • يتجدد تلقائيا" else " • لن يتجدد"}" else "مرور اليوم مفعل حتى ${java.text.SimpleDateFormat("h:mm a", java.util.Locale("ar")).format(java.util.Date(Plus.dayPassUntil))}",
                         style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary, textAlign = TextAlign.Center,
                     )
                     if (Plus.subscribed) SecondaryButton("إدارة الاشتراك أو إلغاؤه", Icons.Rounded.ManageAccounts, Modifier.fillMaxWidth()) { openUrl(ctx, Billing.MANAGE_URL) }
                 }
                 !Plus.live -> {
                     Column(Modifier.fillMaxWidth().cardSurface(Radius.m).padding(Space.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                        Text("قريبًا", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
-                        Text("كل الأدوات مفتوحة لك مجانًا الآن خلال فترة الإطلاق. سيُطرح بلس قريبًا بسعر رمزي.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center)
-                        SwitchRow("نبّهني عند إطلاق بلس", Plus.notifyWhenLive) { Plus.toggleNotify() }
+                        Text("قريبا", style = MaterialTheme.typography.titleMedium, color = tokens.textPrimary)
+                        Text("كل الأدوات مفتوحة لك مجانا الآن خلال فترة الإطلاق. سيطرح بلس قريبا بسعر رمزي.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center)
+                        SwitchRow("نبهني عند إطلاق بلس", Plus.notifyWhenLive) { Plus.toggleNotify() }
                     }
                 }
-                plans.isEmpty() -> Text("تعذّر تحميل الأسعار من Google Play. تأكد من الاتصال وحاول لاحقًا.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center)
+                plans.isEmpty() -> Text("تعذر تحميل الأسعار من Google Play. تأكد من الاتصال وحاول لاحقا.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center)
                 else -> {
                     val monthly = plans.firstOrNull { it.id == "monthly" }
                     plans.filter { it.id != "day" }.forEach { p ->
@@ -161,8 +161,8 @@ fun Paywall(reason: Plus.Reason, close: () -> Unit) {
                     Text(
                         when {
                             chosen.id == "day" -> "دفعة واحدة ${chosen.price}، بلا اشتراك ولا تجديد."
-                            chosen.trialDays > 0 -> "مجانًا ${chosen.trialDays} أيام، ثم ${chosen.price} كل ${chosen.period} ويتجدد تلقائيًا. نذكّرك قبل نهاية التجربة بيوم، ويمكنك الإلغاء في أي وقت من Google Play."
-                            else -> "${chosen.price} كل ${chosen.period}، ويتجدد تلقائيًا حتى تلغيه من Google Play."
+                            chosen.trialDays > 0 -> "مجانا ${chosen.trialDays} أيام، ثم ${chosen.price} كل ${chosen.period} ويتجدد تلقائيا. نذكرك قبل نهاية التجربة بيوم، ويمكنك الإلغاء في أي وقت من Google Play."
+                            else -> "${chosen.price} كل ${chosen.period}، ويتجدد تلقائيا حتى تلغيه من Google Play."
                         },
                         style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary, textAlign = TextAlign.Center,
                     )
@@ -174,7 +174,7 @@ fun Paywall(reason: Plus.Reason, close: () -> Unit) {
             if (!Plus.active) SchoolCodeButton()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Lock, null, tint = tokens.textTertiary, modifier = Modifier.size(14.dp)); Spacer(Modifier.width(4.dp))
-                Text("ملفاتك تبقى على جهازك. ألغِ في أي وقت من المتجر.", style = MaterialTheme.typography.labelMedium, color = tokens.textTertiary)
+                Text("ملفاتك تبقى على جهازك. ألغ في أي وقت من المتجر.", style = MaterialTheme.typography.labelMedium, color = tokens.textTertiary)
             }
             Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
                 TextButton(onClick = { openUrl(ctx, TERMS_URL) }) { Text("شروط الاستخدام") }
@@ -201,9 +201,9 @@ private fun PlanCard(p: Billing.Plan, selected: Boolean, save: Int, onClick: () 
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(p.title, style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary)
-                if (save > 0) { Spacer(Modifier.width(6.dp)); Text("وفّر $save%", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.clip(RoundedCornerShape(50)).background(Brand.Mint).padding(horizontal = 7.dp, vertical = 2.dp)) }
+                if (save > 0) { Spacer(Modifier.width(6.dp)); Text("وفر $save%", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.clip(RoundedCornerShape(50)).background(Brand.Mint).padding(horizontal = 7.dp, vertical = 2.dp)) }
             }
-            Text(if (p.trialDays > 0) "${p.trialDays} أيام مجانًا • ${p.note}" else p.note, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+            Text(if (p.trialDays > 0) "${p.trialDays} أيام مجانا • ${p.note}" else p.note, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
         }
         Text("${p.price}\n/ ${p.period}", style = MaterialTheme.typography.titleSmall, color = tokens.textPrimary, textAlign = TextAlign.End)
     }
@@ -224,7 +224,7 @@ fun SchoolCodeButton() {
         title = { Text("تفعيل باقة المدرسة") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                Text("اكتب الكود الذي وصلك من إدارة مدرستك. يُرسل الكود فقط إلى خادم مُيسّر للتحقق منه، ويُربط بهذا الجهاز.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+                Text("اكتب الكود الذي وصلك من إدارة مدرستك. يرسل الكود فقط إلى خادم ميسر للتحقق منه، ويربط بهذا الجهاز.", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
                 OutlinedTextField(code, { code = it.uppercase().take(20); error = null }, singleLine = true, placeholder = { Text("MSR-XXXX-XXXX") },
                     modifier = Modifier.fillMaxWidth().testTag("schoolCodeField"))
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("schoolCodeError")) }
@@ -235,11 +235,11 @@ fun SchoolCodeButton() {
                 busy = true
                 scope.launch {
                     runCatching { com.muyassir.app.core.Cloud.redeem(code) }
-                        .onSuccess { if (Plus.schoolUntil > System.currentTimeMillis()) open = false else error = "تعذّر تفعيل الكود" }
+                        .onSuccess { if (Plus.schoolUntil > System.currentTimeMillis()) open = false else error = "تعذر تفعيل الكود" }
                         .onFailure { error = it.message }
                     busy = false
                 }
-            }) { Text(if (busy) "جارٍ التحقق…" else "تفعيل") }
+            }) { Text(if (busy) "جار التحقق…" else "تفعيل") }
         },
         dismissButton = { TextButton(onClick = { open = false }, enabled = !busy) { Text("إلغاء") } },
     )

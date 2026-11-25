@@ -127,7 +127,7 @@ fun QuizMaker(t: Tool, back: () -> Unit) {
         }
         QuestionBank(qs, subject, grade, lesson, Edu.levels[level])
         SwitchRow("إنشاء نموذج إجابة منفصل مع معايير التقويم", withKey) { withKey = it }
-        SwitchRow("ملف Word قابل للتعديل أيضًا", word) { word = it }
+        SwitchRow("ملف Word قابل للتعديل أيضا", word) { word = it }
         TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf, enabled = qs.isNotEmpty(), modifier = Modifier.testTag("action")) {
             saveMeta()
@@ -214,8 +214,8 @@ fun QuestionBank(qs: MutableList<JSONObject>, subject: String, grade: String, le
             val add = Edu.importRows(rows)
             val bank = Store.list("qbank"); val have = bank.map { it.optString("q") }.toSet()
             val fresh = add.filter { it.optString("q") !in have }
-            Store.saveList("qbank", bank + fresh); msg = "استُورد ${fresh.size} سؤالًا إلى البنك"
-        }.onFailure { msg = "تعذّرت قراءة الملف. استخدم Excel أو CSV بالأعمدة: السؤال، النوع، أ، ب، ج، د، الإجابة، الدرجة، المادة، الصف، الدرس، الصعوبة." }
+            Store.saveList("qbank", bank + fresh); msg = "استورد ${fresh.size} سؤالا إلى البنك"
+        }.onFailure { msg = "تعذرت قراءة الملف. استخدم Excel أو CSV بالأعمدة: السؤال، النوع، أ، ب، ج، د، الإجابة، الدرجة، المادة، الصف، الدرس، الصعوبة." }
     }
     Panel("بنك الأسئلة") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -223,7 +223,7 @@ fun QuestionBank(qs: MutableList<JSONObject>, subject: String, grade: String, le
                 val bank = Store.list("qbank"); val have = bank.map { it.optString("q") }.toSet()
                 val add = qs.filter { it.optString("q").isNotBlank() && it.optString("q") !in have }
                     .map { JSONObject(it.toString()).put("subject", subject).put("grade", grade).put("lesson", lesson).put("level", level) }
-                Store.saveList("qbank", bank + add); msg = "أُضيف ${add.size} سؤالًا إلى البنك (${bank.size + add.size} إجمالًا)"
+                Store.saveList("qbank", bank + add); msg = "أضيف ${add.size} سؤالا إلى البنك (${bank.size + add.size} إجمالا)"
             }
             SecondaryButton("من البنك", Icons.Rounded.LibraryAdd, Modifier.weight(1f).testTag("bankOpen")) { show = true }
         }
@@ -244,7 +244,7 @@ fun QuestionBank(qs: MutableList<JSONObject>, subject: String, grade: String, le
         AlertDialog(onDismissRequest = { show = false }, title = { Text("بنك الأسئلة (${shown.size} من ${bank.size})") },
             text = {
                 Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (bank.isEmpty()) Text("البنك فارغ. احفظ أسئلة اختبار أو استوردها من Excel لتعيد استخدامها لاحقًا.")
+                    if (bank.isEmpty()) Text("البنك فارغ. احفظ أسئلة اختبار أو استوردها من Excel لتعيد استخدامها لاحقا.")
                     else {
                         TextField2("بحث في الأسئلة", search, { search = it })
                         Picker("المادة", opts("subject"), fSubject, { it }) { fSubject = it }
@@ -274,13 +274,13 @@ object Strategies {
     data class Sec(val head: String, val prompt: String = "", val lines: Int = 3, val table: List<String> = emptyList(), val rows: Int = 0)
     data class T(val name: String, val about: String, val sections: List<Sec>, val perPage: Int = 1)
     val all = listOf(
-        T("ورقة عمل حرة", "اكتب أنشطتك سطرًا سطرًا", emptyList()),
+        T("ورقة عمل حرة", "اكتب أنشطتك سطرا سطرا", emptyList()),
         T("مستويات بلوم", "أسئلة متدرجة من التذكر إلى الإبداع", listOf(
-            Sec("تذكّر", "عرّف أو اذكر…"), Sec("افهم", "اشرح بأسلوبك…"), Sec("طبّق", "استخدم ما تعلمته في…"),
-            Sec("حلّل", "قارن أو صنّف…"), Sec("قيّم", "ما رأيك ولماذا؟"), Sec("ابتكر", "صمّم أو اقترح…"))),
-        T("فكّر، زاوج، شارك", "تفكير فردي ثم نقاش ثنائي ثم مشاركة", listOf(
-            Sec("فكّر بمفردك (دقيقتان)", "اكتب إجابتك الأولية"), Sec("زاوج مع زميلك (3 دقائق)", "ما الذي أضافه زميلك؟"), Sec("شارك الصف", "الفكرة التي سنعرضها", 2))),
-        T("الخبراء (Jigsaw)", "كل مجموعة تتقن جزءًا ثم تعلّمه للآخرين", listOf(
+            Sec("تذكر", "عرف أو اذكر…"), Sec("افهم", "اشرح بأسلوبك…"), Sec("طبق", "استخدم ما تعلمته في…"),
+            Sec("حلل", "قارن أو صنف…"), Sec("قيم", "ما رأيك ولماذا؟"), Sec("ابتكر", "صمم أو اقترح…"))),
+        T("فكر، زاوج، شارك", "تفكير فردي ثم نقاش ثنائي ثم مشاركة", listOf(
+            Sec("فكر بمفردك (دقيقتان)", "اكتب إجابتك الأولية"), Sec("زاوج مع زميلك (3 دقائق)", "ما الذي أضافه زميلك؟"), Sec("شارك الصف", "الفكرة التي سنعرضها", 2))),
+        T("الخبراء (Jigsaw)", "كل مجموعة تتقن جزءا ثم تعلمه للآخرين", listOf(
             Sec("جزئي في مجموعة الخبراء", "الجزء: ............  أهم ثلاث أفكار", 4),
             Sec("ما تعلمته من زملائي في المجموعة الأم", table = listOf("الجزء", "الفكرة الرئيسة", "مثال"), rows = 4))),
         T("القبعات الست", "التفكير في الموضوع من ست زوايا", listOf(
@@ -289,21 +289,21 @@ object Strategies {
             Sec("القبعة الخضراء: الأفكار الجديدة", "ما البدائل والحلول المبتكرة؟", 2), Sec("القبعة الزرقاء: التنظيم", "ما الخلاصة والخطوة التالية؟", 2))),
         T("التعلم التعاوني", "أدوار واضحة لكل عضو ومهمة مشتركة", listOf(
             Sec("أدوار المجموعة", table = listOf("الدور", "الاسم"), rows = 0),
-            Sec("المهمة", "ما المطلوب من المجموعة؟", 3), Sec("ناتج المجموعة", "", 5), Sec("تقييم العمل الجماعي", "ما الذي نجح؟ وما الذي نحسّنه؟", 2))),
+            Sec("المهمة", "ما المطلوب من المجموعة؟", 3), Sec("ناتج المجموعة", "", 5), Sec("تقييم العمل الجماعي", "ما الذي نجح؟ وما الذي نحسنه؟", 2))),
         T("التعلم القائم على حل المشكلات", "من تحديد المشكلة إلى تقييم الحل", listOf(
             Sec("المشكلة", "صف المشكلة بجملة واحدة", 2), Sec("ماذا نعرف؟", "", 3), Sec("ماذا نحتاج أن نعرف؟", "", 3),
             Sec("الحلول المقترحة", table = listOf("الحل", "المزايا", "العيوب"), rows = 3), Sec("الحل المختار ولماذا", "", 3), Sec("كيف سنعرف أنه نجح؟", "", 2))),
         T("المحطات التعليمية", "مهام قصيرة يتنقل الطلاب بينها", listOf(
             Sec("المحطة 1", "المهمة: ............  الزمن: ..... دقائق", 3), Sec("المحطة 2", "المهمة: ............  الزمن: ..... دقائق", 3),
             Sec("المحطة 3", "المهمة: ............  الزمن: ..... دقائق", 3), Sec("المحطة 4", "المهمة: ............  الزمن: ..... دقائق", 3))),
-        T("بطاقات الخروج (3-2-1)", "ثلاث بطاقات قصيرة في الصفحة تُجمع آخر الحصة", listOf(
-            Sec("3 أشياء تعلمتها اليوم", "", 3), Sec("2 سؤالان ما زالا لديّ", "", 2), Sec("1 كيف سأطبّق ما تعلمته", "", 1)), perPage = 3),
+        T("بطاقات الخروج (3-2-1)", "ثلاث بطاقات قصيرة في الصفحة تجمع آخر الحصة", listOf(
+            Sec("3 أشياء تعلمتها اليوم", "", 3), Sec("2 سؤالان ما زالا لدي", "", 2), Sec("1 كيف سأطبق ما تعلمته", "", 1)), perPage = 3),
         T("الاستبيان القبلي والبعدي", "قبل الدرس وبعده لقياس التعلم", listOf(
             Sec("قبل الدرس: ماذا أعرف؟", "", 3), Sec("ماذا أريد أن أعرف؟", "", 2), Sec("بعد الدرس: ماذا تعلمت؟", "", 3),
-            Sec("قيّم فهمك", table = listOf("العبارة", "قبل (1-5)", "بعد (1-5)"), rows = 4))),
-        T("خطة علاجية", "لطلاب يحتاجون دعمًا في مهارة محددة", listOf(
+            Sec("قيم فهمك", table = listOf("العبارة", "قبل (1-5)", "بعد (1-5)"), rows = 4))),
+        T("خطة علاجية", "لطلاب يحتاجون دعما في مهارة محددة", listOf(
             Sec("المهارة المستهدفة", "", 1), Sec("خطة الدعم", table = listOf("الطالب", "مستواه الحالي", "الإجراء العلاجي", "الموعد", "النتيجة"), rows = 6))),
-        T("خطة إثرائية", "لطلاب متقدمين يحتاجون تحديًا أكبر", listOf(
+        T("خطة إثرائية", "لطلاب متقدمين يحتاجون تحديا أكبر", listOf(
             Sec("الهدف الإثرائي", "", 2), Sec("الأنشطة", table = listOf("الطالب", "النشاط الإثرائي", "المصدر", "موعد التسليم"), rows = 5))),
         T("خطة دراسية أسبوعية", "توزيع المذاكرة على أيام الأسبوع", listOf(
             Sec("الأهداف هذا الأسبوع", "", 3),
@@ -334,7 +334,7 @@ fun WorksheetTool(t: Tool, back: () -> Unit) {
             if (kind == 0) { TextField2("الأنشطة/الأسئلة (سطر لكل سؤال)", body, { body = it }, lines = 6); NumField("أسطر إجابة بعد كل سؤال", lines, { lines = it }) }
             else tpl.sections.forEach { s -> Text("• ${s.head}" + if (s.prompt.isNotBlank()) ": ${s.prompt}" else "", style = MaterialTheme.typography.bodySmall) }
         }
-        SwitchRow("ملف Word قابل للتعديل أيضًا", word) { word = it }
+        SwitchRow("ملف Word قابل للتعديل أيضا", word) { word = it }
         TemplatePanel()
         PrimaryButton("إنشاء PDF", Icons.Rounded.PictureAsPdf, modifier = Modifier.testTag("action")) {
             val b = Templates.apply(ctx, DocBuilder(ctx)); val doc = ArrayList<Office.Para>()
@@ -354,7 +354,7 @@ fun WorksheetTool(t: Tool, back: () -> Unit) {
                     b.add(Block.Heading(s.head)); if (copy == 0) doc += Office.Para.Text(s.head, 2)
                     if (s.prompt.isNotBlank()) { b.add(Block.Para(s.prompt, 11f, color = DocBuilder.MUTED)); if (copy == 0) doc += Office.Para.Text(s.prompt) }
                     if (s.table.isNotEmpty()) {
-                        val rows = if (s.head == "أدوار المجموعة") listOf("القائد", "المقرر", "الموقّت", "المتحدث").map { listOf(it, "") } else List(s.rows) { List(s.table.size) { "" } }
+                        val rows = if (s.head == "أدوار المجموعة") listOf("القائد", "المقرر", "الموقت", "المتحدث").map { listOf(it, "") } else List(s.rows) { List(s.table.size) { "" } }
                         b.add(Block.Table(s.table, rows)); if (copy == 0) doc += Office.Para.Table(listOf(s.table) + rows.map { r -> r.map { it.ifBlank { " " } } })
                     } else { b.add(Block.Lines(s.lines)); if (copy == 0) repeat(s.lines) { doc += Office.Para.Text("..............................................................") } }
                 }

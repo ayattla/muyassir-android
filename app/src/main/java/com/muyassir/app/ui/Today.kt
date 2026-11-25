@@ -11,6 +11,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.muyassir.app.tools.thisMonth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,8 +65,13 @@ fun TodayScreen(open: (String) -> Unit, openAssistant: () -> Unit, openTools: ()
             if (Daily.showPrayer) PrayerCard(now)
             QuickGrid(open, openTools)
             if (!Daily.setupDone || editing) SetupCard(first = !Daily.setupDone) { editing = false }
+            WeekStrip(now, open)
             DatesRow(now, open)
             key(tick) { TasksCard(now, open) { tick++ } }
+            if (now.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) FridayCard()
+            BudgetCard(now, open)
+            VatCard()
+            key(tick) { NoteCard(open) { tick++ } }
             if (Daily.setupDone && Daily.roles.isEmpty()) RolePrompt()
             Daily.roles.forEach { RoleCard(it, now, open) }
             ContinueCard(open)
@@ -80,7 +90,7 @@ private fun minuteOfDay(c: Calendar) = c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(
 @Composable
 private fun SetupCard(first: Boolean, done: () -> Unit) {
     Column(Modifier.fillMaxWidth().cardSurface().padding(Space.l).testTag("todaySetup"), verticalArrangement = Arrangement.spacedBy(Space.m), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(if (first) "نرتّب لك يومك" else "تخصيص يومي", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(if (first) "نرتب لك يومك" else "تخصيص يومي", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text("اختر ما يصفك، ويمكنك اختيار أكثر من دور. كل ما تختاره يبقى على جهازك.", style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary, textAlign = TextAlign.Center)
         val roles = listOf("student" to "طالب", "teacher" to "معلم", "employee" to "موظف", "business" to "صاحب منشأة")
         Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -174,8 +184,8 @@ private fun DatesRow(now: Calendar, open: (String) -> Unit) {
         Occasions.upcoming(now).forEach { add(Due(it.days, it.title, 3, "hijri")) }
     }.sortedBy { it.days }.take(8)
     if (dues.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        SectionTitle("مواعيدك القادمة", "رواتب ومناسبات ووثائق")
+    Section {
+        SectionTitle("مواعيدك القادمة", "رواتب ومناسبات ووثائق", icon = Icons.Rounded.Event, color = Color(0xFF14936B))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("dates")) {
             dues.forEach { d ->
                 val warn = d.tone == 2
@@ -187,7 +197,7 @@ private fun DatesRow(now: Calendar, open: (String) -> Unit) {
                 ) {
                     Text(if (d.days == 0L) "اليوم" else "${d.days}", fontSize = if (d.days == 0L) 18.sp else 24.sp, fontWeight = FontWeight.Bold,
                         color = when { warn -> if (tokens.dark) Color(0xFFF2B01E) else Color(0xFFB0600A); d.tone == 3 -> if (tokens.dark) Color(0xFF5FD3AE) else Color(0xFF0E7A57); else -> tokens.accent })
-                    if (d.days > 0) Text(if (d.days in 3..10) "أيام" else "يومًا", style = MaterialTheme.typography.labelSmall, color = tokens.textSecondary)
+                    if (d.days > 0) Text(if (d.days in 3..10) "أيام" else "يوما", style = MaterialTheme.typography.labelSmall, color = tokens.textSecondary)
                     Text(d.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, maxLines = 2)
                 }
             }
@@ -204,7 +214,11 @@ private fun TasksCard(now: Calendar, open: (String) -> Unit, changed: () -> Unit
     val doneCount = tasks.count { it.optBoolean("done") }
     Column(Modifier.fillMaxWidth().cardSurface().padding(Space.l).testTag("todayTasks"), verticalArrangement = Arrangement.spacedBy(Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("مهامك اليوم", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(toneSoft(Color(0xFF0E7490))), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.TaskAlt, null, tint = tone(Color(0xFF0E7490)), modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(Space.m))
+            Text("مهامك اليوم", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             if (tasks.isNotEmpty()) Text("$doneCount من ${tasks.size}", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
         }
         if (tasks.isEmpty() && homework.isEmpty()) {
@@ -252,7 +266,7 @@ private fun RoleCard(role: String, now: Calendar, open: (String) -> Unit) {
         }
         "teacher" -> {
             val q = Store.list("published").firstOrNull()
-            Triple("اختباراتك", q?.let { "آخر اختبار منشور: ${it.optString("title")}" } ?: "أنشئ اختبارًا وانشره برابط، وتصلك النتائج هنا",
+            Triple("اختباراتك", q?.let { "آخر اختبار منشور: ${it.optString("title")}" } ?: "أنشئ اختبارا وانشره برابط، وتصلك النتائج هنا",
                 listOf("quiz_maker" to "اختبار جديد", "attendance" to "الحضور"))
         }
         "employee" -> Triple("عملك", "احسب راتبك الصافي أو مكافأتك أو إجازاتك بالمواد النظامية", listOf("salary" to "الراتب", "leave" to "الإجازات"))
@@ -290,15 +304,26 @@ private fun AdhkarCard(now: Calendar) {
 
 // ---- Home layout pieces -------------------------------------------------------------------------
 
+/** Section header in the card style: a coloured icon chip, the title and an optional pill action. */
 @Composable
-private fun SectionTitle(title: String, sub: String? = null, action: Pair<String, () -> Unit>? = null) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            if (sub != null) Text(sub, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+private fun SectionTitle(title: String, sub: String? = null, action: Pair<String, () -> Unit>? = null, icon: ImageVector = Icons.Rounded.Dashboard, color: Color = Color(0xFF3346D3)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+        Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(toneSoft(color)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = tone(color), modifier = Modifier.size(20.dp))
         }
-        if (action != null) TextButton(onClick = action.second) { Text(action.first) }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+            if (sub != null) Text(sub, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, maxLines = 1)
+        }
+        if (action != null) Text(action.first, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = tokens.accent,
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(tokens.accentSoft).clickable(onClick = action.second).heightIn(min = 36.dp).padding(horizontal = 14.dp, vertical = 8.dp))
     }
+}
+
+/** A home section: one white card with its header inside. */
+@Composable
+private fun Section(tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().cardSurface().padding(Space.l).let { if (tag != null) it.testTag(tag) else it }, verticalArrangement = Arrangement.spacedBy(Space.m), content = content)
 }
 
 @Composable
@@ -364,9 +389,9 @@ private fun QuickGrid(open: (String) -> Unit, openTools: () -> Unit) {
     val base = Daily.roles.flatMap { Tools.byRole[it].orEmpty() }
     val ids = (Store.favorites.toList() + base + listOf("scan", "img_pdf", "pdf_merge", "pdf_compress", "translate", "salary", "invoice", "qr_make")).distinct()
     val tools = ids.mapNotNull { Tools.byId[it] }.take(8)
-    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        SectionTitle("اختصاراتك", if (Store.favorites.isEmpty()) "ثبّت أدواتك بالنجمة لتظهر هنا" else null, "كل الأدوات" to openTools)
-        Column(Modifier.fillMaxWidth().cardSurface().padding(vertical = Space.m, horizontal = Space.s).testTag("quickGrid"), verticalArrangement = Arrangement.spacedBy(Space.m)) {
+    Section {
+        SectionTitle("اختصاراتك", if (Store.favorites.isEmpty()) "ثبت أدواتك بالنجمة لتظهر هنا" else null, "كل الأدوات" to openTools, Icons.Rounded.Bolt, Color(0xFF3346D3))
+        Column(Modifier.fillMaxWidth().testTag("quickGrid"), verticalArrangement = Arrangement.spacedBy(Space.m)) {
             tools.chunked(4).forEach { row ->
                 Row(Modifier.fillMaxWidth()) {
                     row.forEach { t ->
@@ -408,8 +433,8 @@ private fun RolePrompt() {
 private fun ContinueCard(open: (String) -> Unit) {
     val items = Store.recents.take(3).mapNotNull { r -> Tools.byId[r.tool]?.let { it to r } }
     if (items.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(Space.s), modifier = Modifier.testTag("continue")) {
-        SectionTitle("أكمل من حيث توقفت")
+    Section("continue") {
+        SectionTitle("أكمل من حيث توقفت", icon = Icons.Rounded.History, color = Color(0xFF7A4FD0))
         items.forEach { (t, r) -> ActivityRow(t.icon, Tools.colorOf(t), t.title, r.detail, ago(r.time), "فتح") { open(t.id) } }
     }
 }
@@ -417,8 +442,8 @@ private fun ContinueCard(open: (String) -> Unit) {
 /** Every space of the app, one tap away: the categories as coloured tiles. */
 @Composable
 private fun SpacesGrid(openCat: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        SectionTitle("مساحاتك", "${Tools.all.size} أداة في ${Tools.categories.size} مساحات")
+    Section {
+        SectionTitle("مساحاتك", "${Tools.all.size} أداة في ${Tools.categories.size} مساحات", icon = Icons.Rounded.GridView, color = Color(0xFFC2410C))
         Tools.categories.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                 row.forEach { c ->
@@ -454,9 +479,126 @@ private fun ToolOfDay(now: Calendar, open: (String) -> Unit) {
     ) {
         Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(toneSoft(c)), contentAlignment = Alignment.Center) { Icon(t.icon, null, tint = tone(c)) }
         Column(Modifier.weight(1f)) {
-            Text("جرّب اليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
+            Text("جرب اليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
             Text(t.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(t.sub, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, maxLines = 2)
+        }
+    }
+}
+
+// ---- Daily widgets ------------------------------------------------------------------------------
+
+/** The coming seven days at a glance; a dot marks a day with a task, exam, pay day or occasion. */
+@Composable
+private fun WeekStrip(now: Calendar, open: (String) -> Unit) {
+    val zone = TimeZone.getTimeZone("Asia/Riyadh")
+    fun dayStart(off: Int) = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, off); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+    val tasks = Store.list("tasks").filter { !it.optBoolean("done") }.map { it.optLong("due") }
+    val exams = Store.list("exams").map { it.optLong("at") }
+    val pays = Daily.payRules().map { PayDays.next(it, now).first }
+    val occ = Occasions.upcoming(now, 7).map { it.days }
+    var sel by remember { mutableIntStateOf(0) }
+    Section("week") {
+        SectionTitle("أسبوعك", "اضغط على يوم لتشوف ما فيه", icon = Icons.Rounded.CalendarMonth, color = Color(0xFF0E7490))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            (0..6).forEach { i ->
+                val d = dayStart(i); val end = d.timeInMillis + 86_400_000L
+                val busy = tasks.any { it in d.timeInMillis until end } || exams.any { it in d.timeInMillis until end } || i.toLong() in pays || i.toLong() in occ
+                val on = i == sel
+                Column(
+                    Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) tokens.accent else Color.Transparent).clickable { sel = i }.padding(vertical = 8.dp).testTag("day-$i"),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(Hijri.days[d.get(Calendar.DAY_OF_WEEK) - 1].take(3), style = MaterialTheme.typography.labelSmall, color = if (on) tokens.onAccent else tokens.textSecondary, maxLines = 1)
+                    Text("${d.get(Calendar.DAY_OF_MONTH)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (on) tokens.onAccent else tokens.textPrimary)
+                    Box(Modifier.size(5.dp).clip(CircleShape).background(if (busy) (if (on) tokens.onAccent else tokens.accent) else Color.Transparent))
+                }
+            }
+        }
+        val d = dayStart(sel); val end = d.timeInMillis + 86_400_000L
+        val lines = buildList {
+            Store.list("tasks").filter { !it.optBoolean("done") && it.optLong("due") in d.timeInMillis until end }.forEach { add("مهمة: " + it.optString("title")) }
+            Store.list("exams").filter { it.optLong("at") in d.timeInMillis until end }.forEach { add("اختبار " + it.optString("subject")) }
+            Daily.payRules().filter { PayDays.next(it, now).first == sel.toLong() }.forEach { add(it.title) }
+            Occasions.upcoming(now, 7).filter { it.days == sel.toLong() }.forEach { add(it.title) }
+        }
+        Text(if (lines.isEmpty()) "يوم فاضي، ما فيه مواعيد" else lines.take(4).joinToString("\n"), style = MaterialTheme.typography.bodyMedium,
+            color = if (lines.isEmpty()) tokens.textSecondary else tokens.textPrimary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+    }
+}
+
+/** This month's spending against income, and how much is left per day until the next salary. */
+@Composable
+private fun BudgetCard(now: Calendar, open: (String) -> Unit) {
+    val income = Store.obj("budget").optString("income").toDoubleOrNull() ?: 0.0
+    val spent = thisMonth(Store.list("expenses")).sumOf { it.optString("amount").toDoubleOrNull() ?: 0.0 }
+    Section("budgetCard") {
+        SectionTitle("مصروف الشهر", if (income > 0) "من دخل ${fmt(income)} ريال" else "تابع مصروفك قبل يخلص الراتب", "سجل مصروف" to { open("expenses") }, Icons.Rounded.AccountBalanceWallet, Color(0xFFB45309))
+        if (income <= 0) {
+            Text("حدد دخلك الشهري مرة وحدة، ونحسب لك كم يبقى لك كل يوم حتى الراتب.", style = MaterialTheme.typography.bodyMedium, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            OutlinedButton(onClick = { open("budget") }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("حدد دخلك") }
+        } else {
+            val left = income - spent
+            val days = Daily.payRules().firstOrNull()?.let { PayDays.next(it, now).first.coerceAtLeast(1) } ?: 30L
+            LinearProgressIndicator(progress = { (spent / income).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(50)),
+                color = if (left < 0) Color(0xFFC0392B) else Color(0xFFB45309), trackColor = toneSoft(Color(0xFFB45309)))
+            Row(Modifier.fillMaxWidth()) {
+                Stat("صرفت", "${fmt(spent)} ريال", Modifier.weight(1f)); Stat("باقي", "${fmt(left)} ريال", Modifier.weight(1f))
+                Stat("لكل يوم", if (left > 0) "${fmt(left / days)} ريال" else "0", Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun Stat(label: String, value: String, m: Modifier) {
+    Column(m, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.textSecondary)
+    }
+}
+
+private fun fmt(v: Double) = if (v == Math.floor(v) && kotlin.math.abs(v) < 1e9) "%,d".format(java.util.Locale.US, v.toLong()) else "%,.2f".format(java.util.Locale.US, v)
+
+/** Saudi VAT (15%) both ways, right on the home screen. */
+@Composable
+private fun VatCard() {
+    var amount by remember { mutableStateOf("") }
+    val v = amount.toDoubleOrNull()
+    Section("vatCard") {
+        SectionTitle("حاسبة الضريبة", "ضريبة القيمة المضافة 15%", icon = Icons.Rounded.Calculate, color = Color(0xFF3346D3))
+        OutlinedTextField(amount, { amount = it.filter { c -> c.isDigit() || c == '.' } }, placeholder = { Text("اكتب المبلغ") }, singleLine = true, shape = RoundedCornerShape(Radius.m),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), suffix = { Text("ريال") }, modifier = Modifier.fillMaxWidth().testTag("vatAmount"))
+        if (v != null && v > 0) Row(Modifier.fillMaxWidth()) {
+            Stat("مع الضريبة", fmt(v * 1.15), Modifier.weight(1f)); Stat("الضريبة", fmt(v * .15), Modifier.weight(1f)); Stat("قبل الضريبة لو شامل", fmt(v / 1.15), Modifier.weight(1f))
+        }
+    }
+}
+
+/** Friday: a reminder to read Surat al-Kahf, opening it in آيات تتلى. */
+@Composable
+private fun FridayCard() {
+    val uri = LocalUriHandler.current
+    Section("fridayCard") {
+        SectionTitle("جمعة مباركة", "سورة الكهف والصلاة على النبي ﷺ", icon = Icons.Rounded.AutoStories, color = Color(0xFF14936B))
+        Button(onClick = { uri.openUri("https://ayattla.com/surah/18-al-kahf") }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("اقرأ سورة الكهف في آيات تتلى") }
+    }
+}
+
+/** The latest note and a quick way to jot a new one. */
+@Composable
+private fun NoteCard(open: (String) -> Unit, changed: () -> Unit) {
+    val last = Store.list("notes").maxByOrNull { it.optLong("id") }
+    var draft by remember { mutableStateOf("") }
+    Section("noteCard") {
+        SectionTitle("ملاحظة سريعة", last?.let { "آخر ملاحظة: " + it.optString("title") }, "كل الملاحظات" to { open("notes") }, Icons.Rounded.EditNote, Color(0xFF7A4FD0))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            OutlinedTextField(draft, { draft = it }, placeholder = { Text("اكتب فكرة قبل تنساها") }, shape = RoundedCornerShape(Radius.m), maxLines = 3, modifier = Modifier.weight(1f).testTag("quickNote"))
+            FilledIconButton(onClick = {
+                val text = draft.trim(); if (text.isEmpty()) return@FilledIconButton
+                Store.saveList("notes", Store.list("notes") + JSONObject().put("id", System.currentTimeMillis()).put("title", text.lineSequence().first().take(40)).put("body", text))
+                draft = ""; changed()
+            }, modifier = Modifier.size(52.dp).testTag("quickNoteAdd").semantics { contentDescription = "حفظ الملاحظة" }) { Icon(Icons.Rounded.Check, null) }
         }
     }
 }

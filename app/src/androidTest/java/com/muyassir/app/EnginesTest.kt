@@ -36,7 +36,7 @@ class EnginesTest {
 
     private fun samplePdf(name: String, pages: Int): File {
         val b = DocBuilder(ctx)
-        repeat(pages) { i -> if (i > 0) b.add(DocBuilder.Block.PageBreak); b.add(DocBuilder.Block.Title("صفحة ${i + 1}")); b.add(DocBuilder.Block.Para("مرحبًا بكم في مُيسّر — Muyassir test page ${i + 1}")) }
+        repeat(pages) { i -> if (i > 0) b.add(DocBuilder.Block.PageBreak); b.add(DocBuilder.Block.Title("صفحة ${i + 1}")); b.add(DocBuilder.Block.Para("مرحبا بكم في ميسر — Muyassir test page ${i + 1}")) }
         return b.save(File(dir, name))
     }
 

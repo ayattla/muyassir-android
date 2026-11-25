@@ -94,7 +94,7 @@ fun PdfEditTool(t: Tool, back: () -> Unit) {
             }
         }
         r.onSuccess { (a, ff) -> pdf = a.first; pages = a.second; pageSize = a.third; page = 0; fields = ff; ff.forEach { values[it.name] = it.value }; if (ff.isNotEmpty()) tab = 1 }
-            .onFailure { error = "تعذّر فتح الملف. إن كان محميًا بكلمة مرور فأزل الحماية أولًا." }
+            .onFailure { error = "تعذر فتح الملف. إن كان محميا بكلمة مرور فأزل الحماية أولا." }
     }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { u -> u?.let { load(it) } }
     LaunchedEffect(Unit) { (TestHooks.inputs ?: com.muyassir.app.core.Incoming.take())?.firstOrNull()?.let { load(it) } }
@@ -122,7 +122,7 @@ fun PdfEditTool(t: Tool, back: () -> Unit) {
                     Text("الحجم ${fontPt.toInt()}", style = MaterialTheme.typography.labelMedium); Slider(fontPt, { fontPt = it }, valueRange = 8f..28f)
                     ChipRow { listOf("أسود", "أزرق", "أحمر", "أخضر").forEachIndexed { i, n -> Chip(n, i == color) { color = i } } }
                 }
-                Hint(if (kind == 0) "اكتب النص ثم المس مكانه على الصفحة." else "المس المكان على الصفحة، ثم عدّل الحجم من الأسفل.")
+                Hint(if (kind == 0) "اكتب النص ثم المس مكانه على الصفحة." else "المس المكان على الصفحة، ثم عدل الحجم من الأسفل.")
             }
             if (pages > 1) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
                 IconButton(enabled = page > 0, onClick = { page-- }) { Icon(Icons.Rounded.ChevronRight, "الصفحة السابقة") }
@@ -170,23 +170,23 @@ fun PdfEditTool(t: Tool, back: () -> Unit) {
                 }
             }
             if (marks.isNotEmpty()) Text("${marks.size} إضافة على ${marks.map { it.page }.distinct().size} صفحة", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
-            PrimaryButton(if (busy) "جارٍ الحفظ…" else "حفظ الملف", Icons.Rounded.Save, enabled = marks.isNotEmpty() && !busy, modifier = Modifier.testTag("action")) {
+            PrimaryButton(if (busy) "جار الحفظ…" else "حفظ الملف", Icons.Rounded.Save, enabled = marks.isNotEmpty() && !busy, modifier = Modifier.testTag("action")) {
                 Plus.check(t.id, listOf(pdf!!.length()))?.let { Plus.paywall = it; return@PrimaryButton }
                 scope.launch {
                     busy = true
                     val r = withContext(Dispatchers.IO) {
-                        runCatching { listOf(PdfEngine.annotate(pdf!!, marks.map { m -> PdfEngine.Overlay(m.page, m.rx, m.ry, m.rw, m.rh, overlayBitmap(m, 3f)) }, File(Files.outDir(ctx), "مستند-معدّل.pdf"))) }
+                        runCatching { listOf(PdfEngine.annotate(pdf!!, marks.map { m -> PdfEngine.Overlay(m.page, m.rx, m.ry, m.rw, m.rh, overlayBitmap(m, 3f)) }, File(Files.outDir(ctx), "مستند-معدل.pdf"))) }
                     }
                     busy = false
-                    r.onSuccess { result = it; Store.used(t.id); Plus.counted(t.id); maybeAskForReview(ctx) }.onFailure { error = "تعذّر حفظ التعديلات على هذا الملف." }
+                    r.onSuccess { result = it; Store.used(t.id); Plus.counted(t.id); maybeAskForReview(ctx) }.onFailure { error = "تعذر حفظ التعديلات على هذا الملف." }
                 }
             }
         }
         if (pdf != null && tab == 1) {
-            if (fields.isEmpty()) Panel { Text("هذا الملف ليس نموذجًا قابلًا للتعبئة. استخدم «كتابة وتظليل» لإضافة النص في أي مكان.", style = MaterialTheme.typography.bodyMedium) }
+            if (fields.isEmpty()) Panel { Text("هذا الملف ليس نموذجا قابلا للتعبئة. استخدم «كتابة وتظليل» لإضافة النص في أي مكان.", style = MaterialTheme.typography.bodyMedium) }
             else {
                 Panel("حقول النموذج") { fields.forEach { f -> TextField2(f.label, values[f.name] ?: "", { values[f.name] = it }) } }
-                PrimaryButton(if (busy) "جارٍ الحفظ…" else "تعبئة وحفظ", Icons.Rounded.EditNote, enabled = !busy, modifier = Modifier.testTag("fillForm")) {
+                PrimaryButton(if (busy) "جار الحفظ…" else "تعبئة وحفظ", Icons.Rounded.EditNote, enabled = !busy, modifier = Modifier.testTag("fillForm")) {
                     Plus.check(t.id, listOf(pdf!!.length()))?.let { Plus.paywall = it; return@PrimaryButton }
                     scope.launch {
                         busy = true
@@ -194,14 +194,14 @@ fun PdfEditTool(t: Tool, back: () -> Unit) {
                             runCatching { listOf(PdfEngine.fillForm(pdf!!, values.toMap(), File(Files.outDir(ctx), "نموذج-معبأ.pdf")) { v, w, h -> textBitmap(ctx, v, (h * 0.6f).coerceIn(7f, 14f), 0xFF141A2E.toInt(), w, h) }) }
                         }
                         busy = false
-                        r.onSuccess { result = it; Store.used(t.id); Plus.counted(t.id) }.onFailure { error = "تعذّرت تعبئة هذا النموذج." }
+                        r.onSuccess { result = it; Store.used(t.id); Plus.counted(t.id) }.onFailure { error = "تعذرت تعبئة هذا النموذج." }
                     }
                 }
-                Hint("النص الإنجليزي يُكتب داخل الحقل نفسه، والعربي يُرسم مكان الحقل ليظهر صحيحًا في كل البرامج.")
+                Hint("النص الإنجليزي يكتب داخل الحقل نفسه، والعربي يرسم مكان الحقل ليظهر صحيحا في كل البرامج.")
             }
         }
         if (result.isNotEmpty()) ResultFiles(result)
-        if (pdf == null) Hint("أضف نصًا عربيًا أو إنجليزيًا في أي مكان، وظلّل، وأخفِ ما لا تريد ظهوره، أو عبّئ النماذج الرسمية. كل ذلك على جهازك.")
+        if (pdf == null) Hint("أضف نصا عربيا أو إنجليزيا في أي مكان، وظلل، وأخف ما لا تريد ظهوره، أو عبئ النماذج الرسمية. كل ذلك على جهازك.")
     }
 }
 

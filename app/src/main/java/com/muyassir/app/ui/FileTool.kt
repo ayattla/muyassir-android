@@ -53,7 +53,7 @@ fun FileTool(
     actionLabel: String,
     reorderable: Boolean = false,
     options: @Composable ColumnScope.(inputs: List<Uri>) -> Unit = {},
-    validate: (List<Uri>) -> String? = { if (it.isEmpty()) "اختر ملفًا أولًا" else null },
+    validate: (List<Uri>) -> String? = { if (it.isEmpty()) "اختر ملفا أولا" else null },
     after: @Composable ColumnScope.() -> Unit = {},
     run: suspend (inputs: List<Uri>, out: File, progress: Progress) -> List<File>,
 ) {
@@ -104,17 +104,17 @@ fun FileTool(
                         Icon(Icons.Rounded.UploadFile, null, tint = accent, modifier = Modifier.size(28.dp))
                     }
                     Text(if (inputs.isEmpty()) pickLabel else if (multiple) "إضافة ملفات أخرى" else "تغيير الملف", style = MaterialTheme.typography.titleSmall, color = accent)
-                    Text(if (multiple) "يمكنك اختيار عدة ملفات دفعة واحدة" else "اختر ملفًا من جهازك أو من خدمات التخزين", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
+                    Text(if (multiple) "يمكنك اختيار عدة ملفات دفعة واحدة" else "اختر ملفا من جهازك أو من خدمات التخزين", style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Lock, null, tint = tokens.textTertiary, modifier = Modifier.size(13.dp)); Spacer(Modifier.width(4.dp))
-                        Text("تتم المعالجة على جهازك ولا تُرفع ملفاتك", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary)
+                        Text("تتم المعالجة على جهازك ولا ترفع ملفاتك", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary)
                     }
                 }
             }
             if (com.muyassir.app.core.Plus.isMetered(tool.id) && !com.muyassir.app.core.Plus.unlocked) {
                 val left = com.muyassir.app.core.Plus.opsLeft
                 Row(Modifier.fillMaxWidth().testTag("opsLeft"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (left > 0) "متبقٍ لك اليوم $left من ${com.muyassir.app.core.Plus.FREE_OPS_PER_DAY} عمليات مجانية" else "انتهت عملياتك المجانية لليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
+                    Text(if (left > 0) "متبق لك اليوم $left من ${com.muyassir.app.core.Plus.FREE_OPS_PER_DAY} عمليات مجانية" else "انتهت عملياتك المجانية لليوم", style = MaterialTheme.typography.labelMedium, color = tokens.textSecondary)
                     Spacer(Modifier.width(6.dp))
                     TextButton(onClick = { com.muyassir.app.core.Plus.paywall = com.muyassir.app.core.Plus.Reason.Menu }) { Text("بلا حدود مع بلس") }
                 }
@@ -145,7 +145,7 @@ fun FileTool(
             Panel {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = tokens.accent); Spacer(Modifier.width(Space.s))
-                    Text(progress.label.ifBlank { "جارٍ المعالجة على جهازك…" }, style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary)
+                    Text(progress.label.ifBlank { "جار المعالجة على جهازك…" }, style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary)
                 }
                 if (progress.value >= 0) {
                     val v by androidx.compose.animation.core.animateFloatAsState(progress.value, label = "p")
@@ -189,12 +189,12 @@ fun FileTool(
 fun friendly(t: Throwable): String {
     val m = t.message ?: ""
     return when {
-        t is OutOfMemoryError -> "الملف كبير جدًا على ذاكرة الجهاز. جرّب دقة أقل أو عددًا أقل من الصفحات."
-        m.contains("password", true) || t.javaClass.simpleName.contains("InvalidPassword") -> "الملف محمي بكلمة مرور. استخدم أداة «إزالة حماية PDF» أولًا."
+        t is OutOfMemoryError -> "الملف كبير جدا على ذاكرة الجهاز. جرب دقة أقل أو عددا أقل من الصفحات."
+        m.contains("password", true) || t.javaClass.simpleName.contains("InvalidPassword") -> "الملف محمي بكلمة مرور. استخدم أداة «إزالة حماية PDF» أولا."
         t is SecurityException -> "لا يمكن فتح هذا الملف. اختره مرة أخرى."
         m.isNotBlank() && m.any { it in '؀'..'ۿ' } -> m
-        t.javaClass.name.contains("MlKit") -> "تعذّر تشغيل نموذج Google على هذا الجهاز. تأكد من تحديث خدمات Google Play والاتصال بالإنترنت لأول استخدام."
-        else -> "تعذّرت المعالجة: تأكد أن الملف سليم ومن النوع الصحيح."
+        t.javaClass.name.contains("MlKit") -> "تعذر تشغيل نموذج Google على هذا الجهاز. تأكد من تحديث خدمات Google Play والاتصال بالإنترنت لأول استخدام."
+        else -> "تعذرت المعالجة: تأكد أن الملف سليم ومن النوع الصحيح."
     }
 }
 
@@ -218,12 +218,12 @@ fun ResultFiles(files: List<File>) {
                 IconButton(onClick = { pending = f; saveAs.launch(f.name) }) { Icon(Icons.Rounded.Save, "حفظ باسم") }
             }
         }
-        if (files.size > 60) Text("و${files.size - 60} ملفًا آخر", style = MaterialTheme.typography.bodySmall)
+        if (files.size > 60) Text("و${files.size - 60} ملفا آخر", style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             SecondaryButton("مشاركة", Icons.Rounded.Share, Modifier.weight(1f)) { Files.share(ctx, files) }
             SecondaryButton("حفظ في التنزيلات", Icons.Rounded.Download, Modifier.weight(1f)) {
                 val ok = files.all { Files.saveToDownloads(ctx, it) }
-                if (ok) toast(ctx, "حُفظ في مجلد التنزيلات/Muyassir") else { pending = files.first(); saveAs.launch(files.first().name) }
+                if (ok) toast(ctx, "حفظ في مجلد التنزيلات/Muyassir") else { pending = files.first(); saveAs.launch(files.first().name) }
             }
         }
         if (files.size == 1 && files[0].extension == "pdf") SecondaryButton("طباعة", Icons.Rounded.Print, Modifier.fillMaxWidth()) { Files.printPdf(ctx, files[0]) }
@@ -298,6 +298,6 @@ fun notifyDone(ctx: android.content.Context, title: String, n: Int) {
     val i = android.app.PendingIntent.getActivity(ctx, 0, android.content.Intent(ctx, com.muyassir.app.MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP), android.app.PendingIntent.FLAG_IMMUTABLE)
     val note = androidx.core.app.NotificationCompat.Builder(ctx, com.muyassir.app.MuyassirApp.CHANNEL)
         .setSmallIcon(com.muyassir.app.R.drawable.ic_launcher_foreground).setContentTitle("اكتملت العملية: $title")
-        .setContentText("$n ${if (n == 1) "ملف جاهز" else "ملفات جاهزة"} في مُيسّر").setContentIntent(i).setAutoCancel(true).build()
+        .setContentText("$n ${if (n == 1) "ملف جاهز" else "ملفات جاهزة"} في ميسر").setContentIntent(i).setAutoCancel(true).build()
     runCatching { androidx.core.app.NotificationManagerCompat.from(ctx).notify(7001, note) }
 }

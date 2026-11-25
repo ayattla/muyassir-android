@@ -14,14 +14,14 @@ COLOR = {"files": "#3346D3", "images": "#7340D0", "study": "#0B7F7A", "saudi": "
 e = html.escape
 
 STEPS = {
-    "files": ["افتح الأداة في تطبيق مُيسّر", "اختر الملف من جهازك أو من تطبيق الملفات", "اضبط الخيارات إن وجدت ثم ابدأ", "احفظ الناتج أو شاركه مباشرة"],
-    "images": ["افتح الأداة في تطبيق مُيسّر", "اختر صورة أو أكثر من المعرض", "اضبط الإعدادات وشاهد المعاينة", "احفظ الصورة الجديدة أو شاركها"],
-    "study": ["افتح الأداة في تطبيق مُيسّر", "اكتب البيانات أو اختر قالبًا جاهزًا", "راجع الناتج على الشاشة", "صدّره ملف PDF أو Word أو شاركه"],
-    "saudi": ["افتح الحاسبة في تطبيق مُيسّر", "أدخل الأجر والتواريخ والبيانات المطلوبة", "اقرأ النتيجة وتفصيلها", "اعرض طريقة الحساب والمادة النظامية ومصدرها الرسمي"],
-    "productivity": ["افتح الأداة في تطبيق مُيسّر", "أضف عناصرك وبياناتك", "نظّمها وعدّلها متى شئت", "تبقى محفوظة على جهازك"],
-    "docs": ["افتح الأداة في تطبيق مُيسّر", "عبئ الحقول بالعربية", "شاهد المستند قبل حفظه", "صدّره PDF أو Word وشاركه"],
-    "calc": ["افتح الحاسبة في تطبيق مُيسّر", "أدخل القيم", "تظهر النتيجة فورًا", "انسخ النتيجة أو أعد الحساب"],
-    "smart": ["افتح الأداة في تطبيق مُيسّر", "أدخل النص أو اختر الملف", "ابدأ المعالجة", "انسخ الناتج أو احفظه"],
+    "files": ["افتح الأداة في تطبيق ميسر", "اختر الملف من جهازك أو من تطبيق الملفات", "اضبط الخيارات إن وجدت ثم ابدأ", "احفظ الناتج أو شاركه مباشرة"],
+    "images": ["افتح الأداة في تطبيق ميسر", "اختر صورة أو أكثر من المعرض", "اضبط الإعدادات وشاهد المعاينة", "احفظ الصورة الجديدة أو شاركها"],
+    "study": ["افتح الأداة في تطبيق ميسر", "اكتب البيانات أو اختر قالبا جاهزا", "راجع الناتج على الشاشة", "صدره ملف PDF أو Word أو شاركه"],
+    "saudi": ["افتح الحاسبة في تطبيق ميسر", "أدخل الأجر والتواريخ والبيانات المطلوبة", "اقرأ النتيجة وتفصيلها", "اعرض طريقة الحساب والمادة النظامية ومصدرها الرسمي"],
+    "productivity": ["افتح الأداة في تطبيق ميسر", "أضف عناصرك وبياناتك", "نظمها وعدلها متى شئت", "تبقى محفوظة على جهازك"],
+    "docs": ["افتح الأداة في تطبيق ميسر", "عبئ الحقول بالعربية", "شاهد المستند قبل حفظه", "صدره PDF أو Word وشاركه"],
+    "calc": ["افتح الحاسبة في تطبيق ميسر", "أدخل القيم", "تظهر النتيجة فورا", "انسخ النتيجة أو أعد الحساب"],
+    "smart": ["افتح الأداة في تطبيق ميسر", "أدخل النص أو اختر الملف", "ابدأ المعالجة", "انسخ الناتج أو احفظه"],
 }
 NOTE = {
     "saudi": "النتيجة تقديرية للاسترشاد، وتعرض الحاسبة المعادلة ورقم المادة والمصدر الرسمي وتاريخ آخر مراجعة. للقرار النهائي راجع الجهة المختصة.",
@@ -53,9 +53,9 @@ def page(title: str, desc: str, path: str, body: str, ld: list) -> str:
             f'<title>{e(title)}</title><meta name="description" content="{e(desc)}"><link rel="canonical" href="{url}">'
             f'<meta property="og:type" content="website"><meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}">'
             f'<meta property="og:url" content="{url}"><meta property="og:locale" content="ar_SA"><meta name="theme-color" content="#3346D3">'
-            f'<style>{CSS}</style>{lds}</head><body><main><div class="top"><a class="brand" href="{BASE}/">مُيسّر</a>'
+            f'<style>{CSS}</style>{lds}</head><body><main><div class="top"><a class="brand" href="{BASE}/">ميسر</a>'
             f'<a href="https://ayattla.com/" style="font-size:14px;color:#5B6178">من آيات تتلى</a></div>{body}'
-            f'<footer>مُيسّر: أدوات عربية تعمل على جهازك، ولا تُرفع ملفاتك إلى أي خادم.</footer></main></body></html>')
+            f'<footer>ميسر: أدوات عربية تعمل على جهازك، ولا ترفع ملفاتك إلى أي خادم.</footer></main></body></html>')
 
 
 def tile(t: dict) -> str:
@@ -73,39 +73,39 @@ def home():
             secs.append(f'<section data-sec><h2>{e(c["title"])}</h2><p class="blurb">{e(c["blurb"])}</p><div class="grid">{"".join(tile(t) for t in ts)}</div></section>')
     n = len(DATA["tools"])
     body = (f'<div class="hero"><h1>{n} أداة عربية في تطبيق واحد</h1>'
-            '<p>حوّل ملفات PDF وWord، وعدّل الصور، وأنشئ الاختبارات وأوراق العمل، واحسب الراتب ونهاية الخدمة والضريبة. كل ذلك على جهازك وبالعربية.</p>'
-            '<span class="soon">التطبيق قريبًا على Google Play وApp Store</span>'
+            '<p>حول ملفات PDF وWord، وعدل الصور، وأنشئ الاختبارات وأوراق العمل، واحسب الراتب ونهاية الخدمة والضريبة. كل ذلك على جهازك وبالعربية.</p>'
+            '<span class="soon">التطبيق قريبا على Google Play وApp Store</span>'
             '<input class="search" type="search" placeholder="ابحث عن أداة، مثل: ضغط PDF" aria-label="ابحث عن أداة" oninput="f(this.value)"></div>'
             + "".join(secs) +
             '<script>function f(q){q=q.trim().toLowerCase();document.querySelectorAll(".tool").forEach(function(a){a.hidden=q&&a.dataset.k.toLowerCase().indexOf(q)<0});'
             'document.querySelectorAll("[data-sec]").forEach(function(s){s.hidden=!s.querySelector(".tool:not([hidden])")})}</script>')
-    ld = [{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "مُيسّر", "applicationCategory": "UtilitiesApplication",
+    ld = [{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "ميسر", "applicationCategory": "UtilitiesApplication",
            "operatingSystem": "Android, iOS", "inLanguage": "ar", "url": BASE + "/", "description": f"{n} أداة عربية لتحويل الملفات والصور والتعليم والخدمات السعودية، تعمل على الجهاز.",
            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "SAR"}}]
-    return page("مُيسّر: أدوات PDF والصور والمعلم والحاسبات السعودية بالعربية", f"{n} أداة عربية في تطبيق واحد: تحويل PDF وWord، الصور، الاختبارات وأوراق العمل، الراتب ونهاية الخدمة والضريبة. تعمل على جهازك.", "/", body, ld)
+    return page("ميسر: أدوات PDF والصور والمعلم والحاسبات السعودية بالعربية", f"{n} أداة عربية في تطبيق واحد: تحويل PDF وWord، الصور، الاختبارات وأوراق العمل، الراتب ونهاية الخدمة والضريبة. تعمل على جهازك.", "/", body, ld)
 
 
 @router.get("/t/{tid}", response_class=HTMLResponse)
 def tool(tid: str):
     t = TOOLS.get(tid)
     if not t:
-        return HTMLResponse(page("الأداة غير موجودة", "", "/", f'<div class="card" style="text-align:center"><h1>الأداة غير موجودة</h1><p><a href="{BASE}/" style="color:#3346D3">كل أدوات مُيسّر</a></p></div>', []), 404)
+        return HTMLResponse(page("الأداة غير موجودة", "", "/", f'<div class="card" style="text-align:center"><h1>الأداة غير موجودة</h1><p><a href="{BASE}/" style="color:#3346D3">كل أدوات ميسر</a></p></div>', []), 404)
     c = CATS[t["cats"][0]]
     steps = "".join(f"<li>{e(s)}</li>" for s in STEPS.get(c["id"], STEPS["smart"]))
     related = [x for x in DATA["tools"] if x["id"] != tid and c["id"] in x["cats"]][:6]
     note = f'<div class="card note"><b>تنبيه</b><p style="margin:4px 0 0">{e(NOTE[c["id"]])}</p></div>' if c["id"] in NOTE else ""
-    body = (f'<p class="crumbs"><a href="{BASE}/">مُيسّر</a> / {e(c["title"])}</p>'
-            f'<div class="hero" style="padding-top:8px"><h1>{e(t["title"])}</h1><p>{e(t["sub"])}، بالعربية وعلى جهازك، ضمن قسم {e(c["title"])} في تطبيق مُيسّر.</p>'
-            '<span class="soon">التطبيق قريبًا على Google Play وApp Store</span></div>'
+    body = (f'<p class="crumbs"><a href="{BASE}/">ميسر</a> / {e(c["title"])}</p>'
+            f'<div class="hero" style="padding-top:8px"><h1>{e(t["title"])}</h1><p>{e(t["sub"])}، بالعربية وعلى جهازك، ضمن قسم {e(c["title"])} في تطبيق ميسر.</p>'
+            '<span class="soon">التطبيق قريبا على Google Play وApp Store</span></div>'
             f'<div class="card"><h2 style="text-align:start">طريقة الاستخدام</h2><ol>{steps}</ol></div>{note}'
-            '<div class="card privacy"><b>خصوصيتك</b><p style="margin:4px 0 0">تعمل الأداة على جهازك، ولا تُرفع ملفاتك أو بياناتك إلى أي خادم. لا حاجة إلى حساب.</p></div>'
+            '<div class="card privacy"><b>خصوصيتك</b><p style="margin:4px 0 0">تعمل الأداة على جهازك، ولا ترفع ملفاتك أو بياناتك إلى أي خادم. لا حاجة إلى حساب.</p></div>'
             + (f'<section><h2>أدوات قريبة</h2><p class="blurb">{e(c["blurb"])}</p><div class="grid">{"".join(tile(x) for x in related)}</div></section>' if related else ""))
-    ld = [{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": f'{t["title"]} في مُيسّر', "applicationCategory": "UtilitiesApplication",
+    ld = [{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": f'{t["title"]} في ميسر', "applicationCategory": "UtilitiesApplication",
            "operatingSystem": "Android, iOS", "inLanguage": "ar", "url": f'{BASE}/t/{tid}', "description": t["sub"], "offers": {"@type": "Offer", "price": "0", "priceCurrency": "SAR"}},
           {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
-              {"@type": "ListItem", "position": 1, "name": "مُيسّر", "item": BASE + "/"},
+              {"@type": "ListItem", "position": 1, "name": "ميسر", "item": BASE + "/"},
               {"@type": "ListItem", "position": 2, "name": t["title"], "item": f'{BASE}/t/{tid}'}]}]
-    return page(f'{t["title"]} بالعربية | مُيسّر', f'{t["title"]}: {t["sub"]}. أداة عربية مجانية تعمل على جهازك دون رفع ملفاتك.', f"/t/{tid}", body, ld)
+    return page(f'{t["title"]} بالعربية | ميسر', f'{t["title"]}: {t["sub"]}. أداة عربية مجانية تعمل على جهازك دون رفع ملفاتك.', f"/t/{tid}", body, ld)
 
 
 @router.get("/sitemap.xml")
@@ -116,13 +116,13 @@ def sitemap():
 
 
 ADMIN = """<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>إدارة مُيسّر: باقات المدارس</title><style>""" + CSS + """
+<meta name="robots" content="noindex,nofollow"><title>إدارة ميسر: باقات المدارس</title><style>""" + CSS + """
 label{display:block;margin:10px 0 4px;font-weight:600}input,textarea{width:100%;padding:12px;border:1px solid #CBD0DE;border-radius:12px;font:inherit;background:#fff}
 button{font:inherit;border:0;border-radius:12px;padding:12px 18px;background:#3346D3;color:#fff;cursor:pointer;min-height:44px}button.ghost{background:#EEF0FD;color:#2836A8}
 button.danger{background:#FDECEC;color:#B42318}table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:8px;border-bottom:1px solid #E3E6EF;text-align:start}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.err{color:#B42318}.ok{color:#23814A}pre{white-space:pre-wrap;direction:ltr;text-align:left;background:#F6F7FB;padding:12px;border-radius:12px}
 @media (prefers-color-scheme:dark){input,textarea{background:#171C2C;color:#E8EBF5;border-color:#2A3147}pre{background:#0F1320}td,th{border-color:#2A3147}}
-</style></head><body><main><div class="top"><a class="brand" href="./">مُيسّر</a><span style="color:#5B6178;font-size:14px">باقات المدارس</span></div>
+</style></head><body><main><div class="top"><a class="brand" href="./">ميسر</a><span style="color:#5B6178;font-size:14px">باقات المدارس</span></div>
 <div class="card" id="login"><h2 style="text-align:start">الدخول</h2><label for="pw">كلمة مرور الإدارة</label><input id="pw" type="password" autocomplete="current-password">
 <p class="row" style="margin-top:12px"><button onclick="enter()">دخول</button><span id="lerr" class="err"></span></p></div>
 <div id="app" hidden>
@@ -130,11 +130,11 @@ button.danger{background:#FDECEC;color:#B42318}table{width:100%;border-collapse:
 <label for="school">اسم المدرسة</label><input id="school" placeholder="مثل: مدارس الرواد الأهلية">
 <div class="row"><div style="flex:1;min-width:140px"><label for="seats">عدد المعلمين</label><input id="seats" type="number" min="1" max="500" value="10"></div>
 <div style="flex:1;min-width:140px"><label for="months">المدة بالأشهر</label><input id="months" type="number" min="1" max="36" value="12"></div></div>
-<label for="note">ملاحظة (رقم الفاتورة مثلًا)</label><input id="note">
+<label for="note">ملاحظة (رقم الفاتورة مثلا)</label><input id="note">
 <p class="row" style="margin-top:12px"><button onclick="create()">أنشئ الأكواد</button><span id="cmsg"></span></p><div id="newcodes"></div></div>
 <div class="card"><div class="row" style="justify-content:space-between"><h2 style="text-align:start;margin:0">الباقات</h2><button class="ghost" onclick="load()">تحديث</button></div>
 <div id="list" style="margin-top:10px"></div></div>
-<div class="card"><h2 style="text-align:start">تحرير كود</h2><p class="blurb" style="text-align:start">إذا غيّر المعلم جواله، حرّر كوده ليفعّله على الجهاز الجديد.</p>
+<div class="card"><h2 style="text-align:start">تحرير كود</h2><p class="blurb" style="text-align:start">إذا غير المعلم جواله، حرر كوده ليفعله على الجهاز الجديد.</p>
 <div class="row"><input id="rel" placeholder="MSR-XXXX-XXXX" style="flex:1;direction:ltr"><button class="ghost" onclick="release()">تحرير</button></div><p id="rmsg"></p></div>
 </div></main>
 <script>
@@ -149,17 +149,17 @@ function csv(name,codes){var b=new Blob(['\\ufeffالمدرسة,الكود\\n'+c
  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='أكواد-'+name+'.csv';a.click()}
 function create(){var s=document.getElementById('school').value.trim(),m=document.getElementById('cmsg');m.className='';m.textContent='...';
  api('licenses',{method:'POST',body:JSON.stringify({school:s,seats:+document.getElementById('seats').value,months:+document.getElementById('months').value,note:document.getElementById('note').value})})
- .then(function(j){m.className='ok';m.textContent='أُنشئت '+j.codes.length+' أكواد';
+ .then(function(j){m.className='ok';m.textContent='أنشئت '+j.codes.length+' أكواد';
   document.getElementById('newcodes').innerHTML='<pre>'+j.codes.map(esc).join('\\n')+'</pre><button class="ghost" id="dl">تنزيل الأكواد CSV</button>';
   document.getElementById('dl').onclick=function(){csv(s,j.codes)};load()}).catch(function(e){m.className='err';m.textContent=e.message})}
 function load(){api('licenses').then(function(ls){var h='<table><tr><th>المدرسة</th><th>المستخدم</th><th>تنتهي</th><th></th></tr>';
  ls.forEach(function(l){h+='<tr><td>'+esc(l.school)+(l.note?'<br><small>'+esc(l.note)+'</small>':'')+'</td><td>'+l.used+' من '+l.seats+'</td><td>'+(l.revoked?'ملغاة':day(l.expires))+'</td><td class="row">'+
   '<button class="ghost" onclick="codes('+l.id+',\\''+esc(l.school).replace(/'/g,'')+'\\')">الأكواد</button>'+(l.revoked?'':'<button class="danger" onclick="revoke('+l.id+')">إلغاء</button>')+'</td></tr>'});
  document.getElementById('list').innerHTML=ls.length?h+'</table>':'<p class="blurb">لا توجد باقات بعد.</p>'}).catch(function(e){document.getElementById('list').textContent=e.message})}
-function codes(id,name){api('licenses/'+id+'/codes').then(function(cs){csv(name,cs.map(function(c){return c.code+(c.used?' (مفعّل)':'')}))})}
+function codes(id,name){api('licenses/'+id+'/codes').then(function(cs){csv(name,cs.map(function(c){return c.code+(c.used?' (مفعل)':'')}))})}
 function revoke(id){if(prompt('اكتب «إلغاء» لتأكيد إلغاء الباقة وكل أكوادها')!=='إلغاء')return;api('licenses/'+id+'/revoke',{method:'POST'}).then(load)}
 function release(){var m=document.getElementById('rmsg');api('codes/'+encodeURIComponent(document.getElementById('rel').value)+'/release',{method:'POST'})
- .then(function(){m.className='ok';m.textContent='حُرّر الكود، ويمكن تفعيله على جهاز جديد'}).catch(function(e){m.className='err';m.textContent=e.message})}
+ .then(function(){m.className='ok';m.textContent='حرر الكود، ويمكن تفعيله على جهاز جديد'}).catch(function(e){m.className='err';m.textContent=e.message})}
 if(PW)api('licenses').then(show).catch(function(){sessionStorage.removeItem('mpw')});
 </script></body></html>"""
 

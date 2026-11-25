@@ -39,7 +39,7 @@ object Ocr {
         Lang.AR -> {
             val api = TessBaseAPI()
             try {
-                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذّر تشغيل محرك التعرف" }
+                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذر تشغيل محرك التعرف" }
                 api.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO
                 val k = if (bmp.width < 1200) 2 else 1
                 val src = if (k == 2) Bitmap.createScaledBitmap(bmp, bmp.width * 2, bmp.height * 2, true) else bmp
@@ -81,7 +81,7 @@ object Ocr {
         Lang.AR -> {
             val api = TessBaseAPI()
             try {
-                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذّر تشغيل محرك التعرف" }
+                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذر تشغيل محرك التعرف" }
                 api.pageSegMode = psm
                 val k = if (bmp.width < 1200) 2 else 1
                 val src = if (k == 2) Bitmap.createScaledBitmap(bmp, bmp.width * 2, bmp.height * 2, true) else bmp
@@ -135,7 +135,7 @@ object Ocr {
         Lang.AR -> {
             val api = TessBaseAPI()
             try {
-                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذّر تشغيل محرك التعرف" }
+                check(api.init(tessDir(ctx).absolutePath, "ara+eng")) { "تعذر تشغيل محرك التعرف" }
                 api.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO
                 // Tesseract works best around 300 dpi; upscale small images.
                 val src = if (bmp.width < 1200) Bitmap.createScaledBitmap(bmp, bmp.width * 2, bmp.height * 2, true) else bmp

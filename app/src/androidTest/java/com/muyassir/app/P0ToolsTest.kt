@@ -77,7 +77,7 @@ class P0ToolsTest {
         "الرايبوسومات مسؤولة عن تصنيع البروتينات داخل الخلية. تختلف الخلايا في أشكالها وأحجامها حسب وظائفها في الجسم."
 
     // ---------- Saudi services and calculators ----------
-    @Test fun leaveBalance() { launch("leave"); input("سنوات الخدمة", "6"); waitText("30 يومًا") }
+    @Test fun leaveBalance() { launch("leave"); input("سنوات الخدمة", "6"); waitText("30 يوما") }
     @Test fun zakatDue() { launch("zakat"); input("النقد والأرصدة البنكية", "100000"); input("سعر غرام الذهب", "300"); waitText("2,500.00") }
     @Test fun overtimePay() { launch("overtime"); input("الراتب الأساسي", "6000"); input("عدد الساعات الإضافية", "10"); waitText("375.00") }
     @Test fun electricityBill() { launch("electricity"); click("حتى 31 ديسمبر 2026"); input("الاستهلاك الشهري", "1000"); waitText("207.00") }
@@ -116,8 +116,8 @@ class P0ToolsTest {
         launch("quiz_maker"); click("إضافة سؤال"); input("نص السؤال", "كم عدد أيام الأسبوع؟"); input("الخيار أ", "سبعة"); input("الخيار ب", "خمسة")
         click("إنشاء PDF"); waitResults()
     }
-    @Test fun worksheetPdf() { launch("worksheet"); input("الأنشطة/الأسئلة", "1) عرّف الخلية\n2) اذكر أجزاءها"); click("إنشاء PDF"); waitResults() }
-    @Test fun certificateSingle() { launch("certificate"); input("اسم المكرَّم", "سارة أحمد"); clickTag("action"); waitResults() }
+    @Test fun worksheetPdf() { launch("worksheet"); input("الأنشطة/الأسئلة", "1) عرف الخلية\n2) اذكر أجزاءها"); click("إنشاء PDF"); waitResults() }
+    @Test fun certificateSingle() { launch("certificate"); input("اسم المكرم", "سارة أحمد"); clickTag("action"); waitResults() }
     @Test fun certificateBulk() {
         launch("certificate"); click("شهادات جماعية من قائمة أسماء"); input("الأسماء", "سارة\nمحمد\nنورة"); clickTag("action"); waitResults(); waitText("شهادات-")
     }
@@ -219,16 +219,16 @@ class P0ToolsTest {
 
     // ---------- P2: Saudi services with formula, source and review date ----------
     @Test fun noticeCompensation() {
-        launch("notice"); input("أيام الإشعار التي أُعطيت", "20"); input("الأجر الشهري", "9000"); waitText("12,000.00")
+        launch("notice"); input("أيام الإشعار التي أعطيت", "20"); input("الأجر الشهري", "9000"); waitText("12,000.00")
         click("عرض"); waitText("المادتان 75 و76"); waitText("آخر مراجعة")
     }
     @Test fun finalSettlementShowsBreakdown() {
-        launch("settlement"); pickDate("تاريخ المباشرة", false); input("آخر أجر شهري", "10000"); input("أيام عمل لم يُدفع أجرها", "10")
+        launch("settlement"); pickDate("تاريخ المباشرة", false); input("آخر أجر شهري", "10000"); input("أيام عمل لم يدفع أجرها", "10")
         waitText("إجمالي التسوية التقديرية"); waitText("3,333.33"); waitText("تفاصيل الحساب")
     }
     @Test fun governmentSectorIsExplained() { launch("settlement"); click("حكومي"); waitText("نظام الخدمة المدنية") }
     @Test fun wageDeductionCap() { launch("wage_deduct"); input("الأجر المستحق", "8000"); input("المبلغ المطلوب", "6000"); waitText("4,000.00") }
-    @Test fun entitlementsTotal() { launch("entitlements"); input("الأجر الشهري الكامل", "9000"); input("أيام عمل لم يُدفع أجرها", "10"); waitText("3,000.00") }
+    @Test fun entitlementsTotal() { launch("entitlements"); input("الأجر الشهري الكامل", "9000"); input("أيام عمل لم يدفع أجرها", "10"); waitText("3,000.00") }
     @Test fun serviceLength() { launch("service_len"); pickDate("تاريخ المباشرة", false); waitText("مدة الخدمة"); waitText("بالأيام") }
     @Test fun salaryShowsSource() { launch("salary"); click("عرض"); waitText("نسب الاشتراك"); waitText("آخر مراجعة") }
 
@@ -236,7 +236,7 @@ class P0ToolsTest {
     @Test fun assistantUnderstandsTheBriefExamples() {
         fun first(q: String) = com.muyassir.app.core.Assistant.plan(q).steps.map { it.tool.id }
         val cases = mapOf(
-            "أريد تحويل عشر صور إلى Word" to "img_word", "أنشئ اختباراً من هذا الملف" to "quiz_gen", "أريد حساب مستحقات نهاية الخدمة" to "settlement",
+            "أريد تحويل عشر صور إلى Word" to "img_word", "أنشئ اختبارا من هذا الملف" to "quiz_gen", "أريد حساب مستحقات نهاية الخدمة" to "settlement",
             "اجمع هذه المستندات في PDF" to "pdf_merge", "استخرج الجداول من هذا التقرير" to "pdf_excel", "أنشئ ورقة عمل للصف السادس" to "worksheet",
         )
         val wrong = cases.filter { (q, id) -> first(q).firstOrNull() != id }.map { (q, id) -> "$q → ${first(q)} (expected $id)" }

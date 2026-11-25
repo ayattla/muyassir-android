@@ -80,7 +80,7 @@ fun CvTool(t: Tool, back: () -> Unit) {
                 F(f, "langs", "اللغات", tick = tick); F(f, "courses", "الدورات والشهادات", 3, tick)
             }
         }
-        Panel { Segmented(listOf("سيرة عربية", "English CV"), cvLang) { cvLang = it }; if (cvLang == 1) Hint("اكتب البيانات بالإنجليزية؛ تُكتب العناوين بالإنجليزية ويُحاذى النص لليسار.") }
+        Panel { Segmented(listOf("سيرة عربية", "English CV"), cvLang) { cvLang = it }; if (cvLang == 1) Hint("اكتب البيانات بالإنجليزية؛ تكتب العناوين بالإنجليزية ويحاذى النص لليسار.") }
         TemplatePanel(useLogo = false)
         PrimaryButton("إنشاء السيرة الذاتية", Icons.Rounded.PictureAsPdf, enabled = f.optString("name").isNotBlank()) {
             Store.saveObj("form_cv", f)
@@ -164,7 +164,7 @@ private fun BillingDoc(t: Tool, back: () -> Unit, quote: Boolean, open: (String)
                 listOf(0.4f, 3f, 0.8f, 1f, 1.2f)))
             b.add(Block.KeyValues(listOf("المجموع قبل الضريبة" to money(v.net)) + (if (withVat) listOf("ضريبة القيمة المضافة 15%" to money(v.vat)) else emptyList()) + listOf("الإجمالي المستحق" to money(v.total))))
             f.optString("notes").takeIf { it.isNotBlank() }?.let { b.add(Block.Heading(if (quote) "الشروط" else "ملاحظات")); b.add(Block.Para(it)) }
-            if (!quote && withVat) b.add(Block.Para("تنبيه: هذا مستند مبسط. الفوترة الإلكترونية الإلزامية (فاتورة) تتطلب نظامًا معتمدًا من هيئة الزكاة والضريبة والجمارك.", 8.5f, color = DocBuilder.MUTED))
+            if (!quote && withVat) b.add(Block.Para("تنبيه: هذا مستند مبسط. الفوترة الإلكترونية الإلزامية (فاتورة) تتطلب نظاما معتمدا من هيئة الزكاة والضريبة والجمارك.", 8.5f, color = DocBuilder.MUTED))
             result = listOf(b.save(File(Files.outDir(ctx), "${if (quote) "عرض-سعر" else "فاتورة"}-${f.optString("buyer").ifBlank { "عميل" }}.pdf"))); Store.used(t.id, f.optString("buyer"))
         }
         if (result.isNotEmpty()) {
@@ -291,12 +291,12 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
 
     ToolScreen(t, back) {
         Panel {
-            Segmented(listOf("ارسم توقيعًا", "توقيعي المحفوظ", "ختم أو صورة"), source) { if (it == 0 || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sign)) source = it }
+            Segmented(listOf("ارسم توقيعا", "توقيعي المحفوظ", "ختم أو صورة"), source) { if (it == 0 || com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sign)) source = it }
             Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) { PlusBadge() }
         }
         if (source == 1) Panel("توقيعي المحفوظ") {
             saved?.let { Image(it.asImageBitmap(), "التوقيع المحفوظ", Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(14.dp)).background(Color.White)) }
-                ?: Hint("لا يوجد توقيع محفوظ بعد. ارسم توقيعك في «ارسم توقيعًا» ثم اضغط «حفظ هذا التوقيع».")
+                ?: Hint("لا يوجد توقيع محفوظ بعد. ارسم توقيعك في «ارسم توقيعا» ثم اضغط «حفظ هذا التوقيع».")
         }
         if (source == 2) Panel("الختم") {
             stampImg?.let { Image(it.asImageBitmap(), "الختم", Modifier.fillMaxWidth().height(140.dp)) }
@@ -314,7 +314,7 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
                 Canvas(Modifier.fillMaxSize()) {
                     (strokes + listOf(current)).forEach { s -> for (i in 1 until s.size) drawLine(Color(0xFF0B1F6B), s[i - 1], s[i], 7f, cap = StrokeCap.Round) }
                 }
-                if (strokes.isEmpty() && current.isEmpty()) Text("وقّع هنا بإصبعك", Modifier.align(Alignment.Center), color = Color.Gray)
+                if (strokes.isEmpty() && current.isEmpty()) Text("وقع هنا بإصبعك", Modifier.align(Alignment.Center), color = Color.Gray)
             }
             Row {
                 TextButton(onClick = { strokes.clear() }) { Text("مسح التوقيع") }
@@ -322,7 +322,7 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
                 TextButton(enabled = strokes.isNotEmpty(), onClick = {
                     if (com.muyassir.app.core.Plus.allow(com.muyassir.app.core.Plus.Reason.Sign)) {
                         val b = signatureBitmap(); sigFile.parentFile?.mkdirs(); sigFile.outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                        saved = b; toast(ctx, "حُفظ توقيعك على جهازك")
+                        saved = b; toast(ctx, "حفظ توقيعك على جهازك")
                     }
                 }) { Text("حفظ هذا التوقيع") }
             }
@@ -350,7 +350,7 @@ fun SignPdfTool(t: Tool, back: () -> Unit) {
                 Store.used(t.id)
             }
         }
-        Hint("التوقيع المرسوم مناسب للمستندات الداخلية. التوقيع الإلكتروني الموثّق نظاميًا يتم عبر منصات معتمدة مثل النفاذ الوطني.")
+        Hint("التوقيع المرسوم مناسب للمستندات الداخلية. التوقيع الإلكتروني الموثق نظاميا يتم عبر منصات معتمدة مثل النفاذ الوطني.")
         if (result.isNotEmpty()) ResultFiles(result)
     }
 }

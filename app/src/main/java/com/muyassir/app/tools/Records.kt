@@ -43,7 +43,7 @@ fun daysUntil(t: Long): Long {
     val c = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
     return Math.floorDiv(t - c.timeInMillis, 86_400_000L)
 }
-fun whenText(t: Long): String = when (val d = daysUntil(t)) { 0L -> "اليوم"; 1L -> "غدًا"; -1L -> "أمس"; else -> if (d > 0) "بعد $d يوم" else "منذ ${-d} يوم" }
+fun whenText(t: Long): String = when (val d = daysUntil(t)) { 0L -> "اليوم"; 1L -> "غدا"; -1L -> "أمس"; else -> if (d > 0) "بعد $d يوم" else "منذ ${-d} يوم" }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,9 +99,9 @@ fun ExpiryFromPhoto() {
             busy = false
         }
     }
-    SecondaryButton(if (busy) "جارٍ القراءة…" else "قراءة تاريخ الانتهاء من صورة الوثيقة", Icons.Rounded.DocumentScanner, Modifier.fillMaxWidth().testTag("expiryPhoto")) { if (!busy) pick.launch("image/*") }
+    SecondaryButton(if (busy) "جار القراءة…" else "قراءة تاريخ الانتهاء من صورة الوثيقة", Icons.Rounded.DocumentScanner, Modifier.fillMaxWidth().testTag("expiryPhoto")) { if (!busy) pick.launch("image/*") }
     found?.let { list ->
-        if (list.isEmpty()) Text("لم أجد تاريخًا واضحًا في الصورة. جرّب صورة أوضح أو أدخله يدويًا.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        if (list.isEmpty()) Text("لم أجد تاريخا واضحا في الصورة. جرب صورة أوضح أو أدخله يدويا.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         else {
             Text("اختر تاريخ الانتهاء:", style = MaterialTheme.typography.labelLarge)
             ChipRow {
@@ -113,7 +113,7 @@ fun ExpiryFromPhoto() {
             }
         }
     }
-    Text("تُقرأ الصورة على جهازك ولا تُحفظ؛ يُحفظ التاريخ فقط.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text("تقرأ الصورة على جهازك ولا تحفظ؛ يحفظ التاريخ فقط.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /** A simple table PDF for exported records. */
@@ -250,7 +250,7 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
     listOf(FieldSpec("subject", "المادة", required = true), FieldSpec("at", "موعد الاختبار", FType.DATETIME, required = true), FieldSpec("room", "القاعة/الملاحظات"), FieldSpec("remind", "تذكير قبلها بيوم", FType.BOOL)),
     title = { it.optString("subject") }, subtitle = { o -> o.optLong("at").takeIf { it > 0 }?.let { "${dtFmt.format(Date(it))} • ${whenText(it)}" } ?: "" },
     sort = { l -> l.sortedBy { it.optLong("at") } },
-    reminder = { o -> if (o.optBoolean("remind")) (o.optLong("at") - 86_400_000L) to "اختبارك غدًا" else null },
+    reminder = { o -> if (o.optBoolean("remind")) (o.optLong("at") - 86_400_000L) to "اختبارك غدا" else null },
     header = { list ->
         list.filter { it.optLong("at") > System.currentTimeMillis() }.minByOrNull { it.optLong("at") }?.let {
             ResultCard("أقرب اختبار" to it.optString("subject"), listOf("الموعد" to whenText(it.optLong("at"))))
@@ -258,7 +258,7 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
     })
 
 @Composable fun HomeworkTool(t: Tool, back: () -> Unit) = RecordList(t, back, "homework",
-    listOf(FieldSpec("subject", "المادة", required = true), FieldSpec("title", "الواجب", required = true), FieldSpec("due", "موعد التسليم", FType.DATE), FieldSpec("done", "سُلّم", FType.BOOL)),
+    listOf(FieldSpec("subject", "المادة", required = true), FieldSpec("title", "الواجب", required = true), FieldSpec("due", "موعد التسليم", FType.DATE), FieldSpec("done", "سلم", FType.BOOL)),
     title = { "${it.optString("subject")}: ${it.optString("title")}" }, doneKey = "done",
     subtitle = { o -> o.optLong("due").takeIf { it > 0 }?.let { "التسليم ${whenText(it)}" } ?: "" },
     sort = { l -> l.sortedWith(compareBy({ it.optBoolean("done") }, { it.optLong("due").takeIf { d -> d > 0 } ?: Long.MAX_VALUE })) })
@@ -274,11 +274,11 @@ private fun cell(o: JSONObject, f: FieldSpec): String = when (f.type) {
     title = { it.optString("name") },
     subtitle = { o -> "${o.optString("kind")} • ${o.optLong("expiry").takeIf { it > 0 }?.let { whenText(it) } ?: ""}" },
     sort = { l -> l.sortedBy { it.optLong("expiry") } },
-    reminder = { o -> (o.optLong("expiry") - (o.optString("days").num().takeIf { it > 0 } ?: 30.0).toLong() * 86_400_000L) to "تنتهي ${o.optString("kind")} قريبًا — جدّدها عبر المنصة الرسمية" },
+    reminder = { o -> (o.optLong("expiry") - (o.optString("days").num().takeIf { it > 0 } ?: 30.0).toLong() * 86_400_000L) to "تنتهي ${o.optString("kind")} قريبا — جددها عبر المنصة الرسمية" },
     header = { list ->
         val soon = list.count { val d = daysUntil(it.optLong("expiry")); d in 0..30 }
         val expired = list.count { daysUntil(it.optLong("expiry")) < 0 }
-        if (list.isNotEmpty()) ResultCard(null, listOf("تنتهي خلال 30 يومًا" to "$soon", "منتهية" to "$expired"))
+        if (list.isNotEmpty()) ResultCard(null, listOf("تنتهي خلال 30 يوما" to "$soon", "منتهية" to "$expired"))
         ExpiryFromPhoto()
         Hint("لا تكتب أرقام الوثائق الكاملة. البيانات تبقى على جهازك فقط. التجديد يتم عبر أبشر أو المنصة المختصة.")
     })
@@ -313,7 +313,7 @@ fun BudgetTool(t: Tool, back: () -> Unit) {
         Panel { NumField("الدخل الشهري", income, { income = it; persist() }, suffix = "ريال") }
         val total = spent.values.sum()
         ResultCard("المتبقي هذا الشهر" to money(income.num() - total), listOf("المصروف" to money(total), "الحدود المخططة" to money(limits.values.sumOf { it.num() })),
-            note = "المصروفات تُسجَّل من أداة «إدارة المصروفات».")
+            note = "المصروفات تسجل من أداة «إدارة المصروفات».")
         Panel("الحد الشهري لكل فئة") {
             expenseCats.forEach { c ->
                 val s = spent[c] ?: 0.0; val lim = limits[c]?.num() ?: 0.0
@@ -321,7 +321,7 @@ fun BudgetTool(t: Tool, back: () -> Unit) {
                     Column(Modifier.weight(1f)) {
                         Text(c, style = MaterialTheme.typography.titleSmall)
                         if (lim > 0) { LinearProgressIndicator(progress = { (s / lim).toFloat().coerceIn(0f, 1f) }, Modifier.fillMaxWidth().padding(top = 4.dp), color = if (s > lim) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) }
-                        Text("صُرف ${money(s)}", style = MaterialTheme.typography.bodySmall)
+                        Text("صرف ${money(s)}", style = MaterialTheme.typography.bodySmall)
                     }
                     Spacer(Modifier.width(8.dp))
                     NumField("الحد", limits[c] ?: "", { limits[c] = it; persist() }, Modifier.width(130.dp))
@@ -353,7 +353,7 @@ fun AttendanceTool(t: Tool, back: () -> Unit) {
         }
         if (students.isNotEmpty()) Panel("تسجيل حصة") {
             DateField("التاريخ", date, false) { date = it }
-            Text("علّم الغائبين:", style = MaterialTheme.typography.labelLarge)
+            Text("علم الغائبين:", style = MaterialTheme.typography.labelLarge)
             students.forEach { s ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { if (s in absentToday) absentToday.remove(s) else absentToday.add(s) }) {
                     Checkbox(s in absentToday, { if (it) absentToday.add(s) else absentToday.remove(s) })
@@ -363,7 +363,7 @@ fun AttendanceTool(t: Tool, back: () -> Unit) {
             }
             PrimaryButton("حفظ الحصة (${students.size - absentToday.size} حاضر)", Icons.Rounded.Check) {
                 val o = JSONObject().put("id", System.currentTimeMillis()).put("date", date).put("absent", org.json.JSONArray(absentToday.toList()))
-                sessions = sessions + o; Store.saveList("attendance", sessions); absentToday.clear(); Store.used(t.id); toast(ctx, "حُفظت الحصة")
+                sessions = sessions + o; Store.saveList("attendance", sessions); absentToday.clear(); Store.used(t.id); toast(ctx, "حفظت الحصة")
             }
         }
         if (sessions.isNotEmpty()) Panel("ملخص الغياب (${sessions.size} حصة)") {

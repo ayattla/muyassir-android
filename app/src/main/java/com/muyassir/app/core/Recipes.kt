@@ -84,7 +84,7 @@ object Recipes {
             p.label = "الخطوة ${si + 1} من ${r.steps.size}: ${ops[s.op] ?: s.op}"; p.value = si / r.steps.size.toFloat()
             val dir = File(work, "s$si").apply { mkdirs() }
             files = step(ctx, s, files, dir)
-            check(files.isNotEmpty()) { "لم تُنتج الخطوة «${ops[s.op]}» أي ملف. تأكد من نوع الملفات المختارة." }
+            check(files.isNotEmpty()) { "لم تنتج الخطوة «${ops[s.op]}» أي ملف. تأكد من نوع الملفات المختارة." }
         }
         p.value = 1f
         return files.map { f -> File(out, f.name.substringAfter('_', f.name)).also { f.copyTo(it, overwrite = true) } }

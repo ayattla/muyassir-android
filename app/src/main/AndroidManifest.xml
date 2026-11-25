@@ -20,7 +20,7 @@
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.Muyassir.Splash">
 
-        <!-- «فتح في مُيسّر»: receives files shared from other apps (copied privately, never uploaded). -->
+        <!-- «فتح في ميسر»: receives files shared from other apps (copied privately, never uploaded). -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

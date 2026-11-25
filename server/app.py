@@ -1,4 +1,4 @@
-"""مُيسّر — server for the features that cannot live on the device alone.
+"""ميسر — server for the features that cannot live on the device alone.
 
 - Device accounts (no email or personal data): a device registers and receives a secret token.
 - Interactive activities: a teacher publishes a quiz; students open a short link (or QR) in any browser,
@@ -290,7 +290,7 @@ def take(code: str):
         else:
             opts = "".join(f'<option value="{e(o)}">{e(o)}</option>' for o in q["options"])
             inner = "".join(f'<label>{k + 1}) <select name="q{i}_{k}"><option value=""></option>{opts}</select></label>' for k in range(len(q["options"])))
-            inner = f'<p class="muted">{"رتّب العناصر" if q["type"] == "order" else "صنّف العناصر"} باختيار العنصر لكل موضع</p>' + inner
+            inner = f'<p class="muted">{"رتب العناصر" if q["type"] == "order" else "صنف العناصر"} باختيار العنصر لكل موضع</p>' + inner
         qs.append(f'<div class="card"><b>{i + 1}) {e(q["text"])}</b>{inner}</div>')
     timer = f'<p class="muted">الوقت المتبقي: <span id="t"></span></p><script>var s={a["minutes"] * 60};var f=document.forms[0];setInterval(function(){{s--;document.getElementById("t").textContent=Math.floor(s/60)+":"+("0"+s%60).slice(-2);if(s<=0)f.submit()}},1000)</script>' if a["minutes"] else ""
     form = (f'<h1>{e(a["title"])}</h1><form method="post" action="{e(code.upper())}"><div class="card"><input type="text" name="name" required maxlength="60" placeholder="اكتب اسمك">'
@@ -326,7 +326,7 @@ async def submit(code: str, req: Request):
     rows = ""
     if body.get("show_answers", True):
         rows = "".join(f'<p class="{"ok" if ok else "bad"}">{i + 1}) {"✔" if ok else "✘"} {html.escape(q["text"])}</p>' for i, (q, ok) in enumerate(zip(body["questions"], correct)))
-    return PAGE.format(title="النتيجة", body=f'<div class="card"><h1>درجتك {score:g} من {total:g}</h1><p class="muted">شكرًا {html.escape(name)}، وصلت إجاباتك للمعلم.</p>{rows}</div>')
+    return PAGE.format(title="النتيجة", body=f'<div class="card"><h1>درجتك {score:g} من {total:g}</h1><p class="muted">شكرا {html.escape(name)}، وصلت إجاباتك للمعلم.</p>{rows}</div>')
 
 
 # ---------- end-to-end encrypted sync ----------
@@ -425,11 +425,11 @@ def redeem(b: Redeem, dev: int = Depends(device)):
         if not r:
             audit(c, dev, "redeem_bad", b.code[:20]); raise HTTPException(404, "الكود غير صحيح. تأكد من كتابته كما وصلك")
         if r["revoked"]:
-            raise HTTPException(410, "أُلغي هذا الكود. تواصل مع إدارة مدرستك")
+            raise HTTPException(410, "ألغي هذا الكود. تواصل مع إدارة مدرستك")
         if r["expires"] < time.time():
             raise HTTPException(410, "انتهت صلاحية باقة المدرسة")
         if r["device_id"] not in (None, dev):
-            raise HTTPException(409, "الكود مفعّل على جهاز آخر. اطلب من إدارة مدرستك تحريره ثم أعد المحاولة")
+            raise HTTPException(409, "الكود مفعل على جهاز آخر. اطلب من إدارة مدرستك تحريره ثم أعد المحاولة")
         c.execute("update codes set device_id=?, redeemed=coalesce(redeemed, ?) where code=?", (dev, time.time(), code))
         audit(c, dev, "redeem", code)
         return entitlement_of(c, dev)

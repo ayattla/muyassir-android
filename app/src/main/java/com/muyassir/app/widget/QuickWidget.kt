@@ -48,14 +48,14 @@ class QuickWidget : GlanceAppWidget() {
             Store.list("documents").map { it.optString("name") to it.optLong("expiry") }
         val (name, at) = items.filter { it.second > now }.minByOrNull { it.second } ?: return null
         val d = TimeUnit.MILLISECONDS.toDays(at - now)
-        return "$name ${if (d == 0L) "اليوم" else if (d == 1L) "غدًا" else "بعد $d يوم"}"
+        return "$name ${if (d == 0L) "اليوم" else if (d == 1L) "غدا" else "بعد $d يوم"}"
     }
 
     @Composable
     private fun Content(ctx: Context, next: String?) {
         val ink = ColorProvider(Color(0xFF141A2E)); val accent = ColorProvider(Color(0xFF3346D3)); val muted = ColorProvider(Color(0xFF4F586E))
         Column(GlanceModifier.fillMaxSize().background(Color.White).cornerRadius(20.dp).padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("مُيسّر", style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold))
+            Text("ميسر", style = TextStyle(color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold))
             Spacer(GlanceModifier.height(8.dp))
             Row(GlanceModifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 listOf(Triple("مسح", "tool", "scan"), Triple("ضغط PDF", "tool", "pdf_compress"), Triple("صور إلى PDF", "tool", "img_pdf"), Triple("الوصفات", "screen", "recipes"))

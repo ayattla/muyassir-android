@@ -115,7 +115,7 @@ fun RecipeRun(id: String, back: () -> Unit) {
     FileTool(tool, back, Recipes.mimes(r), true, "اختر ${Recipes.inputs[r.input]}", "تشغيل الوصفة", options = { ins ->
         Panel("الخطوات") {
             r.steps.forEachIndexed { i, s -> Text("${i + 1}. " + Recipes.describe(listOf(s)), style = MaterialTheme.typography.bodyMedium, color = tokens.textPrimary) }
-            Hint("${ins.size} ملف. تعمل كل الخطوات على جهازك، وتُحتسب الوصفة عملية واحدة.")
+            Hint("${ins.size} ملف. تعمل كل الخطوات على جهازك، وتحتسب الوصفة عملية واحدة.")
         }
     }) { ins, out, p -> Recipes.run(ctx, r, ins, out, p) }
 }

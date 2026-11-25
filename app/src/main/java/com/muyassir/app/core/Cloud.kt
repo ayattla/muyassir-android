@@ -48,13 +48,13 @@ object Cloud {
                 5 -> {
                     val its = q.optString("items").lines().map { it.trim() }.filter { it.isNotEmpty() }.take(8)
                     if (its.size < 2) { skipped++; continue }
-                    out.put(JSONObject().put("text", text.ifEmpty { "رتّب العناصر ترتيبًا صحيحًا" }).put("type", "order").put("options", JSONArray(its.sorted())).put("answer", JSONArray(its)).put("mark", mark))
+                    out.put(JSONObject().put("text", text.ifEmpty { "رتب العناصر ترتيبا صحيحا" }).put("type", "order").put("options", JSONArray(its.sorted())).put("answer", JSONArray(its)).put("mark", mark))
                 }
                 6 -> {
                     val ps = q.optString("pairs").lines().mapNotNull { l -> l.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() } }.filter { it.first.isNotEmpty() && it.second.isNotEmpty() }.take(20)
                     val cats = ps.map { it.second }.distinct()
                     if (ps.size < 2 || cats.size < 2 || cats.size > 8) { skipped++; continue }
-                    out.put(JSONObject().put("text", text.ifEmpty { "صنّف العناصر" }).put("type", "classify").put("items", JSONArray(ps.map { it.first }))
+                    out.put(JSONObject().put("text", text.ifEmpty { "صنف العناصر" }).put("type", "classify").put("items", JSONArray(ps.map { it.first }))
                         .put("options", JSONArray(cats)).put("answer", JSONArray(ps.map { it.second })).put("mark", mark))
                 }
                 else -> skipped++
@@ -89,7 +89,7 @@ object Cloud {
                 throw Failure(when {
                     code == 429 -> "طلبات كثيرة خلال وقت قصير، حاول بعد قليل"
                     detail is String && detail.isNotBlank() -> detail
-                    code == 404 -> "الاختبار غير موجود على الخادم (ربما حُذف)"
+                    code == 404 -> "الاختبار غير موجود على الخادم (ربما حذف)"
                     else -> "تعذر الاتصال بالخادم ($code)"
                 })
             }

@@ -93,7 +93,7 @@ fun AppNav(startTool: String? = null, startCat: String? = null, startTab: String
                 ) {
                     composable("today") {
                         LaunchedEffect(Unit) { applyStart() }
-                        // Files shared from another app («فتح في مُيسّر») open the choice screen.
+                        // Files shared from another app («فتح في ميسر») open the choice screen.
                         LaunchedEffect(com.muyassir.app.core.Incoming.version) { if (com.muyassir.app.core.Incoming.version > seenIncoming) { seenIncoming = com.muyassir.app.core.Incoming.version; nav.navigate("incoming") } }
                         TodayScreen(open = openTool, openAssistant = { go("assistant") }, openTools = { go("home") }, openCat = { nav.navigate("cat/$it") }, openMe = { go("settings") })
                     }

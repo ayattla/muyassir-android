@@ -65,9 +65,9 @@ fun ReviewPanel(review: MutableState<Pair<String, List<String>>?>, name: String)
     var saved by remember(r) { mutableStateOf<List<File>>(emptyList()) }
     Panel("راجع النص قبل الحفظ") {
         if (r.second.isNotEmpty()) {
-            Text("كلمات غير مؤكدة (${r.second.size}): تحقّق منها في النص", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+            Text("كلمات غير مؤكدة (${r.second.size}): تحقق منها في النص", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
             ChipRow { r.second.take(40).forEach { w -> Chip(w, false) {} } }
-        } else Hint("لم يجد المحرك كلمات منخفضة الثقة، لكن راجع الأسماء والأرقام دائمًا.")
+        } else Hint("لم يجد المحرك كلمات منخفضة الثقة، لكن راجع الأسماء والأرقام دائما.")
         TextField2("النص المستخرج (الجداول: أعمدة مفصولة بـ |)", text, { text = it }, Modifier.testTag("reviewText"), lines = 12)
         PrimaryButton("حفظ Word بعد المراجعة", Icons.Rounded.Description, modifier = Modifier.testTag("saveReviewed")) {
             val o = File(Files.outDir(ctx), "$name-مراجع.docx")
@@ -82,11 +82,11 @@ fun ImagesToWord(t: Tool, back: () -> Unit) {
     val ctx = LocalContext.current
     val review = remember { mutableStateOf<Pair<String, List<String>>?>(null) }
     var name by remember { mutableStateOf("مستند") }
-    FileTool(t, back, IMAGES + arrayOf("application/pdf"), true, "اختر صورًا أو ملف PDF مصوّر", "تحويل إلى Word", reorderable = true, options = {
-        Hint("يتعرّف على النص العربي والإنجليزي على جهازك ويعيد بناء العناوين والفقرات والجداول في ملف Word قابل للتعديل. الدقة تعتمد على وضوح الصورة، وستظهر لك الكلمات غير المؤكدة لمراجعتها.")
+    FileTool(t, back, IMAGES + arrayOf("application/pdf"), true, "اختر صورا أو ملف PDF مصور", "تحويل إلى Word", reorderable = true, options = {
+        Hint("يتعرف على النص العربي والإنجليزي على جهازك ويعيد بناء العناوين والفقرات والجداول في ملف Word قابل للتعديل. الدقة تعتمد على وضوح الصورة، وستظهر لك الكلمات غير المؤكدة لمراجعتها.")
     }, after = { ReviewPanel(review, name) }) { ins, out, p ->
         val (pages, skipped) = ocrPages(ctx, ins, p, com.muyassir.app.core.Plus.ocrPages.coerceAtMost(60))
-        if (pages.all { it.blocks.isEmpty() }) error("لم يُعثر على نص. جرّب صورة أوضح أو أقرب.")
+        if (pages.all { it.blocks.isEmpty() }) error("لم يعثر على نص. جرب صورة أوضح أو أقرب.")
         val n = Files.base(Files.name(ctx, ins[0])); name = n
         val o = File(out, "$n.docx"); Office.writeDocx(o, docxFrom(pages))
         withContext(Dispatchers.Main) { review.value = pages.joinToString("\n\n") { it.plain() } to pages.flatMap { it.unsure }.distinct() }
@@ -101,10 +101,10 @@ fun ExamToDoc(t: Tool, back: () -> Unit, open: (String) -> Unit) {
     val ctx = LocalContext.current
     var qs by remember { mutableStateOf<List<ExamParser.Q>>(emptyList()) }
     var msg by remember { mutableStateOf<String?>(null) }
-    FileTool(t, back, IMAGES + arrayOf("application/pdf"), true, "صوّر الاختبار أو اختر صوره", "استخراج الأسئلة", reorderable = true, options = {
-        Hint("يتعرّف على الأسئلة المرقمة واختياراتها (أ، ب، ج، د) وأسئلة الصح والخطأ، ثم يبني منها ملف Word قابلًا للتعديل. راجع النتيجة قبل الطباعة.")
+    FileTool(t, back, IMAGES + arrayOf("application/pdf"), true, "صور الاختبار أو اختر صوره", "استخراج الأسئلة", reorderable = true, options = {
+        Hint("يتعرف على الأسئلة المرقمة واختياراتها (أ، ب، ج، د) وأسئلة الصح والخطأ، ثم يبني منها ملف Word قابلا للتعديل. راجع النتيجة قبل الطباعة.")
     }, after = {
-        if (qs.isNotEmpty()) Panel("${qs.size} سؤالًا", Modifier.testTag("examQuestions")) {
+        if (qs.isNotEmpty()) Panel("${qs.size} سؤالا", Modifier.testTag("examQuestions")) {
             qs.take(30).forEachIndexed { i, q ->
                 Text("${i + 1}) ${q.text}", style = MaterialTheme.typography.bodyMedium)
                 q.choices.forEach { c -> Text("   ○ $c", style = MaterialTheme.typography.bodySmall) }
@@ -116,7 +116,7 @@ fun ExamToDoc(t: Tool, back: () -> Unit, open: (String) -> Unit) {
                 SecondaryButton("أضفها لبنك الأسئلة", Icons.Rounded.Inventory2, Modifier.weight(1f)) {
                     val bank = Store.list("qbank"); val have = bank.map { it.optString("q") }.toSet()
                     val add = qs.filter { it.text !in have }.map { toQuiz(it).put("subject", "مستخرج من صورة") }
-                    Store.saveList("qbank", bank + add); msg = "أُضيف ${add.size} سؤالًا إلى البنك"
+                    Store.saveList("qbank", bank + add); msg = "أضيف ${add.size} سؤالا إلى البنك"
                 }
             }
             msg?.let { Text(it, color = Brand.Mint) }
@@ -159,7 +159,7 @@ fun PdfHeaderFooter(t: Tool, back: () -> Unit) {
             if (numbers) Segmented(listOf("1", "صفحة 1 من 10", "- 1 -"), style) { style = it }
             SwitchRow("بدون ترويسة ورقم على الصفحة الأولى (الغلاف)", skipFirst) { skipFirst = it }
         }
-    }, validate = { if (it.isEmpty()) "اختر ملفًا أولًا" else if (header.isBlank() && footer.isBlank() && !numbers) "أضف ترويسة أو تذييلًا أو فعّل الترقيم" else null }) { ins, out, p ->
+    }, validate = { if (it.isEmpty()) "اختر ملفا أولا" else if (header.isBlank() && footer.isBlank() && !numbers) "أضف ترويسة أو تذييلا أو فعل الترقيم" else null }) { ins, out, p ->
         val f = Files.toCache(ctx, ins[0]); val n = PdfEngine.pageCount(f)
         val items = ArrayList<PdfEngine.Overlay>()
         val bmp0 = PdfEngine.render(f, 0, 30); val ratio = bmp0.height / bmp0.width.toFloat(); bmp0.recycle()
@@ -176,7 +176,7 @@ fun PdfHeaderFooter(t: Tool, back: () -> Unit) {
             val bottom = listOf(footer.trim(), num).filter { it.isNotEmpty() }.joinToString("    •    ")
             if (bottom.isNotBlank()) put(bottom, false, 0.8f)
         }
-        val o = File(out, Files.base(Files.name(ctx, ins[0])) + "-مرقّم.pdf"); PdfEngine.annotate(f, items, o); Store.used(t.id); listOf(o)
+        val o = File(out, Files.base(Files.name(ctx, ins[0])) + "-مرقم.pdf"); PdfEngine.annotate(f, items, o); Store.used(t.id); listOf(o)
     }
 }
 

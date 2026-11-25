@@ -69,10 +69,10 @@ fun TextSource(text: String, onText: (String) -> Unit, label: String = "النص
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { u ->
         u ?: return@rememberLauncherForActivityResult
         scope.launch {
-            status = "جارٍ القراءة على جهازك…"
+            status = "جار القراءة على جهازك…"
             val r = withContext(Dispatchers.IO) { runCatching { readText(ctx, u) { s -> status = s } } }
-            status = r.exceptionOrNull()?.let { "تعذّرت قراءة الملف: تأكد أنه سليم." }
-            r.getOrNull()?.let { if (it.isBlank()) status = "لم يُعثر على نص في الملف." else onText(it) }
+            status = r.exceptionOrNull()?.let { "تعذرت قراءة الملف: تأكد أنه سليم." }
+            r.getOrNull()?.let { if (it.isBlank()) status = "لم يعثر على نص في الملف." else onText(it) }
         }
     }
     LaunchedEffect(Unit) { TestHooks.inputs?.firstOrNull()?.let { u -> if (text.isBlank()) { val t = withContext(Dispatchers.IO) { runCatching { readText(ctx, u) }.getOrDefault("") }; if (t.isNotBlank()) onText(t) } } }
@@ -82,7 +82,7 @@ fun TextSource(text: String, onText: (String) -> Unit, label: String = "النص
             pick.launch(arrayOf("application/pdf", "image/*", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.presentationml.presentation"))
         }
         status?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = tokens.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
-        Text("${text.split(Regex("\\s+")).count { it.isNotBlank() }} كلمة • يُقرأ على جهازك ولا يُرفع", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Text("${text.split(Regex("\\s+")).count { it.isNotBlank() }} كلمة • يقرأ على جهازك ولا يرفع", style = MaterialTheme.typography.labelSmall, color = tokens.textTertiary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -115,7 +115,7 @@ fun TranslateTool(t: Tool, back: () -> Unit) {
                         try {
                             busy = "تنزيل حزمة اللغة لأول مرة (مرة واحدة، نحو 30 م.ب)…"
                             Tasks.await(tr.downloadModelIfNeeded(DownloadConditions.Builder().build()))
-                            busy = "جارٍ الترجمة على جهازك…"
+                            busy = "جار الترجمة على جهازك…"
                             text.split(Regex("\\n")).joinToString("\n") { line -> if (line.isBlank()) line else Tasks.await(tr.translate(line)) }
                         } finally { tr.close() }
                     }
@@ -126,7 +126,7 @@ fun TranslateTool(t: Tool, back: () -> Unit) {
                     val d = Files.outDir(ctx)
                     files = listOf(File(d, "ترجمة.txt").apply { writeText(tx) }, File(d, "ترجمة.docx").also { Office.writeDocx(it, tx.split("\n").map { p -> Office.Para.Text(p) }) })
                     Store.used(t.id); maybeAskForReview(ctx)
-                }.onFailure { error = "تعذّرت الترجمة. أول استخدام يحتاج اتصالًا لتنزيل حزمة اللغة، ثم تعمل دون إنترنت." }
+                }.onFailure { error = "تعذرت الترجمة. أول استخدام يحتاج اتصالا لتنزيل حزمة اللغة، ثم تعمل دون إنترنت." }
             }
         }
         if (out.isNotBlank()) { Box(Modifier.testTag("results")) { TextResult(out, "الترجمة") }; ResultFiles(files) }
@@ -143,8 +143,8 @@ fun SummarizeTool(t: Tool, back: () -> Unit) {
     var files by remember { mutableStateOf<List<File>>(emptyList()) }
     ToolScreen(t, back) {
         TextSource(text, { text = it; out = emptyList() })
-        Panel { Text("طول الملخص", style = MaterialTheme.typography.labelLarge); Segmented(listOf("قصير", "متوسط", "مفصّل"), size) { size = it } }
-        PrimaryButton("لخّص", Icons.Rounded.Summarize, enabled = text.split(Regex("\\s+")).size >= 30, modifier = Modifier.testTag("action")) {
+        Panel { Text("طول الملخص", style = MaterialTheme.typography.labelLarge); Segmented(listOf("قصير", "متوسط", "مفصل"), size) { size = it } }
+        PrimaryButton("لخص", Icons.Rounded.Summarize, enabled = text.split(Regex("\\s+")).size >= 30, modifier = Modifier.testTag("action")) {
             if (!Plus.useAi()) return@PrimaryButton
             val n = TextAi.sentences(text).size
             out = TextAi.summarize(text, listOf((n / 6).coerceIn(2, 4), 0, (n / 2).coerceIn(4, 14))[size])
@@ -153,13 +153,13 @@ fun SummarizeTool(t: Tool, back: () -> Unit) {
             files = listOf(File(d, "ملخص.txt").apply { writeText(body) }, File(d, "ملخص.docx").also { Office.writeDocx(it, out.map { s -> Office.Para.Text("• $s") }) })
             Store.used(t.id); maybeAskForReview(ctx)
         }
-        if (text.isNotBlank() && text.split(Regex("\\s+")).size < 30) Text("أضف نصًا أطول (30 كلمة على الأقل) للتلخيص.", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
+        if (text.isNotBlank() && text.split(Regex("\\s+")).size < 30) Text("أضف نصا أطول (30 كلمة على الأقل) للتلخيص.", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
         if (out.isNotEmpty()) {
             Box(Modifier.testTag("results")) { TextResult(out.joinToString("\n") { "• $it" }, "الملخص (${out.size} نقاط)") }
             Panel("الكلمات المفتاحية") { ChipRow { TextAi.keywords(text, 10).forEach { Chip(it) {} } } }
             ResultFiles(files)
         }
-        Hint("يختار أهم الجمل من نصك على جهازك ويعرضها بترتيبها، فلا يضيف معلومة ليست في النص. ${if (!Plus.unlocked) "المجاني: تلخيص واحد يوميًا." else ""}")
+        Hint("يختار أهم الجمل من نصك على جهازك ويعرضها بترتيبها، فلا يضيف معلومة ليست في النص. ${if (!Plus.unlocked) "المجاني: تلخيص واحد يوميا." else ""}")
     }
 }
 
@@ -189,11 +189,11 @@ fun QuizGenTool(t: Tool, back: () -> Unit) {
         }
         if (qs.isEmpty() && text.isNotBlank() && TextAi.sentences(text).size < 3) Text("أضف ثلاث جمل كاملة على الأقل.", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
         if (qs.isNotEmpty()) {
-            Panel("${qs.size} سؤالًا", Modifier.testTag("results")) {
+            Panel("${qs.size} سؤالا", Modifier.testTag("results")) {
                 qs.take(5).forEachIndexed { i, q -> Text("${i + 1}) ${q.text}", style = MaterialTheme.typography.bodyMedium); Text("الإجابة: ${q.answer}", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary) }
                 if (qs.size > 5) Text("والبقية في ملف PDF.", style = MaterialTheme.typography.bodySmall, color = tokens.textTertiary)
             }
-            SecondaryButton(if (saved) "أُضيفت إلى بطاقات المراجعة" else "أضفها إلى بطاقات المراجعة", Icons.Rounded.Style, Modifier.fillMaxWidth()) {
+            SecondaryButton(if (saved) "أضيفت إلى بطاقات المراجعة" else "أضفها إلى بطاقات المراجعة", Icons.Rounded.Style, Modifier.fillMaxWidth()) {
                 if (!saved) {
                     val now = System.currentTimeMillis()
                     Store.saveList("flashcards", Store.list("flashcards") + qs.mapIndexed { i, q -> JSONObject().put("id", now + i).put("f", q.text).put("b", q.answer).put("box", 1) })
@@ -202,7 +202,7 @@ fun QuizGenTool(t: Tool, back: () -> Unit) {
             }
             ResultFiles(files)
         }
-        Hint("تُبنى الأسئلة من جملك نفسها على جهازك (أكمل الفراغ بأربعة اختيارات). راجعها قبل توزيعها. ${if (!Plus.unlocked) "المجاني: مرة واحدة يوميًا." else ""}")
+        Hint("تبنى الأسئلة من جملك نفسها على جهازك (أكمل الفراغ بأربعة اختيارات). راجعها قبل توزيعها. ${if (!Plus.unlocked) "المجاني: مرة واحدة يوميا." else ""}")
     }
 }
 
@@ -229,7 +229,7 @@ fun ReadAloudTool(t: Tool, back: () -> Unit) {
             }
             SecondaryButton("إيقاف", Icons.Rounded.Stop) { tts[0]?.stop(); speaking = false }
         }
-        Hint("صوّر ورقة أو اختر ملفًا، وسيقرأ مُيسّر النص بصوت عربي على جهازك. مفيد لضعاف البصر ولمراجعة الدروس سماعًا.")
-        if (!ready) Hint("إن لم يعمل الصوت العربي، ثبّت حزمة اللغة العربية من إعدادات «تحويل النص إلى كلام» في جهازك.")
+        Hint("صور ورقة أو اختر ملفا، وسيقرأ ميسر النص بصوت عربي على جهازك. مفيد لضعاف البصر ولمراجعة الدروس سماعا.")
+        if (!ready) Hint("إن لم يعمل الصوت العربي، ثبت حزمة اللغة العربية من إعدادات «تحويل النص إلى كلام» في جهازك.")
     }
 }

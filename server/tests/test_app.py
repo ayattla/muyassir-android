@@ -21,7 +21,7 @@ QUIZ = {"title": "اختبار العواصم", "minutes": 0, "questions": [
     {"text": "عاصمة السعودية؟", "type": "choice", "options": ["جدة", "الرياض"], "answer": "الرياض", "mark": 2},
     {"text": "الشمس نجم", "type": "truefalse", "answer": "صح"},
     {"text": "الماء يغلي عند ___", "type": "blank", "answer": "100"},
-    {"text": "رتّب الأعداد", "type": "order", "options": ["3", "1", "2"], "answer": ["1", "2", "3"]}]}
+    {"text": "رتب الأعداد", "type": "order", "options": ["3", "1", "2"], "answer": ["1", "2", "3"]}]}
 
 
 def test_publish_take_submit_and_results(client):
@@ -87,9 +87,9 @@ def test_admin_and_rate_limit(client):
 
 def test_classify_activity(client):
     h = token(client)
-    bad = {"title": "تصنيف", "questions": [{"text": "صنّف", "type": "classify", "items": ["أسد"], "options": ["ثدييات", "طيور"], "answer": ["ثدييات"]}]}
+    bad = {"title": "تصنيف", "questions": [{"text": "صنف", "type": "classify", "items": ["أسد"], "options": ["ثدييات", "طيور"], "answer": ["ثدييات"]}]}
     assert client.post("/api/v1/activities", json=bad, headers=h).status_code == 422
-    q = {"title": "تصنيف الحيوانات", "questions": [{"text": "صنّف الحيوانات", "type": "classify", "items": ["أسد", "صقر", "حوت"],
+    q = {"title": "تصنيف الحيوانات", "questions": [{"text": "صنف الحيوانات", "type": "classify", "items": ["أسد", "صقر", "حوت"],
          "options": ["ثدييات", "طيور"], "answer": ["ثدييات", "طيور", "ثدييات"]}]}
     code = client.post("/api/v1/activities", json=q, headers=h).json()["code"]
     page = client.get("/q/" + code).text; assert "اختر الفئة المناسبة" in page and "صقر" in page
