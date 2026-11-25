@@ -142,7 +142,8 @@ jobs:
           cp out/apk/release/*arm64-v8a*.apk muyassir-preview.apk
           cp out/apk/release/*armeabi-v7a*.apk muyassir-preview-32bit.apk
           cp out/apk/release/*universal*.apk muyassir-preview-universal.apk
+          cp out/bundle/release/*.aab muyassir-play.aab
           ls -la muyassir-preview*.apk
           gh release delete preview --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh release create preview muyassir-preview.apk muyassir-preview-32bit.apk muyassir-preview-universal.apk --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+          gh release create preview muyassir-preview.apk muyassir-preview-32bit.apk muyassir-preview-universal.apk muyassir-play.aab --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
             --title "نسخة المعاينة" --notes "آخر نسخة من الفرع الرئيسي بعد نجاح الفحوص ($(date -u +%F))."
